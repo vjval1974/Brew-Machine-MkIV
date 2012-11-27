@@ -119,9 +119,9 @@ void vCraneTask( void *pvParameters )
 	for( ;; )
 	{
 		adc_value = read_adc(10);
-		lcd_fill(0, 20, 150, 40, 0xFF);
+		lcd_fill(0, 40, 150, 40, 0xFF);
 		lcd_printf(3,3,20, "ADC = %d", adc_value);
-		vTaskDelay( 200 );
+		vTaskDelay( 100 );
 	}
 }
 

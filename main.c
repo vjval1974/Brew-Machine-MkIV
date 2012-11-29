@@ -111,14 +111,15 @@ int main( void )
     prvSetupHardware();// set up peripherals etc 
     USARTInit(USART_PARAMS1);
 
+
     lcd_init();          
     vLEDInit();
-
+    vCraneInit();
 	menu_set_root(main_menu);
 
     xTaskCreate( vTouchTask, 
                  ( signed portCHAR * ) "touch", 
-                 configMINIMAL_STACK_SIZE +1000, 
+                 configMINIMAL_STACK_SIZE +2800,
                  NULL, 
                  tskIDLE_PRIORITY+2,
                  &xTouchTaskHandle );
@@ -131,7 +132,7 @@ int main( void )
                  tskIDLE_PRIORITY+2,
                  &xAdcTaskHandle ); */
     
-       
+
     /* Start the scheduler. */
     vTaskStartScheduler();
     

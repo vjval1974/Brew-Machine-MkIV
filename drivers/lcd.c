@@ -773,8 +773,8 @@ void lcd_background(uint16_t color)
 void lcd_DrawRect(int x1, int y1, int x2, int y2, int col)
 {
     LCD_LOCK;
-    lcd_fill(x1, y1, x2-x1, y2-y1, col);
-    lcd_fill(x1+1, y1+1, x2-x1-2, y2-y1-2, Black);
+    lcd_fill(x1, y1, x2-x1+2, y2-y1+2, col);
+    lcd_fill(x1+1, y1+1, x2-x1, y2-y1, Black);
     LCD_UNLOCK;
 }
 

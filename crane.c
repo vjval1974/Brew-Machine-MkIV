@@ -24,6 +24,7 @@
 #include "lcd.h"
 #include "task.h"
 #include "adc.h"
+#include "leds.h"
 //-------------------------------------------------------------------------
 #define CRANE_UPPER_LIMIT_ADC_CHAN 10
 #define CRANE_LOWER_LIMIT_ADC_CHAN 11
@@ -31,7 +32,8 @@
 #define DRIVING_DN 2
 #define STOPPED 0
 
-xTaskHandle xCraneTaskHandle = NULL, xCraneUpToLimitTaskHandle = NULL, xCraneDnToLimitTaskHandle = NULL, xCraneAppletDisplayHandle = NULL;
+xTaskHandle xCraneTaskHandle = NULL, xCraneUpToLimitTaskHandle = NULL,	xCraneDnToLimitTaskHandle = NULL, xCraneAppletDisplayHandle = NULL;
+
 static char crane_state = STOPPED;
 //-------------------------------------------------------------------------
 void vCraneDnToLimitTask( void *pvParameters );
@@ -60,14 +62,15 @@ void vCraneInit(void){
 	// to Step Pin
 
 	GPIO_InitStructure.GPIO_Pin =  CRANE_ENABLE_PIN;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
 	GPIO_Init( CRANE_PORT, &GPIO_InitStructure );
-	GPIO_ResetBits(CRANE_PORT, CRANE_ENABLE_PIN);
+	GPIO_SetBits(CRANE_PORT, CRANE_ENABLE_PIN);
 
 	GPIO_InitStructure.GPIO_Pin =  CRANE_DIR_PIN;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
 	GPIO_Init( CRANE_PORT, &GPIO_InitStructure );
-	GPIO_ResetBits(CRANE_PORT, CRANE_DIR_PIN);
+	GPIO_SetBits(CRANE_PORT, CRANE_DIR_PIN);
+
 
 
 	// SET UP TIMER 3
@@ -130,13 +133,19 @@ void vCraneStop(){
 
 void vCraneAppletDisplay( void *pvParameters){
 	static char tog = 0;
-	for(;;){
+	static char last_state;
+	for(;;)
+	{
+		printf("%d, %d\r\n", last_state, crane_state);
 		switch (crane_state)
 		{
 		case DRIVING_UP:
 		{
 			if(tog)
+			{
+				lcd_fill(1,200, 100,50, Black);
 				lcd_printf(1,13,20,"Driving UP!");
+			}
 			else
 				lcd_fill(1,200, 100,50, Black);
 
@@ -145,17 +154,9 @@ void vCraneAppletDisplay( void *pvParameters){
 		case DRIVING_DN:
 		{
 			if(tog)
-				lcd_printf(1,13,20,"Driving DN!");
-			else
+			{
 				lcd_fill(1,200, 100,50, Black);
-
-
-			break;
-		}
-		case STOPPED:
-		{
-			if(tog){
-				lcd_printf(1,13,20,"STOPPED!");
+				lcd_printf(1,13,20,"Driving DN!");
 			}
 			else
 				lcd_fill(1,200, 100,50, Black);
@@ -163,14 +164,32 @@ void vCraneAppletDisplay( void *pvParameters){
 
 			break;
 		}
+		case (STOPPED):
+			{
+			if(last_state != crane_state)
+			{
+				lcd_fill(1,200, 100,50, Black);
+				lcd_printf(1,13,20,"STOPPED!");
+			}
+			//else
+			//
+
+
+			break;
+			}
 		default:
 		{
 			break;
 		}
 		}
-		taskYIELD();
-		vTaskDelay(500);
+		//		taskYIELD();
 		tog = tog ^ 1;
+		//printf("%d,%d\n",last_state, crane_state);
+		last_state = crane_state;
+		vTaskDelay(500);
+
+
+
 	}
 }
 
@@ -185,7 +204,7 @@ void vCraneUpToLimitTask( void *pvParameters )
 	crane_state = DRIVING_UP;
 
 	//down counting increases speed
-	GPIO_WriteBit( CRANE_PORT, CRANE_ENABLE_PIN, 0 );
+	GPIO_WriteBit( CRANE_PORT, CRANE_ENABLE_PIN, 0 ); //pull low to enable drive
 	GPIO_WriteBit( CRANE_PORT, CRANE_DIR_PIN, 1 );
 
 	//Ramp Up Speed
@@ -327,7 +346,7 @@ void manual_crane_applet(int init){
 		adc_init();
 		xTaskCreate( vCraneAppletDisplay,
 				( signed portCHAR * ) "crane_display",
-				configMINIMAL_STACK_SIZE +200,
+				configMINIMAL_STACK_SIZE +400,
 				NULL,
 				tskIDLE_PRIORITY,
 				&xCraneAppletDisplayHandle );

@@ -3,12 +3,14 @@
 // DS1820 driver for STM32F103VE using FreeRTOS
 ////////////////////////////////////////////////////////////////////////////
 
-#include "FreeRTOS.h"
-#include "task.h"
+
+
 #include "stm32f10x.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include "FreeRTOS.h"
+#include "task.h"
 #include "ds1820.h"
 #include "queue.h"
 #include "lcd.h"
@@ -37,10 +39,12 @@
 #define NO_ERROR       0x00
 
 //Default Temp Sensor Addresses
-#define HLT_TEMP_SENSOR "\x10\x9c\xa4\x1e\x02\x08\x00\xf"
-#define MASH_TEMP_SENSOR "\x10\xe3\x9b\x1e\x02\x08\x00\x58"
-#define CABINET_TEMP_SENSOR "\x10\x99\xd7\x39\x01\x08\x00\xd5"
-#define AMBIENT_TEMP_SENSOR "\x10\xe3\x9b\x1e\x02\x08\x00\x32"
+#define HLT_TEMP_SENSOR "\x10\x99\xd7\x39\x01\x08\x00\xd5"
+#define MASH_TEMP_SENSOR "\x10\x6c\xe2\x38\x01\x08\x00\x95"
+#define CABINET_TEMP_SENSOR "\x10\x83\xc5\x1e\x02\x08\x00\xAC"
+#define AMBIENT_TEMP_SENSOR "\x10\x83\xc5\x1e\x02\x08\x00\xAC"
+#define HLT_SSR_TEMP_SENSOR "\x10\xA5\x91\x1E\x02\x08\x00\x22"
+#define BOIL_SSR_TEMP_SENSOR "\x10\5Dc\xB0\x1E\x02\x08\x00\xC4"
 
 // BUS COMMANDS
 #define DQ_IN()  {DS1820_PORT->CRH&=0xFFFFF0FF;DS1820_PORT->CRH |= 0x00000400;}
@@ -48,6 +52,8 @@
 #define DQ_SET()   GPIO_SetBits(DS1820_PORT, DS1820_PIN)
 #define DQ_RESET() GPIO_ResetBits(DS1820_PORT, DS1820_PIN)
 #define DQ_READ()  GPIO_ReadInputDataBit(DS1820_PORT, DS1820_PIN)
+
+xTaskHandle xTaskDS1820DisplayTempsHandle;
 
 // STATIC FUNCTIONS
 static void ds1820_convert(void);
@@ -61,13 +67,13 @@ static void ds1820_convert(void);
 static uint8_t ds1820_search();
 static float ds1820_read_device(uint8_t * rom_code);
 static void delay_us(uint16_t count); 
-
+void  vTaskDS1820DisplayTemps(void *pvParameters);
 
 
 
 uint8_t rom[8]; //temporary to store rom codes
-float temps[4]; // holds the converted temperatures from the devices
-char * b[5]; // holds the 64 bit addresses of the temp sensors
+float temps[6]; // holds the converted temperatures from the devices
+char * b[6]; // holds the 64 bit addresses of the temp sensors
 
 ////////////////////////////////////////////////////////////////////////////
 // Interfacing Function
@@ -81,7 +87,7 @@ void vTaskDS1820Convert( void *pvParameters ){
     ds1820_init();
     if (ds1820_reset() ==PRESENCE_ERROR)
     {
-        sprintf(buf, "NO SENSOR DETECTED\r\n");
+        printf("NO SENSOR DETECTED\r\n");
         vTaskDelete(NULL); // if this task fails... delete it
     }
   
@@ -90,39 +96,42 @@ void vTaskDS1820Convert( void *pvParameters ){
     b[MASH] = (char *) malloc (sizeof(rom)+1);
     b[CABINET] = (char *) malloc (sizeof(rom)+1);
     b[AMBIENT] = (char *) malloc (sizeof(rom)+1);
-    b[SPARE] = (char *) malloc (sizeof(rom)+1);
-    
+    b[HLT_SSR] = (char *) malloc (sizeof(rom)+1);
+    b[BOIL_SSR] = (char *) malloc (sizeof(rom)+1);
     // Copy default values
     memcpy(b[HLT], HLT_TEMP_SENSOR, sizeof(HLT_TEMP_SENSOR)+1);
     memcpy(b[MASH], MASH_TEMP_SENSOR, sizeof(MASH_TEMP_SENSOR)+1);
     memcpy(b[CABINET], CABINET_TEMP_SENSOR, sizeof(CABINET_TEMP_SENSOR)+1);
     memcpy(b[AMBIENT], AMBIENT_TEMP_SENSOR, sizeof(AMBIENT_TEMP_SENSOR)+1);  
-
-  
-    
+    memcpy(b[HLT_SSR], HLT_SSR_TEMP_SENSOR, sizeof(HLT_SSR_TEMP_SENSOR)+1);
+    memcpy(b[BOIL_SSR], BOIL_SSR_TEMP_SENSOR, sizeof(BOIL_SSR_TEMP_SENSOR)+1);
+    vTaskSuspendAll();
+    ds1820_search();
+            if (rom[0] == 0x10)
+                printf("%02x-%02x-%02x-%02x-%02x-%02x-%02x-%02x\r\n",rom[0],
+                        rom[1], rom[2], rom[3], rom[4], rom[5], rom[6], rom[7]);
+            else printf("NO SENSOR\r\n");
+    xTaskResumeAll();
     for (;;)
     {
         ds1820_convert();
         
-        vTaskDelay(2000); // wait for conversion
+        vTaskDelay(200); // wait for conversion
 
         // save values in array for use by application
-        for (ii = 0 ; ii < 4; ii++)
+        for (ii = 0 ; ii < 6; ii++)
             temps[ii] = ds1820_read_device(b[ii]);
 
-                 
+        printf("DS1820 Convert Water Mark = %u\r\n", uxTaskGetStackHighWaterMark(NULL));
       // Uncomment below to send temps to the console
-        /*
-        sprintf(buf, "HLT Temp = %.2fDeg-C\r\n", temps[HLT]);
-        xQueueSendToBack(xConsoleQueue, &buf, 100);
-        sprintf(buf, "Mash Temp = %.2fDeg-C\r\n", temps[MASH]);
-        xQueueSendToBack(xConsoleQueue, &buf, 100);
-        sprintf(buf, "Cabinet Temp = %.2fDeg-C\r\n", temps[CABINET]);
-        xQueueSendToBack(xConsoleQueue, &buf, 100);
-        sprintf(buf, "Ambient Temp = %.2fDeg-C\r\n", temps[AMBIENT]);
-        xQueueSendToBack(xConsoleQueue, &buf, 100);
-        */
-        
+/*
+        printf("HLT Temp = %.2fDeg-C\r\n", temps[HLT]);
+        printf("Mash Temp = %.2fDeg-C\r\n", temps[MASH]);
+        printf("Cabinet Temp = %.2fDeg-C\r\n", temps[CABINET]);
+        printf("Ambient Temp = %.2fDeg-C\r\n", temps[AMBIENT]);
+        printf("HLT SSR Temp = %.2fDeg-C\r\n", temps[HLT_SSR]);
+        printf("BOIL SSR Temp = %.2fDeg-C\r\n", temps[BOIL_SSR]);
+*/
         taskYIELD();
     }
     
@@ -258,18 +267,54 @@ void ds1820_search_key(uint16_t x, uint16_t y){
 }
 ////////////////////////////////////////////////////////////////////////////
 
-void  ds1820_display_temps(void){
+void vDS1820DiagApplet(int init){
 
-    char lcd_string[20];
-    
-    lcd_clear(Black);
-//    lcd_draw_back_button();
-    lcd_printf(1,1, 15, "TEMPERATURES");
-  
-    lcd_printf(1, 40, 20, "HLT = %.2f\0", ds1820_get_temp(HLT));
-    lcd_printf(1, 56, 20, "Mash = %.2f\0", ds1820_get_temp(MASH));
-    lcd_printf(1, 72, 20, "Cabinet = %.2f\0", ds1820_get_temp(CABINET));
-    lcd_printf(1, 88, 20, "Ambient = %.2f\0", ds1820_get_temp(AMBIENT));
+	if (init)
+		//lcd_clear(Black);
+	xTaskCreate( vTaskDS1820DisplayTemps,
+	                 ( signed portCHAR * ) "ds1820_dsp",
+	                 configMINIMAL_STACK_SIZE + 500,
+	                 NULL,
+	                 tskIDLE_PRIORITY+1,
+	                 &xTaskDS1820DisplayTempsHandle );
+
+}
+
+int DS1820DiagKey(int xx, int yy){
+
+	if (xx > 200 && yy > 200)
+	{
+		vTaskDelete(xTaskDS1820DisplayTempsHandle);
+		vTaskDelay(100);
+		return 1;
+	}
+	vTaskDelay(10);
+	return 0; // xx > 200 && yy > 200;
+}
+
+
+void  vTaskDS1820DisplayTemps( void *pvParameters){
+
+	//char lcd_string[20];
+	static int count = 0;
+	lcd_printf(1,1, 15, "TEMPERATURES");
+	for (;;)
+	{
+		count++;
+//		portENTER_CRITICAL();
+		lcd_fill(1,50, 200, 190, Black);
+		lcd_printf(1, 5, 20, "HLT = %.2f", ds1820_get_temp(HLT));
+		lcd_printf(1, 6, 20, "Mash = %.2f", ds1820_get_temp(MASH));
+		lcd_printf(1, 7, 20, "Cabinet = %.2f", ds1820_get_temp(CABINET));
+		lcd_printf(1, 8, 20, "Ambient = %.2f", ds1820_get_temp(AMBIENT));
+		lcd_printf(1, 9, 20, "HLT_SSR = %.2f", ds1820_get_temp(HLT_SSR));
+		lcd_printf(1, 10, 20, "BOIL_SSR = %.2f", ds1820_get_temp(BOIL_SSR));
+		printf("Display High water = %u\r\n",uxTaskGetStackHighWaterMark(NULL));
+//		portEXIT_CRITICAL();
+		taskYIELD();
+		vTaskDelay(500);
+
+	}
 }
 ////////////////////////////////////////////////////////////////////////////
 

@@ -49,7 +49,7 @@ xTaskHandle xLCDTaskHandle,
     xAdcTaskHandle , 
     xBeepTaskHandle, 
     xTimerSetupHandle,
-    xDS1820Handle;
+    xDS1820TaskHandle;
 
 
 // Needed by file core_cm3.h
@@ -66,6 +66,8 @@ void item_1_callback(unsigned char button_down)
 void item_2_callback(unsigned char button_down)
 {
 	printf("Button %d\r\n", button_down);
+    printf("DS1820 Display Water Mark from main = %u\r\n", uxTaskGetStackHighWaterMark(xTaskDS1820DisplayTempsHandle));
+
 	vLEDSet(D4_PORT, D4_PIN, button_down);
 }
 
@@ -91,7 +93,8 @@ int example_applet_touch_handler(int xx, int yy)
 struct menu manual_menu[] =
 {
 	{"Crane",       	NULL,				manual_crane_applet, 	NULL, 				manual_crane_key},
-	{"Item 5", 			NULL, 				NULL, 					item_2_callback, 	NULL},
+	{"FlashLED", 		NULL, 				NULL, 					item_2_callback, 	NULL},
+	{"DS1820Diag", 		NULL, 				vDS1820DiagApplet,		NULL,	 		 	DS1820DiagKey},
 	{"Back",   			NULL, 				NULL, 					NULL, 				NULL},
     {NULL, 				NULL, 				NULL, 					NULL, 				NULL}
 };
@@ -119,18 +122,18 @@ int main( void )
 
     xTaskCreate( vTouchTask, 
                  ( signed portCHAR * ) "touch", 
-                 configMINIMAL_STACK_SIZE +2800,
+                 configMINIMAL_STACK_SIZE +800,
                  NULL, 
                  tskIDLE_PRIORITY+2,
                  &xTouchTaskHandle );
 
-    /* Create you application tasks if needed here
-    xTaskCreate( vKegTask, 
-                 ( signed portCHAR * ) "ADC", 
-                 configMINIMAL_STACK_SIZE +1000, 
+    // Create you application tasks if needed here
+    xTaskCreate( vTaskDS1820Convert,
+                 ( signed portCHAR * ) "DS1820",
+                 configMINIMAL_STACK_SIZE +500,
                  NULL, 
                  tskIDLE_PRIORITY+2,
-                 &xAdcTaskHandle ); */
+                 &xDS1820TaskHandle );
     
 
     /* Start the scheduler. */

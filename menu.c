@@ -11,6 +11,7 @@
 #include <string.h>
 #include <stdint.h>
 #include "FreeRTOS.h"
+#include "task.h"
 #include "touch.h"
 #include "menu.h"
 #include "queue.h"
@@ -36,11 +37,12 @@ static int menu_touch_x;
 
 static unsigned start_time;
 
+/*
 static void menu_update_hilight(void)
 {
 
 }
-
+*/
 static void menu_run_callback(char init)
 {
     if (g_index > 0)
@@ -119,14 +121,14 @@ static void menu_two_column()
     	menu_paint_cell(ii);
     }	
 }
-
+/*
 static void menu_paint_row(int row)
 {
 	int yy = CRUMB_H + row * (g_rowh);
 	uint16_t bgCol = COL_BG_NORM; 
 	
 }
-
+*/
 static void menu_update(void)
 {
 	start_time = xTaskGetTickCount();

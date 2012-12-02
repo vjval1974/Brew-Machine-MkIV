@@ -122,7 +122,7 @@ void vTaskDS1820Convert( void *pvParameters ){
         for (ii = 0 ; ii < 6; ii++)
             temps[ii] = ds1820_read_device(b[ii]);
 
-        printf("DS1820 Convert Water Mark = %u\r\n", uxTaskGetStackHighWaterMark(NULL));
+        //printf("DS1820 Convert Water Mark = %u\r\n", uxTaskGetStackHighWaterMark(NULL));
       // Uncomment below to send temps to the console
 /*
         printf("HLT Temp = %.2fDeg-C\r\n", temps[HLT]);
@@ -301,7 +301,7 @@ void  vTaskDS1820DisplayTemps( void *pvParameters){
 	for (;;)
 	{
 		count++;
-//		portENTER_CRITICAL();
+		portENTER_CRITICAL();
 		lcd_fill(1,50, 200, 190, Black);
 		lcd_printf(1, 5, 20, "HLT = %.2f", ds1820_get_temp(HLT));
 		lcd_printf(1, 6, 20, "Mash = %.2f", ds1820_get_temp(MASH));
@@ -310,7 +310,7 @@ void  vTaskDS1820DisplayTemps( void *pvParameters){
 		lcd_printf(1, 9, 20, "HLT_SSR = %.2f", ds1820_get_temp(HLT_SSR));
 		lcd_printf(1, 10, 20, "BOIL_SSR = %.2f", ds1820_get_temp(BOIL_SSR));
 		printf("Display High water = %u\r\n",uxTaskGetStackHighWaterMark(NULL));
-//		portEXIT_CRITICAL();
+		portEXIT_CRITICAL();
 		taskYIELD();
 		vTaskDelay(500);
 
@@ -338,7 +338,7 @@ static void delay_us(uint16_t count){
 ////////////////////////////////////////////////////////////////////////////
 
 static void ds1820_init(void) {
-    // intialise timer 2 for counting 
+    // Initialise timer 2 for counting
     TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
     TIM_TimeBaseStructure.TIM_Period = 1;                
@@ -491,6 +491,7 @@ static uint8_t ds1820_search(){
     portEXIT_CRITICAL();
     ds1820_reset();
     sprintf(console_text, "Sensor search complete\r\n\0");
+    return 0;
    
 }
 ////////////////////////////////////////////////////////////////////////////

@@ -58,6 +58,9 @@ void lcd_text_xy(uint16_t Xpos, uint16_t Ypos, const char *str,uint16_t Color, u
 void lcd_lock();
 void lcd_release();
 void DrawBMP(uint8_t* ptrBitmap);
+
+void lcd_background(uint16_t color);
+void lcd_text(uint8_t col, uint8_t row, const char *text);
 /**
  * The LCD is written to by more than one task so is controlled by a
  * 'gatekeeper' task.  This is the only task that is actually permitted to

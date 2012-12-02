@@ -29,6 +29,7 @@
 #include "serial.h"
 #include "crane.h"
 #include "adc.h"
+#include "hlt.h"
 /*-----------------------------------------------------------*/
 
 /* The period of the system clock in nano seconds.  This is used to calculate
@@ -49,7 +50,9 @@ xTaskHandle xLCDTaskHandle,
     xAdcTaskHandle , 
     xBeepTaskHandle, 
     xTimerSetupHandle,
-    xDS1820TaskHandle;
+    xDS1820TaskHandle,
+    xCheckTaskHandle;
+
 
 
 // Needed by file core_cm3.h
@@ -65,10 +68,9 @@ void item_1_callback(unsigned char button_down)
 
 void item_2_callback(unsigned char button_down)
 {
-	printf("Button %d\r\n", button_down);
-    printf("DS1820 Display Water Mark from main = %u\r\n", uxTaskGetStackHighWaterMark(xTaskDS1820DisplayTempsHandle));
-
-	vLEDSet(D4_PORT, D4_PIN, button_down);
+  printf("Button %d\r\n", button_down);
+  printf("HLT Display Water Mark from main = %u\r\n", uxTaskGetStackHighWaterMark(xHLTAppletDisplayHandle));
+  vLEDSet(D4_PORT, D4_PIN, button_down);
 }
 
 void example_applet(int init)
@@ -90,21 +92,54 @@ int example_applet_touch_handler(int xx, int yy)
 	return xx > 200 && yy > 200;
 }
 
-struct menu manual_menu[] =
+void vCheckTask(void *pvParameters)
 {
-	{"Crane",       	NULL,				manual_crane_applet, 	NULL, 				manual_crane_key},
-	{"FlashLED", 		NULL, 				NULL, 					item_2_callback, 	NULL},
-	{"DS1820Diag", 		NULL, 				vDS1820DiagApplet,		NULL,	 		 	DS1820DiagKey},
-	{"Back",   			NULL, 				NULL, 					NULL, 				NULL},
-    {NULL, 				NULL, 				NULL, 					NULL, 				NULL}
-};
+
+  unsigned int touch, adc, ds1820, timer, low_level = 100;
+  for (;;){
+      touch = uxTaskGetStackHighWaterMark(xTouchTaskHandle);
+      adc = uxTaskGetStackHighWaterMark(xAdcTaskHandle);
+      ds1820 =  uxTaskGetStackHighWaterMark(xDS1820TaskHandle);
+      timer = uxTaskGetStackHighWaterMark(xTimerSetupHandle);
+
+      if (touch < low_level ||
+          adc < low_level ||
+          ds1820 < low_level ||
+          timer < low_level)
+        {
+          vTaskSuspendAll();
+          printf("ADCwm = %d\r\n", adc);
+          printf("touchwm = %d\r\n", touch);
+          printf("DS1820wm = %d\r\n", ds1820);
+          printf("TimerSetupwm = %d\r\n", timer);
+          xTaskResumeAll();
+          vTaskDelay(500);
+
+        }
+      vTaskDelay(10);
+      taskYIELD();
+  }
+
+
+
+}
+
+struct menu manual_menu[] =
+    {
+        {"Crane",       	NULL,				manual_crane_applet, 	        NULL, 			manual_crane_key},
+        {"FlashLED", 		NULL, 				NULL, 				item_2_callback, 	NULL},
+        {"DS1820Diag", 		NULL, 				vDS1820DiagApplet,		NULL,	 		DS1820DiagKey},
+        {"HLT",                 NULL,                           vHLTApplet,                     NULL,                   HLTKey},
+        {"Back",   	        NULL, 				NULL, 				NULL, 			NULL},
+        {NULL, 			NULL, 				NULL, 				NULL, 			NULL}
+    };
 
 struct menu main_menu[] =
-{
-    {"Manual Control",  manual_menu, 		NULL, 					NULL, 				NULL},
-    {"Applet",          NULL,               example_applet,		 	NULL, 				example_applet_touch_handler},
-    {NULL, 				NULL, 				NULL, 					NULL, 				NULL}
-};
+    {
+        {"Manual Control",      manual_menu,    		NULL, 				NULL, 			NULL},
+        {"Applet",              NULL,                           example_applet,                 NULL,			example_applet_touch_handler},
+        {NULL,                  NULL, 				NULL,                           NULL, 			NULL}
+    };
 
 /**
  * Main.
@@ -118,11 +153,12 @@ int main( void )
     lcd_init();          
     vLEDInit();
     vCraneInit();
+    hlt_init();
 	menu_set_root(main_menu);
 
     xTaskCreate( vTouchTask, 
                  ( signed portCHAR * ) "touch", 
-                 configMINIMAL_STACK_SIZE +800,
+                 configMINIMAL_STACK_SIZE +500,
                  NULL, 
                  tskIDLE_PRIORITY+2,
                  &xTouchTaskHandle );
@@ -135,6 +171,12 @@ int main( void )
                  tskIDLE_PRIORITY+2,
                  &xDS1820TaskHandle );
     
+    xTaskCreate( vCheckTask,
+                   ( signed portCHAR * ) "check",
+                   configMINIMAL_STACK_SIZE +500,
+                   NULL,
+                   tskIDLE_PRIORITY+5,
+                   &xCheckTaskHandle );
 
     /* Start the scheduler. */
     vTaskStartScheduler();

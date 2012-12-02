@@ -32,9 +32,25 @@
 #define DRIVING_DN 2
 #define STOPPED 0
 
-xTaskHandle xCraneTaskHandle = NULL, xCraneUpToLimitTaskHandle = NULL,	xCraneDnToLimitTaskHandle = NULL, xCraneAppletDisplayHandle = NULL;
+xTaskHandle xCraneTaskHandle = NULL, xCraneUpToLimitTaskHandle = NULL,  xCraneDnToLimitTaskHandle = NULL, xCraneAppletDisplayHandle = NULL;
 
 static char crane_state = STOPPED;
+int test(int x){
+	printf("test\r\n");
+	return 0;
+}
+
+struct StepperSteps  {
+		char * step_name;
+		int (*setupFunc)(void);
+		int (*pollingFunc)(int x);
+}StirSteps[];
+
+
+struct StepperSteps StirSteps[] = {
+		{"brad", NULL, test},
+		{NULL, NULL, NULL}
+};
 //-------------------------------------------------------------------------
 void vCraneDnToLimitTask( void *pvParameters );
 void vCraneUpToLimitTask( void *pvParameters );
@@ -55,25 +71,51 @@ void vCraneInit(void){
 	TIM_DeInit( TIM3 );
 	TIM_TimeBaseStructInit( &TIM_TimeBaseStructure );
 
+	//CRANE STEPPER DRIVE PINS ARE USING THE ALTERNATE FUNCTION OF THEIR DEFAULTS.
+	//THEY TAKE THE OUTPUT COMPARE FUNCTION OF TIMER 3 TO DRIVE WITH PWM VIA REMAPPING
 	GPIO_InitStructure.GPIO_Pin =  CRANE_STEP_PIN;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;// Alt Function - Push Pull
-	GPIO_Init( CRANE_PORT, &GPIO_InitStructure );
-	GPIO_PinRemapConfig( GPIO_FullRemap_TIM3, ENABLE );// Map TIM3_CH3
-	// to Step Pin
+	GPIO_Init( CRANE_DRIVE_PORT, &GPIO_InitStructure );
 
+	GPIO_InitStructure.GPIO_Pin =  CRANE_STIR_STEP_PIN;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP; //Alt Function
+	GPIO_Init( CRANE_STIR_DRIVE_PORT, &GPIO_InitStructure );
+
+	GPIO_PinRemapConfig( GPIO_FullRemap_TIM3, ENABLE );// Map TIM3_CH3 and CH4 to Step Pins
+
+	//CONTROL PINS
 	GPIO_InitStructure.GPIO_Pin =  CRANE_ENABLE_PIN;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-	GPIO_Init( CRANE_PORT, &GPIO_InitStructure );
-	GPIO_SetBits(CRANE_PORT, CRANE_ENABLE_PIN);
+	GPIO_Init( CRANE_CONTROL_PORT, &GPIO_InitStructure );
+	GPIO_SetBits(CRANE_CONTROL_PORT, CRANE_ENABLE_PIN);
 
 	GPIO_InitStructure.GPIO_Pin =  CRANE_DIR_PIN;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-	GPIO_Init( CRANE_PORT, &GPIO_InitStructure );
-	GPIO_SetBits(CRANE_PORT, CRANE_DIR_PIN);
+	GPIO_Init( CRANE_CONTROL_PORT, &GPIO_InitStructure );
+	GPIO_SetBits(CRANE_CONTROL_PORT, CRANE_DIR_PIN);
+
+	GPIO_InitStructure.GPIO_Pin =  CRANE_STIR_DIR_PIN;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+	GPIO_Init( CRANE_STIR_CONTROL_PORT, &GPIO_InitStructure );
+	GPIO_SetBits(CRANE_STIR_CONTROL_PORT, CRANE_STIR_DIR_PIN);
+
+	GPIO_InitStructure.GPIO_Pin =  CRANE_STIR_ENABLE_PIN;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+	GPIO_Init( CRANE_STIR_CONTROL_PORT, &GPIO_InitStructure );
+	GPIO_SetBits(CRANE_STIR_CONTROL_PORT, CRANE_STIR_ENABLE_PIN);
+
+	//LIMIT INPUTS
+	GPIO_InitStructure.GPIO_Pin =  CRANE_UPPER_LIMIT_PIN;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
+	GPIO_Init( CRANE_LIMIT_PORT, &GPIO_InitStructure );
+
+	GPIO_InitStructure.GPIO_Pin =  CRANE_LOWER_LIMIT_PIN;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
+	GPIO_Init( CRANE_LIMIT_PORT, &GPIO_InitStructure );
 
 
 
-	// SET UP TIMER 3
+	// SET UP TIMER 3  FOR PWM
 
 	//Period 10000, Prescaler 50, pulse = 26 gives 111Hz with 5us
 	//Pulse width.
@@ -91,6 +133,7 @@ void vCraneInit(void){
 	// Initial duty cycle equals 25 which gives pulse of 5us
 	TIM_OCInitStruct.TIM_Pulse = 26;
 	TIM_OC3Init( TIM3, &TIM_OCInitStruct );
+	TIM_OC4Init( TIM3, &TIM_OCInitStruct );
 	printf("Crane Initialised\r\n");
 }
 
@@ -120,10 +163,11 @@ void vCraneStop(){
 		TIM_SetAutoreload(TIM3, setSpeed);
 	}
 
-	GPIO_WriteBit( CRANE_PORT, CRANE_ENABLE_PIN, 1 );
-	GPIO_WriteBit( CRANE_PORT, CRANE_DIR_PIN, 0 );
+	GPIO_WriteBit( CRANE_CONTROL_PORT, CRANE_ENABLE_PIN, 1 );
+	GPIO_WriteBit( CRANE_CONTROL_PORT, CRANE_DIR_PIN, 0 );
 	TIM_Cmd( TIM3, DISABLE );
 	printf("stopped!\r\n");
+
 	xTaskResumeAll();
 	vTaskDelete(NULL);
 }
@@ -198,24 +242,25 @@ void vCraneUpToLimitTask( void *pvParameters )
 {
 	uint16_t speed;
 	uint32_t ii = 0;
-	short upper_limit = 0;
+	unsigned char upper_limit = 0;
 	printf("Driving crane up to limit\r\n");
 	TIM_Cmd( TIM3, ENABLE );
 	crane_state = DRIVING_UP;
-
+	char val = 0;
 	//down counting increases speed
-	GPIO_WriteBit( CRANE_PORT, CRANE_ENABLE_PIN, 0 ); //pull low to enable drive
-	GPIO_WriteBit( CRANE_PORT, CRANE_DIR_PIN, 1 );
+	GPIO_WriteBit( CRANE_CONTROL_PORT, CRANE_ENABLE_PIN, 0 ); //pull low to enable drive
+	GPIO_WriteBit( CRANE_CONTROL_PORT, CRANE_DIR_PIN, 1 );
 
 	//Ramp Up Speed
 	for (speed = 40000; speed > 11800; speed-=100)
 	{
-		//printf("Ramp up\r\n");
+
+		printf("Ramp up\r\n");
 		vTaskDelay(1);
 		TIM_SetAutoreload(TIM3, speed);
-		upper_limit = read_adc(CRANE_UPPER_LIMIT_ADC_CHAN);
-
-		if (upper_limit < 500)
+		//upper_limit = read_adc(CRANE_UPPER_LIMIT_ADC_CHAN);
+		upper_limit = GPIO_ReadInputDataBit(CRANE_LIMIT_PORT, CRANE_UPPER_LIMIT_PIN);
+		if (upper_limit == 0)
 		{
 			printf("STOPPED on Ramp up\r\n");
 			xTaskCreate( vCraneStop,
@@ -229,10 +274,12 @@ void vCraneUpToLimitTask( void *pvParameters )
 	//Now the speed is reached,
 	for (;;)
 	{
-		//printf("running up\r\n");
-		upper_limit = read_adc(CRANE_UPPER_LIMIT_ADC_CHAN);
+		printf("Input = %d\r\n", upper_limit);
+//		upper_limit = read_adc(CRANE_UPPER_LIMIT_ADC_CHAN);
+		upper_limit = GPIO_ReadInputDataBit(CRANE_LIMIT_PORT, CRANE_UPPER_LIMIT_PIN);
 
-		if (upper_limit < 500)
+
+		if (upper_limit == 0)
 		{
 			printf("STOPPED while running up \r\n");
 			xTaskCreate( vCraneStop,
@@ -250,13 +297,13 @@ void vCraneDnToLimitTask( void *pvParameters )
 {
 	uint16_t speed;
 	uint32_t ii = 0;
-	short lower_limit = 0;
+	unsigned char lower_limit = 0;
 	printf("Driving crane down to limit\r\n");
 	TIM_Cmd( TIM3, ENABLE );
 	crane_state = DRIVING_DN;
 	//down counting increases speed
-	GPIO_WriteBit( CRANE_PORT, CRANE_ENABLE_PIN, 0 );
-	GPIO_WriteBit( CRANE_PORT, CRANE_DIR_PIN, 0 );
+	GPIO_WriteBit( CRANE_CONTROL_PORT, CRANE_ENABLE_PIN, 0 );
+	GPIO_WriteBit( CRANE_CONTROL_PORT, CRANE_DIR_PIN, 0 );
 
 	//Ramp Up Speed
 	for (speed = 40000; speed > 11800; speed-=100)
@@ -264,9 +311,9 @@ void vCraneDnToLimitTask( void *pvParameters )
 		//printf("Ramp up\r\n");
 		vTaskDelay(1);
 		TIM_SetAutoreload(TIM3, speed);
-		lower_limit = read_adc(CRANE_LOWER_LIMIT_ADC_CHAN);
-
-		if (lower_limit < 500)
+		//lower_limit = read_adc(CRANE_LOWER_LIMIT_ADC_CHAN);
+		lower_limit = GPIO_ReadInputDataBit(CRANE_LIMIT_PORT, CRANE_LOWER_LIMIT_PIN);
+		if (lower_limit == 0)
 		{
 			printf("STOPPED on Ramp up\r\n");
 			xTaskCreate( vCraneStop,
@@ -282,9 +329,10 @@ void vCraneDnToLimitTask( void *pvParameters )
 	for (;;)
 	{
 		//printf("running down\r\n");
-		lower_limit = read_adc(CRANE_LOWER_LIMIT_ADC_CHAN);
+		//lower_limit = read_adc(CRANE_LOWER_LIMIT_ADC_CHAN);
+		lower_limit = GPIO_ReadInputDataBit(CRANE_LIMIT_PORT, CRANE_LOWER_LIMIT_PIN);
 
-		if (lower_limit < 500)
+		if (lower_limit == 0)
 		{
 			printf("STOPPED while running down\r\n");
 			xTaskCreate( vCraneStop,
@@ -343,10 +391,10 @@ void manual_crane_applet(int init){
 		lcd_printf(26,6,4, "STOP");
 		lcd_printf(30, 13, 4, "Back");
 		//adc_init();
-		adc_init();
+		//adc_init();
 		xTaskCreate( vCraneAppletDisplay,
 				( signed portCHAR * ) "crane_display",
-				configMINIMAL_STACK_SIZE +400,
+				configMINIMAL_STACK_SIZE +500,
 				NULL,
 				tskIDLE_PRIORITY,
 				&xCraneAppletDisplayHandle );
@@ -367,84 +415,88 @@ int manual_crane_key(int x, int y){
 		printf("Up button Pressed...\r\n");
 		if (xCraneUpToLimitTaskHandle == NULL)
 		{
-			printf("No previous up task, checking for down task... \r\n");
-			if (xCraneDnToLimitTaskHandle)
-			{
-				printf("down task found, deleting...\r\n");
-				xTaskCreate( vCraneStop,
-						( signed portCHAR * ) "crane_stop",
-						configMINIMAL_STACK_SIZE +200,
-						NULL,
-						tskIDLE_PRIORITY+2,
-						NULL );
-			}
-			printf("Creating Task to drive crane up to upper limit\r\n");
-			xTaskCreate( vCraneUpToLimitTask,
-					( signed portCHAR * ) "crane_up",
-					configMINIMAL_STACK_SIZE +800,
-					NULL,
-					tskIDLE_PRIORITY+1,
-					&xCraneUpToLimitTaskHandle );
-			// lcd_fill(1, 71, 200, 50, Black);
+		    printf("No previous up task, checking for down task... \r\n");
+		    if (xCraneDnToLimitTaskHandle)
+		      {
+		        printf("down task found, deleting...\r\n");
+		        xTaskCreate( vCraneStop,
+		            ( signed portCHAR * ) "crane_stop",
+		            configMINIMAL_STACK_SIZE +200,
+		            NULL,
+		            tskIDLE_PRIORITY+2,
+		            NULL );
+		      }
+		    printf("Creating Task to drive crane up to upper limit\r\n");
+		    xTaskCreate( vCraneUpToLimitTask,
+		        ( signed portCHAR * ) "crane_up",
+		        configMINIMAL_STACK_SIZE +800,
+		        NULL,
+		        tskIDLE_PRIORITY+1,
+		        &xCraneUpToLimitTaskHandle );
+		    // lcd_fill(1, 71, 200, 50, Black);
 		}
 
 	}
 	else if (x > DN_X1+1 && x < DN_X2-1 && y > DN_Y1+1 && y < DN_Y2-1)
 
-	{
-		printf("Dn button Pressed...\r\n");
-		if (xCraneDnToLimitTaskHandle == NULL)
-		{
-			printf("No previous down task, checking for up task...\r\n");
-			if (xCraneUpToLimitTaskHandle)
-			{
-				printf("up task found, deleting...\r\n");
-				xTaskCreate( vCraneStop,
-						( signed portCHAR * ) "crane_stop",
-						configMINIMAL_STACK_SIZE +500,
-						NULL,
-						tskIDLE_PRIORITY+2,
-						NULL );
-			}
-			printf("Creating Task to drive crane Down to upper limit\r\n");
-			xTaskCreate( vCraneDnToLimitTask,
-					( signed portCHAR * ) "crane_down",
-					configMINIMAL_STACK_SIZE +800,
-					NULL,
-					tskIDLE_PRIORITY+1,
-					&xCraneDnToLimitTaskHandle );
+	  {
+	    printf("Dn button Pressed...\r\n");
+	    if (xCraneDnToLimitTaskHandle == NULL)
+	      {
+	        printf("No previous down task, checking for up task...\r\n");
+	        if (xCraneUpToLimitTaskHandle)
+	          {
+	            printf("up task found, deleting...\r\n");
+	            xTaskCreate( vCraneStop,
+	                ( signed portCHAR * ) "crane_stop",
+	                configMINIMAL_STACK_SIZE +500,
+	                NULL,
+	                tskIDLE_PRIORITY+2,
+	                NULL );
+	          }
+	        printf("Creating Task to drive crane Down to upper limit\r\n");
+	        xTaskCreate( vCraneDnToLimitTask,
+	            ( signed portCHAR * ) "crane_down",
+	            configMINIMAL_STACK_SIZE +800,
+	            NULL,
+	            tskIDLE_PRIORITY+1,
+	            &xCraneDnToLimitTaskHandle );
 
-			//	lcd_fill(1, 126, 200, 50, Black);
+	        //	lcd_fill(1, 126, 200, 50, Black);
 
-		}
+	      }
 
-	}
+	  }
 	else if (x > ST_X1+1 && x < ST_X2-1 && y > ST_Y1+1 && y < ST_Y2-1)
-	{
-		xTaskCreate( vCraneStop,
-				( signed portCHAR * ) "crane_stop",
-				configMINIMAL_STACK_SIZE +500,
-				NULL,
-				tskIDLE_PRIORITY+2,
-				NULL );
-	}
+	  {
+	    xTaskCreate( vCraneStop,
+	        ( signed portCHAR * ) "crane_stop",
+	        configMINIMAL_STACK_SIZE +500,
+	        NULL,
+	        tskIDLE_PRIORITY+2,
+	        NULL );
+	  }
 
 	else if (x > BK_X1 && y > BK_Y1 && x < BK_X2 && y < BK_Y2)
-	{
-		if (xCraneAppletDisplayHandle != NULL)
-			vTaskDelete(xCraneAppletDisplayHandle);
-
-		xTaskCreate( vCraneStop,
-				( signed portCHAR * ) "crane_stop",
-				configMINIMAL_STACK_SIZE +500,
-				NULL,
-				tskIDLE_PRIORITY+2,
-				NULL );
+	  {
+	    if (xCraneAppletDisplayHandle != NULL)
+	      {
+	        vTaskDelete(xCraneAppletDisplayHandle);
+	        xCraneAppletDisplayHandle = NULL;
+	      }
 
 
-		return 1;
+	    xTaskCreate( vCraneStop,
+	        ( signed portCHAR * ) "crane_stop",
+	        configMINIMAL_STACK_SIZE +500,
+	        NULL,
+	        tskIDLE_PRIORITY,
+	        NULL );
 
-	}
+	    vTaskDelay(200);
+	    return 1;
+
+	  }
 
 	vTaskDelay(10);
 	return 0;

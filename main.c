@@ -35,6 +35,7 @@
 /* The period of the system clock in nano seconds.  This is used to calculate
 the jitter time in nano seconds. */
 #define mainNS_PER_CLOCK ( ( unsigned portLONG ) ( ( 1.0 / ( double ) configCPU_CLOCK_HZ ) * 1000000000.0 ) )
+unsigned long ulIdleCycleCount = 0UL;
 
 /*-----------------------------------------------------------*/
 
@@ -97,6 +98,7 @@ void vCheckTask(void *pvParameters)
 
   unsigned int touch, adc, ds1820, timer, low_level = 100;
   for (;;){
+      //printf("check task: idle ticks = %lu\r\n", ulIdleCycleCount);
       touch = uxTaskGetStackHighWaterMark(xTouchTaskHandle);
       adc = uxTaskGetStackHighWaterMark(xAdcTaskHandle);
       ds1820 =  uxTaskGetStackHighWaterMark(xDS1820TaskHandle);
@@ -116,7 +118,7 @@ void vCheckTask(void *pvParameters)
           vTaskDelay(500);
 
         }
-      vTaskDelay(10);
+      vTaskDelay(100);
       taskYIELD();
   }
 
@@ -160,7 +162,7 @@ int main( void )
                  ( signed portCHAR * ) "touch", 
                  configMINIMAL_STACK_SIZE +500,
                  NULL, 
-                 tskIDLE_PRIORITY+2,
+                 tskIDLE_PRIORITY+1,
                  &xTouchTaskHandle );
 
     // Create you application tasks if needed here
@@ -168,14 +170,14 @@ int main( void )
                  ( signed portCHAR * ) "DS1820",
                  configMINIMAL_STACK_SIZE +500,
                  NULL, 
-                 tskIDLE_PRIORITY+2,
+                 tskIDLE_PRIORITY,
                  &xDS1820TaskHandle );
     
     xTaskCreate( vCheckTask,
                    ( signed portCHAR * ) "check",
                    configMINIMAL_STACK_SIZE +500,
                    NULL,
-                   tskIDLE_PRIORITY+5,
+                   tskIDLE_PRIORITY,
                    &xCheckTaskHandle );
 
     /* Start the scheduler. */
@@ -277,7 +279,9 @@ void vApplicationStackOverflowHook( xTaskHandle *pxTask, signed portCHAR *pcTask
 }
 
 /*-----------------------------------------------------------*/
-
+void vApplicationIdleHook(void){
+   ulIdleCycleCount++;
+}
 
 
 

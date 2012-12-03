@@ -15,10 +15,10 @@
 
 #define HEATING 1
 #define OFF 0
-volatile char hlt_state = OFF;
+static char hlt_state = OFF;
 
 xTaskHandle xHeatHLTTaskHandle = NULL, xHLTAppletDisplayHandle = NULL;
-volatile float diag_setpoint = 74;
+static float diag_setpoint = 74;
 
 void vHLTAppletDisplay( void *pvParameters);
 
@@ -81,7 +81,6 @@ void vTaskHeatHLT( void * pvParameters)
           // output depending on temp
           if (actual < *setpoint)
             {
-//              printf("setpoint = %2.2f\r\n", *setpoint);
               GPIO_WriteBit(HLT_SSR_PORT, HLT_SSR_PIN, 1);
               hlt_state = HEATING;
             }
@@ -141,7 +140,7 @@ void vTaskHeatHLT( void * pvParameters)
 #define BK_Y2 235
 #define BK_W (BK_X2-BK_X1)
 #define BK_H (BK_Y2-BK_Y1)
-
+volatile char self_destruct = 0;
 void vHLTApplet(int init){
   if (init)
         {
@@ -155,23 +154,23 @@ void vHLTApplet(int init){
                 lcd_fill(START_HEATING_X1+1, START_HEATING_Y1+1, START_HEATING_W, START_HEATING_H, Green);
                 lcd_DrawRect(BK_X1, BK_Y1, BK_X2, BK_Y2, Cyan);
                 lcd_fill(BK_X1+1, BK_Y1+1, BK_W, BK_H, Magenta);
-                lcd_printf(10,1,12,  "MANUAL HLT APPLET");
-                lcd_printf(4,4,2, "SETPOINT_UP");
-                lcd_printf(4,8,4, "SETPOINT DOWN");
-                lcd_printf(22,4,4, "START HEATING");
-                lcd_printf(22,8,4, "STOP HEATING");
+                lcd_printf(10,1,18,  "MANUAL HLT APPLET");
+                lcd_printf(4,4,11,  "SETPOINT_UP");
+                lcd_printf(4,8,13,  "SETPOINT DOWN");
+                lcd_printf(22,4,13, "START HEATING");
+                lcd_printf(22,8,12, "STOP HEATING");
                 lcd_printf(30, 13, 4, "Back");
                 //vTaskDelay(2000);
                 //adc_init();
                 //adc_init();
                 //create a dynamic display task
                 xTaskCreate( vHLTAppletDisplay,
-                    ( signed portCHAR * ) "hlt_display",
-                    configMINIMAL_STACK_SIZE +1400,
+                    ( signed portCHAR * ) "hlt_disp",
+                    configMINIMAL_STACK_SIZE + 500,
                     NULL,
                     tskIDLE_PRIORITY ,
                     &xHLTAppletDisplayHandle );
-
+                self_destruct = 0;
         }
 
 }
@@ -181,24 +180,25 @@ void vHLTAppletDisplay( void *pvParameters){
         static char tog = 0;
         static char last_state;
         float hlt_level;
-
+        float diag_setpoint1; // = diag_setpoint;
         char hlt_ok = 0;
         for(;;)
         {
+
             hlt_level = fGetHLTLevel();
-//
+            diag_setpoint1 = diag_setpoint;
             lcd_fill(1,176, 180,40, Black);
 //
             if (hlt_level > 4.0)
               lcd_printf(1,11,20,"level OK");
             else
               lcd_printf(1,11,20,"level LOW");
-//
-            printf("wm = %d\r\n",uxTaskGetStackHighWaterMark(NULL));
-            //printf("ddd\r\n");
-            //vTaskSuspendAll();
-            lcd_printf(12,11,20,"SP=%2.2fdeg", diag_setpoint);
-            //lcd_printf(1,12,20,"level = %2.2f litres", hlt_level);
+
+            printf("0wm = %d\r\n",uxTaskGetStackHighWaterMark(NULL));
+
+            printf("1wm = %d\r\n",uxTaskGetStackHighWaterMark(NULL));
+            lcd_printf(1,12,30,"level = %2.2f litres", hlt_level);
+            printf("2wm = %d\r\n",uxTaskGetStackHighWaterMark(NULL));
             //xTaskResumeAll();
             printf("state %d,  wm = %d\r\n", last_state, uxTaskGetStackHighWaterMark(xHLTAppletDisplayHandle));
                 switch (hlt_state)
@@ -207,12 +207,12 @@ void vHLTAppletDisplay( void *pvParameters){
                 {
                         if(tog)
                         {
-                                lcd_fill(1,220, 180,20, Black);
-                                lcd_printf(1,13,20,"HEATING to %2.2f degC", diag_setpoint);
+                              lcd_fill(1,220, 180,20, Black);
+                                lcd_printf(1,13,15,"HEATING to degC");
                         }
-                        else
+                        else{
                                 lcd_fill(1,210, 180,20, Black);
-
+                        }
                         break;
                 }
                 case OFF:
@@ -220,11 +220,12 @@ void vHLTAppletDisplay( void *pvParameters){
                         if(tog)
                         {
                                 lcd_fill(1,210, 180,20, Black);
-                                lcd_printf(1,13,20,"NOT HEATING");
+                                lcd_printf(1,13,11,"NOT HEATING");
                         }
                         else
+                          {
                                 lcd_fill(1,210, 180,20, Black);
-
+                          }
 
                         break;
                 }
@@ -237,12 +238,14 @@ void vHLTAppletDisplay( void *pvParameters){
                 tog = tog ^ 1;
                 //printf("%d,%d\n",last_state, crane_state);
                 last_state = hlt_state;
-                vTaskDelay(500);
 
+                vTaskDelay(500);
+                if (self_destruct)
+                  vTaskDelete(NULL);
+                //lcd_printf(2,11,20,"SP=%2.2lfdeg", 43.22);
 
 
         }
-
 }
 
 
@@ -301,13 +304,18 @@ int HLTKey(int xx, int yy)
     {
       if (xHLTAppletDisplayHandle != NULL)
         {
-          vTaskDelete(xHLTAppletDisplayHandle);
+          self_destruct = 1;
+        /*  vTaskDelete(xHLTAppletDisplayHandle);
+          taskYIELD();
+          vTaskDelay(100);*/
           xHLTAppletDisplayHandle = NULL;
         }
 
       if (xHeatHLTTaskHandle != NULL)
         {
           vTaskDelete(xHeatHLTTaskHandle);
+          taskYIELD();
+          vTaskDelay(100);
           xHeatHLTTaskHandle = NULL;
         }
       return 1;

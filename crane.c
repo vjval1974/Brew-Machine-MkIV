@@ -141,102 +141,100 @@ void vCraneInit(void){
 
 void vCraneStop(){
 	printf("stopping...\r\n");
-	vTaskSuspendAll();
+//
 	crane_state = STOPPED;
 	//Kill the up and down tasks
 	if (xCraneUpToLimitTaskHandle)
 	{
+                printf("in stop - found up task handle\r\n");
 		vTaskDelete(xCraneUpToLimitTaskHandle);
+		vTaskDelay(100);
 		xCraneUpToLimitTaskHandle = NULL;
 	}
 	if (xCraneDnToLimitTaskHandle)
 	{
+	printf("in stop - found ds task handle\r\n");
 		vTaskDelete(xCraneDnToLimitTaskHandle);
+		vTaskDelay(100);
 		xCraneDnToLimitTaskHandle = NULL;
 	}
-
+	TIM_Cmd( TIM3, ENABLE );
 	uint16_t currentSpeed = TIM3->ARR, setSpeed;
 	//up counting decreases speed... then stop when steps get too large
 	for (setSpeed = currentSpeed; setSpeed < 40000; setSpeed+=100)
 	{
-		vTaskDelay(2);
-		TIM_SetAutoreload(TIM3, setSpeed);
-	}
 
+	        printf("stopping\r\n");
+
+		TIM_SetAutoreload(TIM3, setSpeed);
+                vTaskDelay(1);
+
+	}
 	GPIO_WriteBit( CRANE_CONTROL_PORT, CRANE_ENABLE_PIN, 1 );
 	GPIO_WriteBit( CRANE_CONTROL_PORT, CRANE_DIR_PIN, 0 );
 	TIM_Cmd( TIM3, DISABLE );
 	printf("stopped!\r\n");
 
-	xTaskResumeAll();
-	vTaskDelete(NULL);
+
 }
 
 
 
 
 void vCraneAppletDisplay( void *pvParameters){
-	static char tog = 0;
-	static char last_state;
-	for(;;)
-	{
-		printf("%d, %d\r\n", last_state, crane_state);
-		switch (crane_state)
-		{
-		case DRIVING_UP:
-		{
-			if(tog)
-			{
-				lcd_fill(1,200, 100,50, Black);
-				lcd_printf(1,13,20,"Driving UP!");
-			}
-			else
-				lcd_fill(1,200, 100,50, Black);
+  static char tog = 0;
+  static char last_state;
+  for(;;)
+    {
+      printf("%d, %d\r\n", last_state, crane_state);
+      switch (crane_state)
+      {
+      case DRIVING_UP:
+        {
+          if(tog)
+            {
+              lcd_fill(1,190, 100,20, Red);
+              lcd_printf(1,12,20,"Driving UP!");
+            }
+          else
+            lcd_fill(1,190, 100,20, Green);
 
-			break;
-		}
-		case DRIVING_DN:
-		{
-			if(tog)
-			{
-				lcd_fill(1,200, 100,50, Black);
-				lcd_printf(1,13,20,"Driving DN!");
-			}
-			else
-				lcd_fill(1,200, 100,50, Black);
-
-
-			break;
-		}
-		case (STOPPED):
-			{
-			if(last_state != crane_state)
-			{
-				lcd_fill(1,200, 100,50, Black);
-				lcd_printf(1,13,20,"STOPPED!");
-			}
-			//else
-			//
+          break;
+        }
+      case DRIVING_DN:
+        {
+          if(tog)
+            {
+              lcd_fill(1,190, 100,20, Red);
+              lcd_printf(1,12,20,"Driving DN!");
+            }
+          else
+            lcd_fill(1,190, 100,20, Green);
 
 
-			break;
-			}
-		default:
-		{
-			break;
-		}
-		}
-		//		taskYIELD();
-		tog = tog ^ 1;
-		//printf("%d,%d\n",last_state, crane_state);
-		last_state = crane_state;
-		vTaskDelay(500);
+          break;
+        }
+      case STOPPED:
+        {
+          if(last_state != crane_state)
+            {
+              lcd_fill(1,190, 100,20, Red);
+              lcd_printf(1,12,20,"STOPPED!");
+            }
+          //else
+          //
 
 
-
-	}
+          break;
+        }
+      }
+      tog = tog ^ 1;
+      //printf("%d,%d\n",last_state, crane_state);
+      last_state = crane_state;
+      vTaskDelay(300);
+      taskYIELD();
+    }
 }
-
 
 void vCraneUpToLimitTask( void *pvParameters )
 {
@@ -263,12 +261,8 @@ void vCraneUpToLimitTask( void *pvParameters )
 		if (upper_limit == 0)
 		{
 			printf("STOPPED on Ramp up\r\n");
-			xTaskCreate( vCraneStop,
-					( signed portCHAR * ) "crane_stop",
-					configMINIMAL_STACK_SIZE +500,
-					NULL,
-					tskIDLE_PRIORITY+2,
-					NULL );
+			vCraneStop();
+
 		}
 	}
 	//Now the speed is reached,
@@ -282,12 +276,8 @@ void vCraneUpToLimitTask( void *pvParameters )
 		if (upper_limit == 0)
 		{
 			printf("STOPPED while running up \r\n");
-			xTaskCreate( vCraneStop,
-					( signed portCHAR * ) "crane_stop",
-					configMINIMAL_STACK_SIZE +500,
-					NULL,
-					tskIDLE_PRIORITY+2,
-					NULL );
+			vCraneStop();
+
 		}
 		vTaskDelay(50);
 	}
@@ -316,12 +306,9 @@ void vCraneDnToLimitTask( void *pvParameters )
 		if (lower_limit == 0)
 		{
 			printf("STOPPED on Ramp up\r\n");
-			xTaskCreate( vCraneStop,
-					( signed portCHAR * ) "crane_stop",
-					configMINIMAL_STACK_SIZE +500,
-					NULL,
-					tskIDLE_PRIORITY+2,
-					NULL );
+			vCraneStop();
+
+			vTaskDelay(10);
 		}
 	}
 
@@ -335,12 +322,14 @@ void vCraneDnToLimitTask( void *pvParameters )
 		if (lower_limit == 0)
 		{
 			printf("STOPPED while running down\r\n");
-			xTaskCreate( vCraneStop,
+			vCraneStop();
+			/*xTaskCreate( vCraneStop,
 					( signed portCHAR * ) "crane_stop",
 					configMINIMAL_STACK_SIZE +500,
 					NULL,
-					tskIDLE_PRIORITY+2,
-					NULL );
+					tskIDLE_PRIORITY+1,
+					NULL );*/
+			vTaskDelay(100);
 		}
 		vTaskDelay(50);
 	}
@@ -404,13 +393,13 @@ void manual_crane_applet(int init){
 
 
 
-int manual_crane_key(int x, int y){
+int manual_crane_key(int xx, int yy){
 
 	uint16_t window = 0;
-	static uint8_t xx = 0,yy = 0,w = 5,h = 5;
+	static uint8_t w = 5,h = 5;
 	static uint16_t last_window = 0;
 	//printf("(%d, %d)\r\n", x, y);
-	if (x > UP_X1+1 && x < UP_X2-1 && y > UP_Y1+1 && y < UP_Y2-1)
+	if (xx > UP_X1+1 && xx < UP_X2-1 && yy > UP_Y1+1 && yy < UP_Y2-1)
 	{
 		printf("Up button Pressed...\r\n");
 		if (xCraneUpToLimitTaskHandle == NULL)
@@ -419,12 +408,7 @@ int manual_crane_key(int x, int y){
 		    if (xCraneDnToLimitTaskHandle)
 		      {
 		        printf("down task found, deleting...\r\n");
-		        xTaskCreate( vCraneStop,
-		            ( signed portCHAR * ) "crane_stop",
-		            configMINIMAL_STACK_SIZE +200,
-		            NULL,
-		            tskIDLE_PRIORITY+2,
-		            NULL );
+		       vCraneStop();
 		      }
 		    printf("Creating Task to drive crane up to upper limit\r\n");
 		    xTaskCreate( vCraneUpToLimitTask,
@@ -437,8 +421,7 @@ int manual_crane_key(int x, int y){
 		}
 
 	}
-	else if (x > DN_X1+1 && x < DN_X2-1 && y > DN_Y1+1 && y < DN_Y2-1)
-
+	else if (xx > DN_X1+1 && xx < DN_X2-1 && yy > DN_Y1+1 && yy < DN_Y2-1)
 	  {
 	    printf("Dn button Pressed...\r\n");
 	    if (xCraneDnToLimitTaskHandle == NULL)
@@ -447,14 +430,10 @@ int manual_crane_key(int x, int y){
 	        if (xCraneUpToLimitTaskHandle)
 	          {
 	            printf("up task found, deleting...\r\n");
-	            xTaskCreate( vCraneStop,
-	                ( signed portCHAR * ) "crane_stop",
-	                configMINIMAL_STACK_SIZE +500,
-	                NULL,
-	                tskIDLE_PRIORITY+2,
-	                NULL );
+	           vCraneStop();
 	          }
 	        printf("Creating Task to drive crane Down to upper limit\r\n");
+
 	        xTaskCreate( vCraneDnToLimitTask,
 	            ( signed portCHAR * ) "crane_down",
 	            configMINIMAL_STACK_SIZE +800,
@@ -467,38 +446,33 @@ int manual_crane_key(int x, int y){
 	      }
 
 	  }
-	else if (x > ST_X1+1 && x < ST_X2-1 && y > ST_Y1+1 && y < ST_Y2-1)
+	else if (xx > ST_X1+1 && xx < ST_X2-1 && yy > ST_Y1+1 && yy < ST_Y2-1)
 	  {
-	    xTaskCreate( vCraneStop,
-	        ( signed portCHAR * ) "crane_stop",
-	        configMINIMAL_STACK_SIZE +500,
-	        NULL,
-	        tskIDLE_PRIORITY+2,
-	        NULL );
+	    vCraneStop();
+
 	  }
 
-	else if (x > BK_X1 && y > BK_Y1 && x < BK_X2 && y < BK_Y2)
+	else if (xx > BK_X1 && yy > BK_Y1 && xx < BK_X2 && yy < BK_Y2)
 	  {
+
 	    if (xCraneAppletDisplayHandle != NULL)
 	      {
 	        vTaskDelete(xCraneAppletDisplayHandle);
+
 	        xCraneAppletDisplayHandle = NULL;
 	      }
 
 
-	    xTaskCreate( vCraneStop,
-	        ( signed portCHAR * ) "crane_stop",
-	        configMINIMAL_STACK_SIZE +500,
-	        NULL,
-	        tskIDLE_PRIORITY,
-	        NULL );
+	    if (crane_state != STOPPED)
+	      vCraneStop();
 
-	    vTaskDelay(200);
+	    vTaskDelay(101);
 	    return 1;
 
 	  }
-
+ {
 	vTaskDelay(10);
 	return 0;
-
+	//return xx > 200 && yy > 200;
+	}
 }

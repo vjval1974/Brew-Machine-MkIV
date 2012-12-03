@@ -195,12 +195,12 @@ static void LCD_FSMCConfig(void)
     FSMC_NORSRAMTimingInitTypeDef  p;
 
     /*-- FSMC Configuration ----------------------------------------------*/
-    p.FSMC_AddressSetupTime = 2;             /* ��ַ����ʱ��  */
-    p.FSMC_AddressHoldTime = 1;              /* ��ַ����ʱ��  */
-    p.FSMC_DataSetupTime = 3;                /* ��ݽ���ʱ��  */
+    p.FSMC_AddressSetupTime = 2; //was 2            /* ��ַ����ʱ��  */
+    p.FSMC_AddressHoldTime = 1; //was 1             /* ��ַ����ʱ��  */
+    p.FSMC_DataSetupTime = 3; //was 3               /* ��ݽ���ʱ��  */
     p.FSMC_BusTurnAroundDuration = 0;        /* ���߷�תʱ��  */
     p.FSMC_CLKDivision = 0;                  /* ʱ�ӷ�Ƶ      */
-    p.FSMC_DataLatency = 0;                  /* ��ݱ���ʱ��  */
+    p.FSMC_DataLatency = 0; //was 0                  /* ��ݱ���ʱ��  */
     p.FSMC_AccessMode = FSMC_AccessMode_A;   /* FSMC ����ģʽ */
 
     /* Color LCD configuration ------------------------------------
@@ -612,11 +612,12 @@ static void lcd_char_xy(unsigned short Xpos,unsigned short Ypos,unsigned char c,
 		lcd_set_cursor(Xpos + j,Ypos+i);
 		lcd_write_ram_prepare();
 		write_data(charColor);
+		//lcd_write_ram_prepare(); //added to test.
 	    }
 		
 
-	    //uint16_t col = ( (tmp_char >> 7-j) & 0x01) ? charColor : bkColor;
-	    //write_data(col);
+	   // uint16_t col = ( (tmp_char >> 7-j) & 0x01) ? charColor : bkColor;
+	   // write_data(col);
 	}
     }
 }
@@ -734,7 +735,9 @@ void lcd_fill(uint16_t xx, uint16_t yy, uint16_t ww, uint16_t hh, uint16_t color
 #include <stdarg.h>
 void lcd_printf(uint8_t col, uint8_t row, uint8_t ww, const char *fmt, ...)
 {
+
     LCD_LOCK;
+
     char message[31];
     va_list ap;
     va_start(ap, fmt);
@@ -746,10 +749,11 @@ void lcd_printf(uint8_t col, uint8_t row, uint8_t ww, const char *fmt, ...)
     	message[len++] = ' ';
     }
     message[len] = 0;
-    
+
     lcd_text(col, row, message);
 
     LCD_UNLOCK;
+
 }
 
 void lcd_clear(uint16_t Color)

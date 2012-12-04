@@ -12,10 +12,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "task.h"
-
+#include "semphr.h"
 #define HEATING 1
 #define OFF 0
-static char hlt_state = OFF;
+volatile char hlt_state = OFF;
+xSemaphoreHandle xAppletRunningSemaphore;
 
 xTaskHandle xHeatHLTTaskHandle = NULL, xHLTAppletDisplayHandle = NULL;
 static float diag_setpoint = 74;
@@ -38,6 +39,7 @@ void hlt_init()
   GPIO_Init( HLT_LEVEL_CHECK_PORT, &GPIO_InitStructure );
 
   adc_init(); //initialise the ADC1 so we can use a channel from it for the hlt level
+  vSemaphoreCreateBinary(xAppletRunningSemaphore);
 
 }
 
@@ -144,6 +146,9 @@ volatile char self_destruct = 0;
 void vHLTApplet(int init){
   if (init)
         {
+//        xHLTAppletDisplayHandle = NULL;
+
+        //xSemaphoreTake(xAppletRunningSemaphore, 0);
                 lcd_DrawRect(SETPOINT_UP_X1, SETPOINT_UP_Y1, SETPOINT_UP_X2, SETPOINT_UP_Y2, Red);
                 lcd_fill(SETPOINT_UP_X1+1, SETPOINT_UP_Y1+1, SETPOINT_UP_W, SETPOINT_UP_H, Blue);
                 lcd_DrawRect(SETPOINT_DN_X1, SETPOINT_DN_Y1, SETPOINT_DN_X2, SETPOINT_DN_Y2, Red);
@@ -175,19 +180,23 @@ void vHLTApplet(int init){
 
 }
 
+volatile char leave_enable = 0;
 
 void vHLTAppletDisplay( void *pvParameters){
         static char tog = 0;
         static char last_state;
         float hlt_level;
         float diag_setpoint1; // = diag_setpoint;
+        float current_temp;
         char hlt_ok = 0;
         for(;;)
         {
-
+            xSemaphoreTake(xAppletRunningSemaphore, portMAX_DELAY);
+            leave_enable = 0;
+            current_temp = ds1820_get_temp(HLT);
             hlt_level = fGetHLTLevel();
             diag_setpoint1 = diag_setpoint;
-            lcd_fill(1,176, 180,40, Black);
+            lcd_fill(1,178, 170,40, Black);
 //
             if (hlt_level > 4.0)
               lcd_printf(1,11,20,"level OK");
@@ -207,11 +216,12 @@ void vHLTAppletDisplay( void *pvParameters){
                 {
                         if(tog)
                         {
-                              lcd_fill(1,220, 180,20, Black);
-                                lcd_printf(1,13,15,"HEATING to degC");
+                              lcd_fill(1,220, 180,29, Black);
+                                lcd_printf(1,13,15,"HEATING to %2.1f degC", diag_setpoint);
+                                lcd_printf(1,14,15,"Currently = %2.1fdegC", current_temp);
                         }
                         else{
-                                lcd_fill(1,210, 180,20, Black);
+                                lcd_fill(1,210, 180,17, Black);
                         }
                         break;
                 }
@@ -219,12 +229,13 @@ void vHLTAppletDisplay( void *pvParameters){
                 {
                         if(tog)
                         {
-                                lcd_fill(1,210, 180,20, Black);
+                                lcd_fill(1,210, 180,29, Black);
                                 lcd_printf(1,13,11,"NOT HEATING");
+                                lcd_printf(1,14,15,"Currently = %2.1fdegC", current_temp);
                         }
                         else
                           {
-                                lcd_fill(1,210, 180,20, Black);
+                                lcd_fill(1,210, 180,17, Black);
                           }
 
                         break;
@@ -238,17 +249,25 @@ void vHLTAppletDisplay( void *pvParameters){
                 tog = tog ^ 1;
                 //printf("%d,%d\n",last_state, crane_state);
                 last_state = hlt_state;
-
+                xSemaphoreGive(xAppletRunningSemaphore);
+                leave_enable = 1;
                 vTaskDelay(500);
-                if (self_destruct)
-                  vTaskDelete(NULL);
+
+                //if (self_destruct)
+  //                vTaskDelete(NULL);
                 //lcd_printf(2,11,20,"SP=%2.2lfdeg", 43.22);
 
 
         }
 }
 
+void vHLTAppletCallback (int in_out) {
+printf(" Called in_out = %d\r\n", in_out);
 
+//  if (in_out == 0)
+//    vTaskDelete(xHLTAppletDisplayHandle);
+
+}
 int HLTKey(int xx, int yy)
 {
 
@@ -278,6 +297,7 @@ int HLTKey(int xx, int yy)
         {
           vTaskDelete(xHeatHLTTaskHandle);
           xHeatHLTTaskHandle = NULL;
+          hlt_state = OFF;
         }
 
     }
@@ -302,22 +322,22 @@ int HLTKey(int xx, int yy)
     }
   else if (xx > BK_X1 && yy > BK_Y1 && xx < BK_X2 && yy < BK_Y2)
     {
+      xSemaphoreTake(xAppletRunningSemaphore, portMAX_DELAY);
+      //while((!leave_enable) && (xHLTAppletDisplayHandle != NULL)); //wait here until we are able to leave the display applet
       if (xHLTAppletDisplayHandle != NULL)
         {
-          self_destruct = 1;
-        /*  vTaskDelete(xHLTAppletDisplayHandle);
-          taskYIELD();
-          vTaskDelay(100);*/
+          vTaskDelete(xHLTAppletDisplayHandle);
+          vTaskDelay(100);
           xHLTAppletDisplayHandle = NULL;
         }
 
       if (xHeatHLTTaskHandle != NULL)
         {
           vTaskDelete(xHeatHLTTaskHandle);
-          taskYIELD();
           vTaskDelay(100);
           xHeatHLTTaskHandle = NULL;
         }
+      xSemaphoreGive(xAppletRunningSemaphore);
       return 1;
 
     }

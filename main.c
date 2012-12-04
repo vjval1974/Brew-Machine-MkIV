@@ -131,7 +131,7 @@ struct menu manual_menu[] =
         {"Crane",       	NULL,				manual_crane_applet, 	        NULL, 			manual_crane_key},
         {"FlashLED", 		NULL, 				NULL, 				item_2_callback, 	NULL},
         {"DS1820Diag", 		NULL, 				vDS1820DiagApplet,		NULL,	 		DS1820DiagKey},
-        {"HLT",                 NULL,                           vHLTApplet,                     NULL,                   HLTKey},
+        {"HLT",                 NULL,                           vHLTApplet,                     vHLTAppletCallback,     HLTKey},
         {"Back",   	        NULL, 				NULL, 				NULL, 			NULL},
         {NULL, 			NULL, 				NULL, 				NULL, 			NULL}
     };

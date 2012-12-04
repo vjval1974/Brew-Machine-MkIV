@@ -25,5 +25,6 @@ void vTaskHeatHLT( void * pvParameters);
 void vHLTApplet(int init);
 int  HLTKey(int xx, int yy);
 void hlt_init(void);
+void vHLTAppletCallback (int in_out);
 extern xTaskHandle xHeatHLTTaskHandle, xHLTAppletDisplayHandle;
 #endif /* HLT_H_ */

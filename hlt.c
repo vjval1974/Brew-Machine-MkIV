@@ -16,10 +16,13 @@
 #define HEATING 1
 #define OFF 0
 volatile char hlt_state = OFF;
+
+// semaphore that stops the returning from the applet to the menu system until the applet goes into the blocked state.
 xSemaphoreHandle xAppletRunningSemaphore;
 
 xTaskHandle xHeatHLTTaskHandle = NULL, xHLTAppletDisplayHandle = NULL;
-static float diag_setpoint = 74;
+
+static float diag_setpoint = 74; // when calling the heat_hlt task, we use this value instead of the passed parameter.
 
 void vHLTAppletDisplay( void *pvParameters);
 
@@ -47,7 +50,6 @@ float fGetHLTLevel(void){
   short raw_adc_value = read_adc(HLT_LEVEL_ADC_CHAN);
   float litres = 0;
   //scale the adc value to indicate the amount of litres left in the HLT
-  //printf("rawADC = %l , %2.2f\r\n", raw_adc_value, (float)raw_adc_value);
   litres = (float)((float)raw_adc_value/(float)HLT_ANALOGUE_MAX) * (float)HLT_MAX_LITRES;
   if ((GPIO_ReadInputDataBit(HLT_LEVEL_CHECK_PORT, HLT_LEVEL_CHECK_PIN)^1) || (litres < 4.0))
       {
@@ -59,12 +61,11 @@ float fGetHLTLevel(void){
 
 void vTaskHeatHLT( void * pvParameters)
 {
-
-
   float * setpoint = (float *)pvParameters;
   float actual = 0.0;
   float hlt_level = 0.0;
   char hlt_ok = 0;
+  //choose which value we use for the setpoint.
   if (setpoint == NULL)
     setpoint = &diag_setpoint;
 
@@ -77,9 +78,8 @@ void vTaskHeatHLT( void * pvParameters)
    if (hlt_level > 4.0)
         {
           //check the temperature
-          //printf("heating task - checking temp\r\n");
           actual = ds1820_get_temp(HLT);
-          //printf("heating task - checking setpoint\r\n");
+
           // output depending on temp
           if (actual < *setpoint)
             {
@@ -95,11 +95,10 @@ void vTaskHeatHLT( void * pvParameters)
       else //DONT HEAT... WE WILL BURN OUT THE ELEMENT
         {
           GPIO_WriteBit(HLT_SSR_PORT, HLT_SSR_PIN, 0); //make sure its off
-  //        printf("HLT Level low\r\n");
           hlt_state = OFF;
         }
       vTaskDelay(100); // 100us delay is fine for heating
-      taskYIELD();
+//      taskYIELD();
     }
 
 
@@ -142,13 +141,9 @@ void vTaskHeatHLT( void * pvParameters)
 #define BK_Y2 235
 #define BK_W (BK_X2-BK_X1)
 #define BK_H (BK_Y2-BK_Y1)
-volatile char self_destruct = 0;
 void vHLTApplet(int init){
   if (init)
         {
-//        xHLTAppletDisplayHandle = NULL;
-
-        //xSemaphoreTake(xAppletRunningSemaphore, 0);
                 lcd_DrawRect(SETPOINT_UP_X1, SETPOINT_UP_Y1, SETPOINT_UP_X2, SETPOINT_UP_Y2, Red);
                 lcd_fill(SETPOINT_UP_X1+1, SETPOINT_UP_Y1+1, SETPOINT_UP_W, SETPOINT_UP_H, Blue);
                 lcd_DrawRect(SETPOINT_DN_X1, SETPOINT_DN_Y1, SETPOINT_DN_X2, SETPOINT_DN_Y2, Red);
@@ -175,41 +170,33 @@ void vHLTApplet(int init){
                     NULL,
                     tskIDLE_PRIORITY ,
                     &xHLTAppletDisplayHandle );
-                self_destruct = 0;
         }
 
 }
 
-volatile char leave_enable = 0;
 
 void vHLTAppletDisplay( void *pvParameters){
-        static char tog = 0;
-        static char last_state;
+        static char tog = 0; //toggles each loop
         float hlt_level;
         float diag_setpoint1; // = diag_setpoint;
         float current_temp;
         char hlt_ok = 0;
         for(;;)
         {
-            xSemaphoreTake(xAppletRunningSemaphore, portMAX_DELAY);
-            leave_enable = 0;
+
+            xSemaphoreTake(xAppletRunningSemaphore, portMAX_DELAY); //take the semaphore so that the key handler wont
+                                                                    //return to the menu system until its returned
             current_temp = ds1820_get_temp(HLT);
             hlt_level = fGetHLTLevel();
             diag_setpoint1 = diag_setpoint;
             lcd_fill(1,178, 170,40, Black);
-//
+
             if (hlt_level > 4.0)
               lcd_printf(1,11,20,"level OK");
             else
               lcd_printf(1,11,20,"level LOW");
 
-            printf("0wm = %d\r\n",uxTaskGetStackHighWaterMark(NULL));
-
-            printf("1wm = %d\r\n",uxTaskGetStackHighWaterMark(NULL));
             lcd_printf(1,12,30,"level = %2.2f litres", hlt_level);
-            printf("2wm = %d\r\n",uxTaskGetStackHighWaterMark(NULL));
-            //xTaskResumeAll();
-            printf("state %d,  wm = %d\r\n", last_state, uxTaskGetStackHighWaterMark(xHLTAppletDisplayHandle));
                 switch (hlt_state)
                 {
                 case HEATING:
@@ -245,17 +232,10 @@ void vHLTAppletDisplay( void *pvParameters){
                         break;
                 }
                 }
-                //              taskYIELD();
                 tog = tog ^ 1;
-                //printf("%d,%d\n",last_state, crane_state);
-                last_state = hlt_state;
-                xSemaphoreGive(xAppletRunningSemaphore);
-                leave_enable = 1;
-                vTaskDelay(500);
 
-                //if (self_destruct)
-  //                vTaskDelete(NULL);
-                //lcd_printf(2,11,20,"SP=%2.2lfdeg", 43.22);
+                xSemaphoreGive(xAppletRunningSemaphore); //give back the semaphore as its safe to return now.
+                vTaskDelay(500);
 
 
         }
@@ -263,9 +243,6 @@ void vHLTAppletDisplay( void *pvParameters){
 
 void vHLTAppletCallback (int in_out) {
 printf(" Called in_out = %d\r\n", in_out);
-
-//  if (in_out == 0)
-//    vTaskDelete(xHLTAppletDisplayHandle);
 
 }
 int HLTKey(int xx, int yy)
@@ -323,7 +300,6 @@ int HLTKey(int xx, int yy)
   else if (xx > BK_X1 && yy > BK_Y1 && xx < BK_X2 && yy < BK_Y2)
     {
       xSemaphoreTake(xAppletRunningSemaphore, portMAX_DELAY);
-      //while((!leave_enable) && (xHLTAppletDisplayHandle != NULL)); //wait here until we are able to leave the display applet
       if (xHLTAppletDisplayHandle != NULL)
         {
           vTaskDelete(xHLTAppletDisplayHandle);

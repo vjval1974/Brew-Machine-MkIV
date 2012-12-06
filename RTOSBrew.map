@@ -3668,7 +3668,7 @@ OUTPUT(RTOSBrew.axf elf32-littlearm)
  .debug_abbrev  0x00003f24      0x15e Debug/heap_2.o
  .debug_abbrev  0x00004082       0xe6 Debug/startup_stm32f10x.o
 
-.debug_info     0x00000000    0x1ee1a
+.debug_info     0x00000000    0x1ee1d
  .debug_info    0x00000000     0x12df Debug/main.o
  .debug_info    0x000012df     0x18b5 Debug/lcd.o
  .debug_info    0x00002b94     0x1115 Debug/stf_syscalls_minimal.o
@@ -3676,30 +3676,30 @@ OUTPUT(RTOSBrew.axf elf32-littlearm)
  .debug_info    0x00004dfc     0x10a9 Debug/serial.o
  .debug_info    0x00005ea5      0xed4 Debug/adc.o
  .debug_info    0x00006d79      0xf01 Debug/leds.o
- .debug_info    0x00007c7a     0x1094 Debug/hlt.o
- .debug_info    0x00008d0e      0x49d Debug/menu.o
- .debug_info    0x000091ab     0x14f7 Debug/crane.o
- .debug_info    0x0000a6a2      0xeed Debug/speaker.o
- .debug_info    0x0000b58f     0x1294 Debug/timer.o
- .debug_info    0x0000c823     0x161f Debug/ds1820.o
- .debug_info    0x0000de42      0x54c Debug/core_cm3.o
- .debug_info    0x0000e38e      0xef9 Debug/system_stm32f10x.o
- .debug_info    0x0000f287      0xd9d Debug/stm32f10x_it.o
- .debug_info    0x00010024      0xe22 Debug/misc.o
- .debug_info    0x00010e46     0x14ee Debug/stm32f10x_rcc.o
- .debug_info    0x00012334     0x130c Debug/stm32f10x_gpio.o
- .debug_info    0x00013640     0x155e Debug/stm32f10x_spi.o
- .debug_info    0x00014b9e     0x29fa Debug/stm32f10x_tim.o
- .debug_info    0x00017598     0x1659 Debug/stm32f10x_usart.o
- .debug_info    0x00018bf1     0x1573 Debug/stm32f10x_fsmc.o
- .debug_info    0x0001a164     0x1330 Debug/stm32f10x_flash.o
- .debug_info    0x0001b494     0x17fb Debug/stm32f10x_adc.o
- .debug_info    0x0001cc8f      0x2aa Debug/list.o
- .debug_info    0x0001cf39      0x7da Debug/queue.o
- .debug_info    0x0001d713     0x10ad Debug/tasks.o
- .debug_info    0x0001e7c0      0x1dc Debug/port.o
- .debug_info    0x0001e99c      0x2b7 Debug/heap_2.o
- .debug_info    0x0001ec53      0x1c7 Debug/startup_stm32f10x.o
+ .debug_info    0x00007c7a     0x1097 Debug/hlt.o
+ .debug_info    0x00008d11      0x49d Debug/menu.o
+ .debug_info    0x000091ae     0x14f7 Debug/crane.o
+ .debug_info    0x0000a6a5      0xeed Debug/speaker.o
+ .debug_info    0x0000b592     0x1294 Debug/timer.o
+ .debug_info    0x0000c826     0x161f Debug/ds1820.o
+ .debug_info    0x0000de45      0x54c Debug/core_cm3.o
+ .debug_info    0x0000e391      0xef9 Debug/system_stm32f10x.o
+ .debug_info    0x0000f28a      0xd9d Debug/stm32f10x_it.o
+ .debug_info    0x00010027      0xe22 Debug/misc.o
+ .debug_info    0x00010e49     0x14ee Debug/stm32f10x_rcc.o
+ .debug_info    0x00012337     0x130c Debug/stm32f10x_gpio.o
+ .debug_info    0x00013643     0x155e Debug/stm32f10x_spi.o
+ .debug_info    0x00014ba1     0x29fa Debug/stm32f10x_tim.o
+ .debug_info    0x0001759b     0x1659 Debug/stm32f10x_usart.o
+ .debug_info    0x00018bf4     0x1573 Debug/stm32f10x_fsmc.o
+ .debug_info    0x0001a167     0x1330 Debug/stm32f10x_flash.o
+ .debug_info    0x0001b497     0x17fb Debug/stm32f10x_adc.o
+ .debug_info    0x0001cc92      0x2aa Debug/list.o
+ .debug_info    0x0001cf3c      0x7da Debug/queue.o
+ .debug_info    0x0001d716     0x10ad Debug/tasks.o
+ .debug_info    0x0001e7c3      0x1dc Debug/port.o
+ .debug_info    0x0001e99f      0x2b7 Debug/heap_2.o
+ .debug_info    0x0001ec56      0x1c7 Debug/startup_stm32f10x.o
 
 .debug_line     0x00000000     0xc8cf
  .debug_line    0x00000000      0x4ef Debug/main.o

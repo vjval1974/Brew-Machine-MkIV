@@ -191,12 +191,15 @@ void vHLTAppletDisplay( void *pvParameters){
             diag_setpoint1 = diag_setpoint;
             lcd_fill(1,178, 170,40, Black);
 
+            //Tell user whether there is enough water to heat
             if (hlt_level > 4.0)
               lcd_printf(1,11,20,"level OK");
             else
               lcd_printf(1,11,20,"level LOW");
 
+            //display the level if its over 4 litres
             lcd_printf(1,12,30,"level = %2.2f litres", hlt_level);
+            //display the state and user info (the state will flash on the screen)
                 switch (hlt_state)
                 {
                 case HEATING:
@@ -232,6 +235,7 @@ void vHLTAppletDisplay( void *pvParameters){
                         break;
                 }
                 }
+
                 tog = tog ^ 1;
 
                 xSemaphoreGive(xAppletRunningSemaphore); //give back the semaphore as its safe to return now.
@@ -251,21 +255,16 @@ int HLTKey(int xx, int yy)
   uint16_t window = 0;
   static uint8_t w = 5,h = 5;
   static uint16_t last_window = 0;
-  //printf("(%d, %d)\r\n", xx, yy);
   if (xx > SETPOINT_UP_X1+1 && xx < SETPOINT_UP_X2-1 && yy > SETPOINT_UP_Y1+1 && yy < SETPOINT_UP_Y2-1)
     {
-      //printf("Setpoint-Up button Pressed...\r\n");
       diag_setpoint+=0.5;
       printf("Setpoint is now %2.2f\r\n", diag_setpoint);
-      //lcd_printf(10,13, 10, "SP = %2.2f", diag_setpoint);
     }
   else if (xx > SETPOINT_DN_X1+1 && xx < SETPOINT_DN_X2-1 && yy > SETPOINT_DN_Y1+1 && yy < SETPOINT_DN_Y2-1)
 
     {
-      //printf("Setpoint-Dn button Pressed...\r\n");
       diag_setpoint-=0.5;
       printf("Setpoint is now %2.2f\r\n", diag_setpoint);
-     // lcd_printf(10,13, 10, "SP = %2.2f", diag_setpoint);
     }
   else if (xx > STOP_HEATING_X1+1 && xx < STOP_HEATING_X2-1 && yy > STOP_HEATING_Y1+1 && yy < STOP_HEATING_Y2-1)
     {
@@ -299,20 +298,23 @@ int HLTKey(int xx, int yy)
     }
   else if (xx > BK_X1 && yy > BK_Y1 && xx < BK_X2 && yy < BK_Y2)
     {
+      //try to take the semaphore from the display applet. wait here if we cant take it.
       xSemaphoreTake(xAppletRunningSemaphore, portMAX_DELAY);
+      //delete the display applet task if its been created.
       if (xHLTAppletDisplayHandle != NULL)
         {
           vTaskDelete(xHLTAppletDisplayHandle);
           vTaskDelay(100);
           xHLTAppletDisplayHandle = NULL;
         }
-
+      //delete the heating task
       if (xHeatHLTTaskHandle != NULL)
         {
           vTaskDelete(xHeatHLTTaskHandle);
           vTaskDelay(100);
           xHeatHLTTaskHandle = NULL;
         }
+      //return the semaphore for taking by another task.
       xSemaphoreGive(xAppletRunningSemaphore);
       return 1;
 

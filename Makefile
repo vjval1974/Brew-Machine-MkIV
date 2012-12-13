@@ -99,6 +99,7 @@ SOURCE=	main.c 	drivers/lcd.c \
 		mill.c \
 		menu.c \
 		valves.c \
+		diag_temps.c \
 		crane.c \
 		drivers/speaker.c \
 		drivers/timer.c \

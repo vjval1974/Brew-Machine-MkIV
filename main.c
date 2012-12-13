@@ -34,6 +34,7 @@
 #include "hlt_pump.h"
 #include "mash_pump.h"
 #include "valves.h"
+#include "diag_temps.h"
 /*-----------------------------------------------------------*/
 
 /* The period of the system clock in nano seconds.  This is used to calculate
@@ -168,6 +169,7 @@ int main( void )
     vHLTPumpInit();
     vMashPumpInit();
     vValvesInit();
+    vDiagTempsInit();
 
 	menu_set_root(main_menu);
 

@@ -67,7 +67,7 @@ static void ds1820_convert(void);
 static uint8_t ds1820_search();
 static float ds1820_read_device(uint8_t * rom_code);
 static void delay_us(uint16_t count); 
-void  vTaskDS1820DisplayTemps(void *pvParameters);
+
 
 
 
@@ -272,61 +272,6 @@ void ds1820_search_key(uint16_t x, uint16_t y){
     
 #endif
 }
-////////////////////////////////////////////////////////////////////////////
-
-void vDS1820DiagApplet(int init){
-
-	if (init){
-		//lcd_clear(Black);
-	xTaskCreate( vTaskDS1820DisplayTemps,
-	                 ( signed portCHAR * ) "ds1820_dsp",
-	                 configMINIMAL_STACK_SIZE + 500,
-	                 NULL,
-	                 tskIDLE_PRIORITY+1,
-	                 &xTaskDS1820DisplayTempsHandle );
-	}
-}
-
-int DS1820DiagKey(int xx, int yy){
-
-	if (xx > 200 && yy > 200)
-	{
-		vTaskDelete(xTaskDS1820DisplayTempsHandle);
-		vTaskDelay(100);
-		return 1;
-	}
-	vTaskDelay(10);
-	return 0; // xx > 200 && yy > 200;
-}
-
-
-void  vTaskDS1820DisplayTemps( void *pvParameters){
-
-	//char lcd_string[20];
-	static int count = 0;
-	lcd_printf(1,1, 12, "TEMPERATURES");
-	for (;;)
-	{
-		count++;
-		//portENTER_CRITICAL();
-		lcd_fill(1,50, 200, 190, Black);
-
-
-		lcd_printf(1, 5, 10, "HLT = %.2f", ds1820_get_temp(HLT));
-		lcd_printf(1, 6, 10, "Mash = %.2f", ds1820_get_temp(MASH));
-		lcd_printf(1, 7, 10, "Cabinet = %.2f", ds1820_get_temp(CABINET));
-		lcd_printf(1, 8, 10, "Ambient = %.2f", ds1820_get_temp(AMBIENT));
-		lcd_printf(1, 9, 10, "HLT_SSR = %.2f", ds1820_get_temp(HLT_SSR));
-		lcd_printf(1, 10, 10, "BOIL_SSR = %.2f", ds1820_get_temp(BOIL_SSR));
-
-		printf("Display High water = %u\r\n",uxTaskGetStackHighWaterMark(NULL));
-		//portEXIT_CRITICAL();
-		taskYIELD();
-		vTaskDelay(500);
-
-	}
-}
-////////////////////////////////////////////////////////////////////////////
 
 
 

@@ -38,7 +38,5 @@ extern xTaskHandle xTaskDS1820DisplayTempsHandle;
 void          ds1820_search_applet(void);
 void          ds1820_search_key(uint16_t x, uint16_t y);
 void          ds1820_display_temps(void);
-void 		vDS1820DiagApplet(int init);
-int 		DS1820DiagKey(int xx, int yy);
 
 #endif

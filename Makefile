@@ -94,6 +94,7 @@ SOURCE=	main.c 	drivers/lcd.c \
 		drivers/adc.c \
 		drivers/leds.c \
 		hlt.c \
+		mill.c \
 		menu.c \
 		crane.c \
 		drivers/speaker.c \

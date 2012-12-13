@@ -108,14 +108,14 @@ void vTaskHeatHLT( void * pvParameters)
 
 #define SETPOINT_UP_X1 0
 #define SETPOINT_UP_Y1 30
-#define SETPOINT_UP_X2 150
+#define SETPOINT_UP_X2 100
 #define SETPOINT_UP_Y2 100
 #define SETPOINT_UP_W (SETPOINT_UP_X2-SETPOINT_UP_X1)
 #define SETPOINT_UP_H (SETPOINT_UP_Y2-SETPOINT_UP_Y1)
 
 #define SETPOINT_DN_X1 0
 #define SETPOINT_DN_Y1 105
-#define SETPOINT_DN_X2 150
+#define SETPOINT_DN_X2 100
 #define SETPOINT_DN_Y2 175
 #define SETPOINT_DN_W (SETPOINT_DN_X2-SETPOINT_DN_X1)
 #define SETPOINT_DN_H (SETPOINT_DN_Y2-SETPOINT_DN_Y1)
@@ -136,7 +136,7 @@ void vTaskHeatHLT( void * pvParameters)
 #define STOP_HEATING_H (STOP_HEATING_Y2-STOP_HEATING_Y1)
 
 #define BK_X1 200
-#define BK_Y1 200
+#define BK_Y1 190
 #define BK_X2 315
 #define BK_Y2 235
 #define BK_W (BK_X2-BK_X1)
@@ -155,8 +155,8 @@ void vHLTApplet(int init){
                 lcd_DrawRect(BK_X1, BK_Y1, BK_X2, BK_Y2, Cyan);
                 lcd_fill(BK_X1+1, BK_Y1+1, BK_W, BK_H, Magenta);
                 lcd_printf(10,1,18,  "MANUAL HLT APPLET");
-                lcd_printf(4,4,11,  "SETPOINT_UP");
-                lcd_printf(4,8,13,  "SETPOINT DOWN");
+                lcd_printf(3,4,11,  "SP UP");
+                lcd_printf(1,8,13,  "SP DOWN");
                 lcd_printf(22,4,13, "START HEATING");
                 lcd_printf(22,8,12, "STOP HEATING");
                 lcd_printf(30, 13, 4, "Back");
@@ -207,7 +207,7 @@ void vHLTAppletDisplay( void *pvParameters){
                         if(tog)
                         {
                               lcd_fill(1,220, 180,29, Black);
-                                lcd_printf(1,13,15,"HEATING to %2.1f degC", diag_setpoint);
+                                lcd_printf(1,13,15,"HEATING");
                                 lcd_printf(1,14,15,"Currently = %2.1fdegC", current_temp);
                         }
                         else{
@@ -237,7 +237,8 @@ void vHLTAppletDisplay( void *pvParameters){
                 }
 
                 tog = tog ^ 1;
-
+                lcd_fill(102,99, 35,10, Black);
+                lcd_printf(13,6,15,"%2.1f", diag_setpoint);
                 xSemaphoreGive(xAppletRunningSemaphore); //give back the semaphore as its safe to return now.
                 vTaskDelay(500);
 
@@ -273,9 +274,9 @@ int HLTKey(int xx, int yy)
         {
           vTaskDelete(xHeatHLTTaskHandle);
           xHeatHLTTaskHandle = NULL;
-          hlt_state = OFF;
-        }
 
+        }
+      hlt_state = OFF;
     }
   else if (xx > START_HEATING_X1+1 && xx < START_HEATING_X2-1 && yy > START_HEATING_Y1+1 && yy < START_HEATING_Y2-1)
     {

@@ -25,6 +25,7 @@
 #include "task.h"
 #include "adc.h"
 #include "leds.h"
+#include "semphr.h"
 //-------------------------------------------------------------------------
 #define CRANE_UPPER_LIMIT_ADC_CHAN 10
 #define CRANE_LOWER_LIMIT_ADC_CHAN 11
@@ -141,7 +142,7 @@ void vCraneInit(void){
 
 void vCraneStop(){
 	printf("stopping...\r\n");
-//
+
 	crane_state = STOPPED;
 	//Kill the up and down tasks
 	if (xCraneUpToLimitTaskHandle)
@@ -153,7 +154,7 @@ void vCraneStop(){
 	}
 	if (xCraneDnToLimitTaskHandle)
 	{
-	printf("in stop - found ds task handle\r\n");
+	printf("in stop - found dn task handle\r\n");
 		vTaskDelete(xCraneDnToLimitTaskHandle);
 		vTaskDelay(100);
 		xCraneDnToLimitTaskHandle = NULL;
@@ -164,7 +165,7 @@ void vCraneStop(){
 	for (setSpeed = currentSpeed; setSpeed < 40000; setSpeed+=100)
 	{
 
-	        printf("stopping\r\n");
+	        //printf("stopping\r\n");
 
 		TIM_SetAutoreload(TIM3, setSpeed);
                 vTaskDelay(1);
@@ -173,6 +174,7 @@ void vCraneStop(){
 	GPIO_WriteBit( CRANE_CONTROL_PORT, CRANE_ENABLE_PIN, 1 );
 	GPIO_WriteBit( CRANE_CONTROL_PORT, CRANE_DIR_PIN, 0 );
 	TIM_Cmd( TIM3, DISABLE );
+
 	printf("stopped!\r\n");
 
 
@@ -186,7 +188,7 @@ void vCraneAppletDisplay( void *pvParameters){
   static char last_state;
   for(;;)
     {
-      printf("%d, %d\r\n", last_state, crane_state);
+//      printf("%d, %d\r\n", last_state, crane_state);
       switch (crane_state)
       {
       case DRIVING_UP:
@@ -246,6 +248,7 @@ void vCraneUpToLimitTask( void *pvParameters )
 	crane_state = DRIVING_UP;
 	char val = 0;
 	//down counting increases speed
+
 	GPIO_WriteBit( CRANE_CONTROL_PORT, CRANE_ENABLE_PIN, 0 ); //pull low to enable drive
 	GPIO_WriteBit( CRANE_CONTROL_PORT, CRANE_DIR_PIN, 1 );
 
@@ -253,7 +256,7 @@ void vCraneUpToLimitTask( void *pvParameters )
 	for (speed = 40000; speed > 11800; speed-=100)
 	{
 
-		printf("Ramp up\r\n");
+//		printf("Ramp up\r\n");
 		vTaskDelay(1);
 		TIM_SetAutoreload(TIM3, speed);
 		//upper_limit = read_adc(CRANE_UPPER_LIMIT_ADC_CHAN);
@@ -261,6 +264,7 @@ void vCraneUpToLimitTask( void *pvParameters )
 		if (upper_limit == 0)
 		{
 			printf("STOPPED on Ramp up\r\n");
+
 			vCraneStop();
 
 		}
@@ -268,7 +272,7 @@ void vCraneUpToLimitTask( void *pvParameters )
 	//Now the speed is reached,
 	for (;;)
 	{
-		printf("Input = %d\r\n", upper_limit);
+//		printf("Input = %d\r\n", upper_limit);
 //		upper_limit = read_adc(CRANE_UPPER_LIMIT_ADC_CHAN);
 		upper_limit = GPIO_ReadInputDataBit(CRANE_LIMIT_PORT, CRANE_UPPER_LIMIT_PIN);
 
@@ -276,6 +280,7 @@ void vCraneUpToLimitTask( void *pvParameters )
 		if (upper_limit == 0)
 		{
 			printf("STOPPED while running up \r\n");
+
 			vCraneStop();
 
 		}
@@ -291,6 +296,7 @@ void vCraneDnToLimitTask( void *pvParameters )
 	printf("Driving crane down to limit\r\n");
 	TIM_Cmd( TIM3, ENABLE );
 	crane_state = DRIVING_DN;
+
 	//down counting increases speed
 	GPIO_WriteBit( CRANE_CONTROL_PORT, CRANE_ENABLE_PIN, 0 );
 	GPIO_WriteBit( CRANE_CONTROL_PORT, CRANE_DIR_PIN, 0 );
@@ -357,7 +363,7 @@ void vCraneDnToLimitTask( void *pvParameters )
 #define ST_H (ST_Y2-ST_Y1)
 
 #define BK_X1 200
-#define BK_Y1 200
+#define BK_Y1 190
 #define BK_X2 315
 #define BK_Y2 235
 #define BK_W (BK_X2-BK_X1)

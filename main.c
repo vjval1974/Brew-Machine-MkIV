@@ -30,6 +30,8 @@
 #include "crane.h"
 #include "adc.h"
 #include "hlt.h"
+#include "mill.h"
+
 /*-----------------------------------------------------------*/
 
 /* The period of the system clock in nano seconds.  This is used to calculate
@@ -132,6 +134,7 @@ struct menu manual_menu[] =
         {"FlashLED", 		NULL, 				NULL, 				item_2_callback, 	NULL},
         {"DS1820Diag", 		NULL, 				vDS1820DiagApplet,		NULL,	 		DS1820DiagKey},
         {"HLT",                 NULL,                           vHLTApplet,                     vHLTAppletCallback,     HLTKey},
+        {"Mill",                NULL,                           vMillApplet,                    NULL,                   iMillKey},
         {"Back",   	        NULL, 				NULL, 				NULL, 			NULL},
         {NULL, 			NULL, 				NULL, 				NULL, 			NULL}
     };
@@ -156,6 +159,7 @@ int main( void )
     vLEDInit();
     vCraneInit();
     hlt_init();
+    vMillInit();
 	menu_set_root(main_menu);
 
     xTaskCreate( vTouchTask, 

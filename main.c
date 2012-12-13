@@ -36,6 +36,7 @@
 #include "valves.h"
 #include "diag_temps.h"
 #include "hop_dropper.h"
+#include "boil.h"
 
 /*-----------------------------------------------------------*/
 
@@ -174,6 +175,7 @@ int main( void )
     vValvesInit();
     vDiagTempsInit();
     vHopsInit();
+    vBoilInit();
 
 	menu_set_root(main_menu);
 
@@ -271,6 +273,7 @@ static void prvSetupHardware( void )
 	/* SPI2 Periph clock enable */
 	RCC_APB1PeriphClockCmd( RCC_APB1Periph_SPI2, ENABLE );
         RCC_APB1PeriphClockCmd( RCC_APB1Periph_TIM3, ENABLE );
+        RCC_APB1PeriphClockCmd( RCC_APB1Periph_TIM4, ENABLE );
 
 	/* Set the Vector Table base address at 0x08000000 */
 	NVIC_SetVectorTable( NVIC_VectTab_FLASH, 0x0 );

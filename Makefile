@@ -94,8 +94,11 @@ SOURCE=	main.c 	drivers/lcd.c \
 		drivers/adc.c \
 		drivers/leds.c \
 		hlt.c \
+		hlt_pump.c \
+		mash_pump.c \
 		mill.c \
 		menu.c \
+		valves.c \
 		crane.c \
 		drivers/speaker.c \
 		drivers/timer.c \

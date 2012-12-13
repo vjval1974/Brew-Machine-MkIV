@@ -35,6 +35,8 @@
 #include "mash_pump.h"
 #include "valves.h"
 #include "diag_temps.h"
+#include "hop_dropper.h"
+
 /*-----------------------------------------------------------*/
 
 /* The period of the system clock in nano seconds.  This is used to calculate
@@ -135,7 +137,7 @@ struct menu manual_menu[] =
     {
         {"Crane",       	NULL,				manual_crane_applet, 	        NULL, 			manual_crane_key},
         {"Valves",              NULL,                           vValvesApplet,                  NULL,                   iValvesKey},
-        {"DS1820Diag", 		NULL, 				vDS1820DiagApplet,		NULL,	 		DS1820DiagKey},
+        {"HopDropper",          NULL,                           vHopDropperApplet,              NULL,                   iHopDropperKey},
         {"HLT",                 NULL,                           vHLTApplet,                     vHLTAppletCallback,     HLTKey},
         {"HLT Pump",            NULL,                           vHLTPumpApplet,                 NULL,                   iHLTPumpKey},
         {"Mash Pump",           NULL,                           vMashPumpApplet,                NULL,                   iMashPumpKey},
@@ -149,6 +151,7 @@ struct menu main_menu[] =
         {"Manual Control",      manual_menu,    		NULL, 				NULL, 			NULL},
         {"Applet",              NULL,                           example_applet,                 NULL,			example_applet_touch_handler},
         {"FlashLED",            NULL,                           NULL,                           item_2_callback,        NULL},
+        {"DS1820Diag",           NULL,                           vDS1820DiagApplet,              NULL,                   DS1820DiagKey},
         {NULL,                  NULL, 				NULL,                           NULL, 			NULL}
     };
 
@@ -170,6 +173,7 @@ int main( void )
     vMashPumpInit();
     vValvesInit();
     vDiagTempsInit();
+    vHopsInit();
 
 	menu_set_root(main_menu);
 

@@ -97,6 +97,7 @@ SOURCE=	main.c 	drivers/lcd.c \
 		hlt_pump.c \
 		mash_pump.c \
 		mill.c \
+		hop_dropper.c \
 		menu.c \
 		valves.c \
 		diag_temps.c \

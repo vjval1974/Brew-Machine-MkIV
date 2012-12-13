@@ -10,5 +10,6 @@
 
 void vDS1820DiagApplet(int init);
 int DS1820DiagKey(int xx, int yy);
+void vDiagTempsInit(void);
 
 #endif /* DIAG_TEMPS_H_ */

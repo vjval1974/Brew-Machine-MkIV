@@ -134,6 +134,16 @@ void vCheckTask(void *pvParameters)
 
 }
 
+struct menu diag_menu[] =
+    {
+        {"Applet",              NULL,                           example_applet,                 NULL,                        example_applet_touch_handler},
+        {"FlashLED",            NULL,                           NULL,                           item_2_callback,        NULL},
+        {"DS1820Diag",           NULL,                           vDS1820DiagApplet,              NULL,                   DS1820DiagKey},
+        {"Back",                 NULL,                           NULL,                           NULL,                   NULL},
+        {NULL,                  NULL,                           NULL,                           NULL,                   NULL}
+    };
+
+
 struct menu manual_menu[] =
     {
         {"Crane",       	NULL,				manual_crane_applet, 	        NULL, 			manual_crane_key},
@@ -150,9 +160,8 @@ struct menu manual_menu[] =
 struct menu main_menu[] =
     {
         {"Manual Control",      manual_menu,    		NULL, 				NULL, 			NULL},
-        {"Applet",              NULL,                           example_applet,                 NULL,			example_applet_touch_handler},
-        {"FlashLED",            NULL,                           NULL,                           item_2_callback,        NULL},
-        {"DS1820Diag",           NULL,                           vDS1820DiagApplet,              NULL,                   DS1820DiagKey},
+        {"Boil",                NULL,                           vBoilApplet,                    NULL,                   iBoilKey},
+        {"Diagnostics",         diag_menu,                      NULL,                           NULL,                   NULL},
         {NULL,                  NULL, 				NULL,                           NULL, 			NULL}
     };
 

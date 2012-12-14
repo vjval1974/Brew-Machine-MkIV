@@ -16,6 +16,6 @@
 
 void vHopDropperApplet(int init);
 int iHopDropperKey(int xx, int yy);
-
+void vHopsInit(void);
 
 #endif /* HOP_DROPPER_H_ */

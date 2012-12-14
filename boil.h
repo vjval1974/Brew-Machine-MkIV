@@ -9,5 +9,7 @@
 #define BOIL_H_
 
 void vBoilInit(void);
+void vBoilApplet(int init);
+int iBoilKey(int xx, int yy);
 
 #endif /* BOIL_H_ */

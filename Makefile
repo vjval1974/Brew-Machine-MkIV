@@ -99,6 +99,7 @@ SOURCE=	main.c 	drivers/lcd.c \
 		mill.c \
 		boil.c \
 		hop_dropper.c \
+		stir.c \
 		menu.c \
 		valves.c \
 		diag_temps.c \

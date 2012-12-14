@@ -15,6 +15,7 @@
 #include "adc.h"
 #include "leds.h"
 #include "semphr.h"
+#include "queue.h"
 #define BOIL_PORT GPIOB
 #define BOIL_PIN GPIO_Pin_8
 

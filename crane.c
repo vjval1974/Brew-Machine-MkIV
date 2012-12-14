@@ -26,6 +26,7 @@
 #include "adc.h"
 #include "leds.h"
 #include "semphr.h"
+#include "queue.h"
 //-------------------------------------------------------------------------
 #define CRANE_UPPER_LIMIT_ADC_CHAN 10
 #define CRANE_LOWER_LIMIT_ADC_CHAN 11
@@ -33,25 +34,17 @@
 #define DRIVING_DN 2
 #define STOPPED 0
 
+
 xTaskHandle xCraneTaskHandle = NULL, xCraneUpToLimitTaskHandle = NULL,  xCraneDnToLimitTaskHandle = NULL, xCraneAppletDisplayHandle = NULL;
+xQueueHandle xStirStepQueue;
+
+
 
 static char crane_state = STOPPED;
-int test(int x){
-	printf("test\r\n");
-	return 0;
-}
-
-struct StepperSteps  {
-		char * step_name;
-		int (*setupFunc)(void);
-		int (*pollingFunc)(int x);
-}StirSteps[];
 
 
-struct StepperSteps StirSteps[] = {
-		{"brad", NULL, test},
-		{NULL, NULL, NULL}
-};
+
+
 //-------------------------------------------------------------------------
 void vCraneDnToLimitTask( void *pvParameters );
 void vCraneUpToLimitTask( void *pvParameters );
@@ -78,9 +71,6 @@ void vCraneInit(void){
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;// Alt Function - Push Pull
 	GPIO_Init( CRANE_DRIVE_PORT, &GPIO_InitStructure );
 
-	GPIO_InitStructure.GPIO_Pin =  CRANE_STIR_STEP_PIN;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP; //Alt Function
-	GPIO_Init( CRANE_STIR_DRIVE_PORT, &GPIO_InitStructure );
 
 	GPIO_PinRemapConfig( GPIO_FullRemap_TIM3, ENABLE );// Map TIM3_CH3 and CH4 to Step Pins
 
@@ -95,15 +85,6 @@ void vCraneInit(void){
 	GPIO_Init( CRANE_CONTROL_PORT, &GPIO_InitStructure );
 	GPIO_SetBits(CRANE_CONTROL_PORT, CRANE_DIR_PIN);
 
-	GPIO_InitStructure.GPIO_Pin =  CRANE_STIR_DIR_PIN;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-	GPIO_Init( CRANE_STIR_CONTROL_PORT, &GPIO_InitStructure );
-	GPIO_SetBits(CRANE_STIR_CONTROL_PORT, CRANE_STIR_DIR_PIN);
-
-	GPIO_InitStructure.GPIO_Pin =  CRANE_STIR_ENABLE_PIN;
-	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-	GPIO_Init( CRANE_STIR_CONTROL_PORT, &GPIO_InitStructure );
-	GPIO_SetBits(CRANE_STIR_CONTROL_PORT, CRANE_STIR_ENABLE_PIN);
 
 	//LIMIT INPUTS
 	GPIO_InitStructure.GPIO_Pin =  CRANE_UPPER_LIMIT_PIN;

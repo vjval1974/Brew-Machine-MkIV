@@ -24,6 +24,7 @@
 #define KEY_RIGHT 0x1
 #define KEY_PRESSED 0x10
 
+
 static struct menu  *g_menu[MAX_DEPTH];
 static unsigned char g_crumbs[MAX_DEPTH];
 static unsigned      g_item = -1;

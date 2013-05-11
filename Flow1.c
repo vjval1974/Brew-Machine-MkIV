@@ -30,7 +30,7 @@ volatile unsigned long pulses = 0;
 const float fLitresPerPulseL = 0.0033;
 const float fLitresPerPulseH = 0.0042;
 const unsigned long ulLowerThresh = 26/2;
-volatile float fLitresDelivered = 0;
+float fLitresDelivered = 0;
 volatile uint8_t flow_state = NOT_FLOWING;
 
 
@@ -301,7 +301,8 @@ void vFlow1AppletDisplay( void *pvParameters){
                // lcd_printf(5,1,25, "Flow 1 = %2.1f Litres", fGetFlow1Litres());
 
                 xSemaphoreGive(xFlow1AppletRunningSemaphore); //give back the semaphore as its safe to return now.
-                vTaskDelay(500);
+
+                vTaskDelay(200);
 
 
         }

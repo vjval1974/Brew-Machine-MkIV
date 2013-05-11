@@ -219,7 +219,7 @@ int main( void )
         ( signed portCHAR * ) "DS1820",
         configMINIMAL_STACK_SIZE ,
         NULL,
-        tskIDLE_PRIORITY + 4,
+        tskIDLE_PRIORITY + 1,
         &xDS1820TaskHandle );
 
     xTaskCreate( vTaskLitresDelivered,

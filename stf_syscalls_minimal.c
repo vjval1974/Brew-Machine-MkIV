@@ -19,12 +19,15 @@
  * </dl>
  */
 
+#include "stm32f10x.h"
 #include <stdlib.h>
+#include <string.h>
 #include <stdio.h>
 #include <errno.h>
 #include <time.h>
 #include <sys/stat.h>
 #include "FreeRTOS.h"
+#include "serial.h"
 
 // Function declaration.
 void _exit(int i);
@@ -182,6 +185,7 @@ _PTR _realloc_r(struct _reent *re, _PTR oldAddr, size_t newSize) {
 
 	if (newAddr == NULL)
 		return NULL;
+
 
 	/* We need the block struct pointer to get the current size */
 	block = oldAddr;

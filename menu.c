@@ -144,7 +144,7 @@ static void menu_update(void)
     lcd_fill(0, CRUMB_H, LCD_W, LCD_H - CRUMB_H, bgCol);
 
     // draw the crumbs
-    char crumbs[90] = "Demo11";
+    char crumbs[90] = "MKIV";
     for (ii = 1; ii <= g_index; ii++)
     {
         strcat(crumbs, ":");

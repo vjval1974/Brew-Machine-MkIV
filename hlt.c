@@ -183,7 +183,7 @@ void vHLTApplet(int init){
                 //create a dynamic display task
                 xTaskCreate( vHLTAppletDisplay,
                     ( signed portCHAR * ) "hlt_disp",
-                    configMINIMAL_STACK_SIZE + 800,
+                    configMINIMAL_STACK_SIZE + 200,
                     NULL,
                     tskIDLE_PRIORITY ,
                     &xHLTAppletDisplayHandle );
@@ -217,7 +217,8 @@ void vHLTAppletDisplay( void *pvParameters){
               lcd_printf(1,11,20,"level LOW");
 
             //display the level if its over 4 litres
-            lcd_printf(1,12,30,"level = %d litres", (int)hlt_level);
+            lcd_printf(1, 12, 30, "level =  %d.%dl", (unsigned int)floor(hlt_level), (unsigned int)(hlt_level-floor(hlt_level)*pow(10, 3)));
+            //lcd_printf(1,12,30,"level = %d litres", (int)hlt_level);
             //display the state and user info (the state will flash on the screen)
                 switch (hlt_state)
                 {
@@ -227,7 +228,8 @@ void vHLTAppletDisplay( void *pvParameters){
                         {
                               lcd_fill(1,220, 180,29, Black);
                                 lcd_printf(1,13,15,"HEATING");
-                              lcd_printf(1,14,15,"Currently = %2.1fdegC", current_temp);
+                                lcd_printf(1, 14, 25, "Currently = %d.%ddegC", (unsigned int)floor(current_temp), (unsigned int)((current_temp-floor(current_temp))*pow(10, 3)));
+                                //lcd_printf(1,14,15,"Currently = %2.1fdegC", current_temp);
                         }
                         else{
                                 lcd_fill(1,210, 180,17, Black);
@@ -240,7 +242,8 @@ void vHLTAppletDisplay( void *pvParameters){
                         {
                                 lcd_fill(1,210, 180,29, Black);
                                 lcd_printf(1,13,11,"NOT HEATING");
-                                lcd_printf(1,14,15,"Currently = %2.1fdegC", current_temp);
+                                lcd_printf(1, 14, 25, "Currently = %d.%ddegC", (unsigned int)floor(current_temp), (unsigned int)((current_temp-floor(current_temp))*pow(10, 3)));
+                                //lcd_printf(1,14,15,"Currently = %2.1fdegC", current_temp);
                         }
                         else
                           {
@@ -259,7 +262,8 @@ void vHLTAppletDisplay( void *pvParameters){
                 tog = tog ^ 1;
                 lcd_fill(102,99, 35,10, Black);
               //printf("%d, %d, %d\r\n", (uint8_t)diag_setpoint, (diag_setpoint), ((uint8_t)diag_setpoint*10)%5);
-              lcd_printf(13,6,15,"%d", (int)diag_setpoint);
+                lcd_printf(13, 6, 25, "%d.%d", (unsigned int)floor(diag_setpoint), (unsigned int)((diag_setpoint-floor(diag_setpoint))*pow(10, 3)));
+              //lcd_printf(13,6,15,"%d", (int)diag_setpoint);
 
                 xSemaphoreGive(xHLTAppletRunningSemaphore); //give back the semaphore as its safe to return now.
                 vTaskDelay(500);

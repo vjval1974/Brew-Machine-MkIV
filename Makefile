@@ -37,7 +37,7 @@ LDSCRIPT=stm32_flash.ld
 
 
 # should use --gc-sections but the debugger does not seem to be able to cope with the option.
-LINKER_FLAGS=-nostartfiles -Xlinker -o$(PROJECT_NAME).axf -Xlinker -M -Xlinker -Map=$(PROJECT_NAME).map -Xlinker --no-gc-sections
+LINKER_FLAGS=-nostartfiles -Xlinker -o$(PROJECT_NAME).axf -Xlinker -M -Xlinker -Map=$(PROJECT_NAME).map -Xlinker --no-gc-sections -lm
 
 
 # Debugging format.
@@ -83,7 +83,7 @@ CFLAGS=-g$(DEBUG)\
 		-mthumb -mcpu=cortex-m3 \
 		-ffunction-sections \
 		-fdata-sections \
-		-lm 
+		
 
 
 # Source files

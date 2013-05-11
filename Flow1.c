@@ -263,7 +263,8 @@ void vFlow1AppletDisplay( void *pvParameters){
                     //lcd_printf(1,13,15,"FLOWING\n");
 
                     //lcd_printf(1,14,15,"Currently @ %2.1flitres", fLitresDelivered);
-                    lcd_printf(1,14,15,"Currently @ %dml", mlu);
+                    lcd_printf(1, 13, 25, "Currently @ %d.%dl", (unsigned int)floor(fGetFlow1Litres()), (unsigned int)((fGetFlow1Litres()-floor(fGetFlow1Litres()))*pow(10, 3)));
+                    //lcd_printf(1,14,15,"Currently @ %dml", mlu);
                   }
                 else{
                     lcd_fill(1,210, 180,17, Black);
@@ -277,8 +278,8 @@ void vFlow1AppletDisplay( void *pvParameters){
                     //printf("%u\r\n",uxTaskGetStackHighWaterMark(NULL));
                     lcd_fill(1,210, 180,29, Black);
                     //lcd_printf(1,13,11,"NOT FLOWING\n");
-
-                    lcd_printf(1,14,15,"Currently @ %dml", mlu);
+                    lcd_printf(1, 13, 25, "Currently @ %d.%d ml", (unsigned int)floor(fGetFlow1Litres()), (unsigned int)((fGetFlow1Litres()-floor(fGetFlow1Litres()))*pow(10, 3)));
+                    //lcd_printf(1,14,15,"Currently @ %dml", mlu);
 
                   }
                 else

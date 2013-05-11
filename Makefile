@@ -82,7 +82,8 @@ CFLAGS=-g$(DEBUG)\
 		-D ALIGN_STRUCT_END=__attribute\(\(aligned\(4\)\)\) \
 		-mthumb -mcpu=cortex-m3 \
 		-ffunction-sections \
-		-fdata-sections 
+		-fdata-sections \
+		-lm 
 
 
 # Source files
@@ -106,7 +107,8 @@ SOURCE=	main.c 	drivers/lcd.c \
 		crane.c \
 		drivers/speaker.c \
 		drivers/timer.c \
-		drivers/ds1820.c
+		drivers/ds1820.c \
+		Flow1.c
 
 # ST Library source files.
 ST_LIB_SOURCE= \
@@ -122,6 +124,7 @@ ST_LIB_SOURCE= \
 		$(ST_LIB_DIR)/src/stm32f10x_fsmc.c \
 		$(ST_LIB_DIR)/src/stm32f10x_flash.c \
 		$(ST_LIB_DIR)/src/stm32f10x_adc.c \
+		$(ST_LIB_DIR)/src/stm32f10x_exti.c 
 
 # FreeRTOS source files.
 FREERTOS_SOURCE= $(RTOS_SOURCE_DIR)/list.c \

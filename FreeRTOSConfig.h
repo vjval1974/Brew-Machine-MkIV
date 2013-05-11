@@ -66,7 +66,8 @@
 #define configCPU_CLOCK_HZ		( ( unsigned portLONG ) 72000000 )
 #define configTICK_RATE_HZ		( ( portTickType ) 1000 )
 #define configMAX_PRIORITIES			( ( unsigned portBASE_TYPE ) 5 )
-#define configMINIMAL_STACK_SIZE		( ( unsigned portSHORT ) 128 )
+#define configMINIMAL_STACK_SIZE		( ( unsigned portSHORT ) 512 )
+// total heap size was 48*1024
 #define configTOTAL_HEAP_SIZE			( ( size_t ) ( 48 * 1024 ) )
 #define configMAX_TASK_NAME_LEN			( 16 )
 #define configUSE_TRACE_FACILITY		1
@@ -93,8 +94,10 @@ to exclude the API function. */
 
 /* This is the raw value as per the Cortex-M3 NVIC.  Values can be 255
 (lowest) to 0 (1?) (highest). */
-#define configKERNEL_INTERRUPT_PRIORITY 255
-#define configMAX_SYSCALL_INTERRUPT_PRIORITY 	191 /* equivalent to 0xa0, or priority 5. */
+// was 255
+#define configKERNEL_INTERRUPT_PRIORITY 1
+
+#define configMAX_SYSCALL_INTERRUPT_PRIORITY 	191/* equivalent to 0xa0, or priority 5. */
 
 /* This is the value being used as per the ST library which permits 16
 priority values, 0 to 15.  This must correspond to the

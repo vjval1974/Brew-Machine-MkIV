@@ -18,8 +18,8 @@
 
 //---CRANE CONTROL PORTS/PINS
 #define CRANE_CONTROL_PORT GPIOB
-#define CRANE_ENABLE_PIN GPIO_Pin_12
-#define CRANE_DIR_PIN GPIO_Pin_14
+#define CRANE_ENABLE_PIN GPIO_Pin_14
+#define CRANE_DIR_PIN GPIO_Pin_12
 
 //---CRANE STEPPER DRIVE PORT/PIN
 #define CRANE_DRIVE_PORT GPIOC
@@ -36,8 +36,8 @@
 
 void vCraneInit(void);
 void vCraneRun(uint16_t speed);
-void manual_crane_applet(int init);
-int manual_crane_key(int x, int y);
+void vCraneApplet(int init);
+int iCraneKey(int x, int y);
 
 extern xTaskHandle xCraneTaskHandle, xCraneUpToLimitTaskHandle,	xCraneDnToLimitTaskHandle, xCraneAppletDisplayHandle;
 

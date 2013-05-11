@@ -16,12 +16,14 @@
 #include "adc.h"
 #include "leds.h"
 #include "semphr.h"
+#include "Flow1.h"
 
 void vValvesAppletDisplay( void *pvParameters);
+
 void vValvesApplet(int init);
 xTaskHandle xValvesTaskHandle = NULL, xValvesAppletDisplayHandle = NULL;
 // semaphore that stops the returning from the applet to the menu system until the applet goes into the blocked state.
-xSemaphoreHandle xAppletRunningSemaphore;
+xSemaphoreHandle xValvesAppletRunningSemaphore;
 
 
 
@@ -53,7 +55,7 @@ void vValvesInit(void){
   GPIO_Init( BOIL_VALVE_PORT, &GPIO_InitStructure );
   GPIO_ResetBits(BOIL_VALVE_PORT, BOIL_VALVE_PIN); //pull low
 
-  vSemaphoreCreateBinary(xAppletRunningSemaphore);
+  vSemaphoreCreateBinary(xValvesAppletRunningSemaphore);
 
 
 }
@@ -176,11 +178,12 @@ void vValvesApplet(int init){
                 //adc_init();
                 //adc_init();
                 //create a dynamic display task
+
                 xTaskCreate( vValvesAppletDisplay,
-                    ( signed portCHAR * ) "Mill_disp",
-                    configMINIMAL_STACK_SIZE + 500,
+                    ( signed portCHAR * ) "V_disp",
+                    configMINIMAL_STACK_SIZE + 200,
                     NULL,
-                    tskIDLE_PRIORITY ,
+                    tskIDLE_PRIORITY,
                     &xValvesAppletDisplayHandle );
         }
 
@@ -189,17 +192,103 @@ void vValvesApplet(int init){
 
 void vValvesAppletDisplay( void *pvParameters){
         static char tog = 0; //toggles each loop
+
+        uint8_t uHLTValveState = CLOSED;
+        uint8_t uMashValveState = CLOSED;
+        uint8_t uBoilValveState = CLOSED;
+        uint8_t uInletValveState = CLOSED;
+        static uint8_t hlt_last = 0, mash_last = 0, boil_last = 0, inlet_last = 0;
         for(;;)
         {
 
-            xSemaphoreTake(xAppletRunningSemaphore, portMAX_DELAY); //take the semaphore so that the key handler wont
+            xSemaphoreTake(xValvesAppletRunningSemaphore, portMAX_DELAY); //take the semaphore so that the key handler wont
                                                                                //return to the menu system until its returned
 
 
-            tog = tog ^ 1;
-            xSemaphoreGive(xAppletRunningSemaphore); //give back the semaphore as its safe to return now.
-            vTaskDelay(500);
+            uHLTValveState = GPIO_ReadInputDataBit(HLT_VALVE_PORT, HLT_VALVE_PIN);
+            uMashValveState = GPIO_ReadInputDataBit(MASH_VALVE_PORT, MASH_VALVE_PIN);
+            uBoilValveState = GPIO_ReadInputDataBit(BOIL_VALVE_PORT, BOIL_VALVE_PIN);
+            uInletValveState = GPIO_ReadInputDataBit(INLET_VALVE_PORT, INLET_VALVE_PIN);
 
+            if (uHLTValveState != hlt_last || uBoilValveState != boil_last || uMashValveState != mash_last || uInletValveState != inlet_last){
+                if (uHLTValveState)
+                  {
+                  lcd_DrawRect(TOGGLE_HLT_VALVE_X1, TOGGLE_HLT_VALVE_Y1, TOGGLE_HLT_VALVE_X2, TOGGLE_HLT_VALVE_Y2, Blue);
+                  lcd_fill(TOGGLE_HLT_VALVE_X1+1, TOGGLE_HLT_VALVE_Y1+1, TOGGLE_HLT_VALVE_W, TOGGLE_HLT_VALVE_H, Red);
+                  lcd_printf(0,4,13,"HLT->MASH");
+                  }
+
+                else
+                  {
+                    lcd_DrawRect(TOGGLE_HLT_VALVE_X1, TOGGLE_HLT_VALVE_Y1, TOGGLE_HLT_VALVE_X2, TOGGLE_HLT_VALVE_Y2, Cyan);
+                    lcd_fill(TOGGLE_HLT_VALVE_X1+1, TOGGLE_HLT_VALVE_Y1+1, TOGGLE_HLT_VALVE_W, TOGGLE_HLT_VALVE_H, Green);
+                    lcd_printf(0,4,13,"HLT->HLT");
+                  }
+
+                if (uMashValveState)
+                  {
+                    lcd_DrawRect(TOGGLE_MASH_VALVE_X1, TOGGLE_MASH_VALVE_Y1, TOGGLE_MASH_VALVE_X2, TOGGLE_MASH_VALVE_Y2, Blue);
+                    lcd_fill(TOGGLE_MASH_VALVE_X1+1, TOGGLE_MASH_VALVE_Y1+1, TOGGLE_MASH_VALVE_W, TOGGLE_MASH_VALVE_H, Red);
+                    lcd_printf(12,4,13, "MASH->BOIL");
+                  }
+
+                else
+                  {
+                    lcd_DrawRect(TOGGLE_MASH_VALVE_X1, TOGGLE_MASH_VALVE_Y1, TOGGLE_MASH_VALVE_X2, TOGGLE_MASH_VALVE_Y2, Cyan);
+                    lcd_fill(TOGGLE_MASH_VALVE_X1+1, TOGGLE_MASH_VALVE_Y1+1, TOGGLE_MASH_VALVE_W, TOGGLE_MASH_VALVE_H, Green);
+                    lcd_printf(12,4,13, "MASH->MASH");
+                  }
+
+
+                if (uBoilValveState)
+                  {
+                    lcd_DrawRect(TOGGLE_BOIL_VALVE_X1, TOGGLE_BOIL_VALVE_Y1, TOGGLE_BOIL_VALVE_X2, TOGGLE_BOIL_VALVE_Y2, Blue);
+                    lcd_fill(TOGGLE_BOIL_VALVE_X1+1, TOGGLE_BOIL_VALVE_Y1+1, TOGGLE_BOIL_VALVE_W, TOGGLE_BOIL_VALVE_H, Red);
+                    lcd_printf(24,4,13, "BOIL OPENED");
+                  }
+                else
+                  {
+                    lcd_DrawRect(TOGGLE_BOIL_VALVE_X1, TOGGLE_BOIL_VALVE_Y1, TOGGLE_BOIL_VALVE_X2, TOGGLE_BOIL_VALVE_Y2, Cyan);
+                    lcd_fill(TOGGLE_BOIL_VALVE_X1+1, TOGGLE_BOIL_VALVE_Y1+1, TOGGLE_BOIL_VALVE_W, TOGGLE_BOIL_VALVE_H, Green);
+                    lcd_printf(24,4,13, "BOIL CLOSED");
+                  }
+
+                if (uInletValveState)
+                  {
+                    lcd_DrawRect(TOGGLE_INLET_VALVE_X1, TOGGLE_INLET_VALVE_Y1, TOGGLE_INLET_VALVE_X2, TOGGLE_INLET_VALVE_Y2, Blue);
+                    lcd_fill(TOGGLE_INLET_VALVE_X1+1, TOGGLE_INLET_VALVE_Y1+1, TOGGLE_INLET_VALVE_W, TOGGLE_INLET_VALVE_H, Red);
+                    lcd_printf(0,8,13, "INLET OPENED");
+                  }
+
+                else
+                  {
+                    lcd_DrawRect(TOGGLE_INLET_VALVE_X1, TOGGLE_INLET_VALVE_Y1, TOGGLE_INLET_VALVE_X2, TOGGLE_INLET_VALVE_Y2, Cyan);
+                    lcd_fill(TOGGLE_INLET_VALVE_X1+1, TOGGLE_INLET_VALVE_Y1+1, TOGGLE_INLET_VALVE_W, TOGGLE_INLET_VALVE_H, Green);
+                    lcd_printf(0,8,13, "INLET CLOSED");
+                  }
+                hlt_last = uHLTValveState;
+                boil_last = uBoilValveState;
+                mash_last = uMashValveState;
+                inlet_last = uInletValveState;
+            }
+
+            if(tog)
+              {
+                lcd_fill(1,220, 180,29, Black);
+                // the following line causes a hard fault if uncommented.
+               // lcd_printf(1,13,15,"Currently @ %2.1flitres", fGetFlow1Litres());
+              }
+            else{
+                lcd_fill(1,210, 180,17, Black);
+            }
+
+
+
+
+            tog = tog ^ 1;
+
+            xSemaphoreGive(xValvesAppletRunningSemaphore); //give back the semaphore as its safe to return now.
+            vTaskDelay(500);
 
         }
 }
@@ -232,7 +321,7 @@ int iValvesKey(int xx, int yy)
   else if (xx > BK_X1 && yy > BK_Y1 && xx < BK_X2 && yy < BK_Y2)
     {
       //try to take the semaphore from the display applet. wait here if we cant take it.
-      xSemaphoreTake(xAppletRunningSemaphore, portMAX_DELAY);
+      xSemaphoreTake(xValvesAppletRunningSemaphore, portMAX_DELAY);
       //delete the display applet task if its been created.
       if (xValvesAppletDisplayHandle != NULL)
         {
@@ -242,7 +331,7 @@ int iValvesKey(int xx, int yy)
         }
 
       //return the semaphore for taking by another task.
-      xSemaphoreGive(xAppletRunningSemaphore);
+      xSemaphoreGive(xValvesAppletRunningSemaphore);
       return 1;
 
     }

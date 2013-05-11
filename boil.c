@@ -33,7 +33,7 @@ xQueueHandle xBoilQueue;
 uint8_t diag_duty= 50;
 volatile uint8_t boil_state = OFF;
 
-void vBoil(uint8_t duty, uint8_t state);
+//void vBoil(uint8_t duty, uint8_t state);
 void vBoilAppletDisplay(void * pvParameters);
 void vTaskBoil( void * pvParameters);
 
@@ -93,6 +93,7 @@ void vBoilInit(void)
   GPIO_ResetBits(BOIL_PORT, BOIL_PIN);
   boil_state = OFF;
 
+  vSemaphoreCreateBinary(xAppletRunningSemaphore);
   xBoilQueue = xQueueCreate(5, sizeof(uint8_t));
 
   if (xBoilQueue != NULL)
@@ -102,17 +103,21 @@ void vBoilInit(void)
           configMINIMAL_STACK_SIZE + 500,
           NULL,
           tskIDLE_PRIORITY ,
-          &xBoilAppletDisplayHandle );
+          &xBoilTaskHandle );
     }
-  else
-    printf("Boil task could not be created.. memory error?\r\n");
+  //else
+  //  printf("Boil task could not be created.. memory error?\r\n");
 
 
 }
 
 uint8_t uGetBoilLevel(void)
 {
+ // // **************OVERRIDDEN *************************
+ // return 1;
+
   return (GPIO_ReadInputDataBit(BOIL_LEVEL_PORT, BOIL_LEVEL_PIN) == 0);
+
 }
 void vTaskBoil( void * pvParameters)
 {
@@ -143,17 +148,17 @@ void vTaskBoil( void * pvParameters)
               TIM_SetCompare3(TIM4, compare);
               TIM_Cmd( TIM4, ENABLE );
               boil_state = BOILING;
-              printf("Boiling, duty = %d\r\n", duty);
+         //     printf("Boiling, duty = %d\r\n", duty);
 
             }
 
-          else
+            else
             {
               TIM_SetCompare3(TIM4, 0);
               TIM_Cmd( TIM4, DISABLE );
               GPIO_ResetBits(BOIL_PORT, BOIL_PIN);
               boil_state = OFF;
-              printf("Boiling stopped or level too low\r\n");
+           //   printf("Boiling stopped or level too low\r\n");
             }
         }
       else
@@ -164,7 +169,7 @@ void vTaskBoil( void * pvParameters)
               TIM_Cmd( TIM4, DISABLE );
               GPIO_ResetBits(BOIL_PORT, BOIL_PIN);
               boil_state = OFF;
-              printf("Boil level too low during boil... stopped boil\r\n");
+             // printf("Boil level too low during boil... stopped boil\r\n");
             }
           //printf("Nothing in boil queue!\r\n");
         }
@@ -318,7 +323,7 @@ int iBoilKey(int xx, int yy)
   if (xx > DUTY_UP_X1+1 && xx < DUTY_UP_X2-1 && yy > DUTY_UP_Y1+1 && yy < DUTY_UP_Y2-1)
     {
       diag_duty+=1;
-      printf("Duty Cycle is now %d\r\n", diag_duty);
+      //printf("Duty Cycle is now %d\r\n", diag_duty);
       if (boil_state == BOILING)
         xQueueSendToBack(xBoilQueue, &diag_duty, 0);
     }
@@ -328,7 +333,7 @@ int iBoilKey(int xx, int yy)
       if (diag_duty == 0)
         diag_duty = 0;
       else diag_duty-=1;
-      printf("Duty Cycle is now %d\r\n", diag_duty);
+      //printf("Duty Cycle is now %d\r\n", diag_duty);
       if (boil_state == BOILING)
         xQueueSendToBack(xBoilQueue, &diag_duty, 0);
     }

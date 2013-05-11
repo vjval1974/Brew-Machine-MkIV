@@ -22,7 +22,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "stm32f10x_it.h"
-
+#include "stm32f10x_exti.h"
 /** @addtogroup Template_Project
   * @{
   */
@@ -54,10 +54,12 @@ void NMI_Handler(void)
   */
 void HardFault_Handler(void)
 {
+
   /* Go to infinite loop when Hard Fault exception occurs */
   while (1)
   {
-        GPIO_WriteBit( GPIOD, GPIO_Pin_13, 1 );
+
+      GPIO_WriteBit( GPIOD, GPIO_Pin_13, 1 );
   }
 }
 
@@ -127,6 +129,9 @@ void DebugMon_Handler(void)
 /*void PPP_IRQHandler(void)
 {
 }*/
+
+
+
 
 /**
   * @}

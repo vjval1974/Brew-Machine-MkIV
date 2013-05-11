@@ -24,7 +24,7 @@
 #include <stdio.h>
 #include "ds1820.h"
 
-static unsigned portSHORT usOutputValue = 0;
+
 
 void vStartupLEDTask ( void *pvParameters );
 void vLEDFlashTask( void *pvParameters );

@@ -21,7 +21,7 @@
 volatile uint8_t hop_dropper_state = OFF;
 
 // semaphore that stops the returning from the applet to the menu system until the applet goes into the blocked state.
-xSemaphoreHandle xAppletRunningSemaphore;
+xSemaphoreHandle xHopAppletRunningSemaphore;
 
 xTaskHandle xHopsNextTaskHandle = NULL, xHopDropperAppletDisplayHandle = NULL;
 
@@ -40,7 +40,7 @@ void vHopsInit(void)
   GPIO_InitStructure.GPIO_Pin =  HOP_DROPPER_LIMIT_PIN;
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;// Output - Push Pull
   GPIO_Init( HOP_DROPPER_LIMIT_PORT, &GPIO_InitStructure );
-
+  vSemaphoreCreateBinary(xHopAppletRunningSemaphore);
 
 }
 
@@ -58,7 +58,7 @@ void vTaskHopsNext(  void * pvParameters)
   char gap = 0, in = 0;
   vHopsDrive(ON);
   vTaskDelay(5); // wait for motor to start driving
-  printf("looking for gap\r\n");
+  //printf("looking for gap\r\n");
   while (gap == 0)
     {
       in = GPIO_ReadInputDataBit(HOP_DROPPER_LIMIT_PORT, HOP_DROPPER_LIMIT_PIN); //sit in loop waiting for the gap
@@ -71,9 +71,9 @@ void vTaskHopsNext(  void * pvParameters)
         gap = 1;
       else gap = 0;
     }
- printf("found gap\r\n");
+ //printf("found gap\r\n");
   // we get here if we have a gap.
- printf("looking for next limit\r\n");
+ //printf("looking for next limit\r\n");
   for(;;)
     {
       //wait until we get another limit
@@ -86,7 +86,7 @@ void vTaskHopsNext(  void * pvParameters)
       in = GPIO_ReadInputDataBit(HOP_DROPPER_LIMIT_PORT, HOP_DROPPER_LIMIT_PIN); //sit in loop waiting for the gap
       if (!in) //we have hit the next stop
         {
-          printf("found next limit!\r\n");
+   //       printf("found next limit!\r\n");
           vHopsDrive(OFF);
           xHopsNextTaskHandle = NULL;
           vTaskDelete(NULL);
@@ -107,7 +107,7 @@ void vHopDropperAppletDisplay( void *pvParameters){
         for(;;)
         {
             hop_dropper_state = GPIO_ReadInputDataBit(HOP_DROPPER_DRIVE_PORT, HOP_DROPPER_DRIVE_PIN);
-            xSemaphoreTake(xAppletRunningSemaphore, portMAX_DELAY); //take the semaphore so that the key handler wont
+            xSemaphoreTake(xHopAppletRunningSemaphore, portMAX_DELAY); //take the semaphore so that the key handler wont
                                                                     //return to the menu system until its returned
                 switch (hop_dropper_state)
                 {
@@ -144,7 +144,7 @@ void vHopDropperAppletDisplay( void *pvParameters){
                 }
 
                 tog = tog ^ 1;
-                xSemaphoreGive(xAppletRunningSemaphore); //give back the semaphore as its safe to return now.
+                xSemaphoreGive(xHopAppletRunningSemaphore); //give back the semaphore as its safe to return now.
                 vTaskDelay(500);
 
 
@@ -199,27 +199,27 @@ int iHopDropperKey(int xx, int yy)
   static uint16_t last_window = 0;
   if (xx > HOPS_NEXT_X1+1 && xx < HOPS_NEXT_X2-1 && yy > HOPS_NEXT_Y1+1 && yy < HOPS_NEXT_Y2-1)
     {
-      printf("Checking if task already running...\r\n");
+      //printf("Checking if task already running...\r\n");
       if (xHopsNextTaskHandle == NULL)
         {
-          printf("No previous HOPS task\r\n");
-          printf("Creating Task\r\n");
+       //   printf("No previous HOPS task\r\n");
+       //   printf("Creating Task\r\n");
           xTaskCreate( vTaskHopsNext,
               ( signed portCHAR * ) "Hops_next",
-              configMINIMAL_STACK_SIZE +800,
+              configMINIMAL_STACK_SIZE +200,
               NULL,
               tskIDLE_PRIORITY+1,
               &xHopsNextTaskHandle );
         }
       else
         {
-          printf("Hops task already running\r\n");
+        //  printf("Hops task already running\r\n");
         }
     }
   else if (xx > BK_X1 && yy > BK_Y1 && xx < BK_X2 && yy < BK_Y2)
     {
       //try to take the semaphore from the display applet. wait here if we cant take it.
-      xSemaphoreTake(xAppletRunningSemaphore, portMAX_DELAY);
+      xSemaphoreTake(xHopAppletRunningSemaphore, portMAX_DELAY);
       //delete the display applet task if its been created.
       if (xHopDropperAppletDisplayHandle != NULL)
         {
@@ -236,7 +236,7 @@ int iHopDropperKey(int xx, int yy)
           xHopsNextTaskHandle = NULL;
         }
       //return the semaphore for taking by another task.
-      xSemaphoreGive(xAppletRunningSemaphore);
+      xSemaphoreGive(xHopAppletRunningSemaphore);
       return 1;
 
     }

@@ -362,7 +362,7 @@ void Reset_Handler(void)
 void Default_Handler(void)
 {
     //set D2
-//        GPIO_WriteBit( GPIOD, GPIO_Pin_13, 1 );       
+     // GPIO_WriteBit( GPIOD, GPIO_Pin_13, 1 );
  
 
   /* Go into an infinite loop. */

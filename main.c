@@ -37,6 +37,8 @@
 #include "diag_temps.h"
 #include "hop_dropper.h"
 #include "boil.h"
+#include "stir.h"
+#include "Flow1.h"
 
 /*-----------------------------------------------------------*/
 
@@ -60,7 +62,8 @@ xTaskHandle xLCDTaskHandle,
     xBeepTaskHandle, 
     xTimerSetupHandle,
     xDS1820TaskHandle,
-    xCheckTaskHandle;
+    xCheckTaskHandle,
+    xLitresDeliveredHandle ;
 
 
 
@@ -104,29 +107,36 @@ int example_applet_touch_handler(int xx, int yy)
 void vCheckTask(void *pvParameters)
 {
 
-  unsigned int touch, adc, ds1820, timer, low_level = 100;
+  unsigned int touch, adc, ds1820, timer, litres, check, low_level = 100, heap;
   for (;;){
-      //printf("check task: idle ticks = %lu\r\n", ulIdleCycleCount);
+      printf("check task: idle ticks = %lu\r\n", ulIdleCycleCount);
       touch = uxTaskGetStackHighWaterMark(xTouchTaskHandle);
       adc = uxTaskGetStackHighWaterMark(xAdcTaskHandle);
       ds1820 =  uxTaskGetStackHighWaterMark(xDS1820TaskHandle);
       timer = uxTaskGetStackHighWaterMark(xTimerSetupHandle);
+      litres = uxTaskGetStackHighWaterMark(xLitresDeliveredHandle);
+      check = uxTaskGetStackHighWaterMark(NULL);
+      heap = xPortGetFreeHeapSize();
 
-      if (touch < low_level ||
-          adc < low_level ||
-          ds1820 < low_level ||
-          timer < low_level)
+//      if (touch < low_level ||
+//          adc < low_level ||
+//          ds1820 < low_level ||
+//          timer < low_level)
         {
           vTaskSuspendAll();
           printf("ADCwm = %d\r\n", adc);
           printf("touchwm = %d\r\n", touch);
           printf("DS1820wm = %d\r\n", ds1820);
           printf("TimerSetupwm = %d\r\n", timer);
+          printf("litreswm = %d\r\n", litres);
+          printf("check = %d\r\n", check);
+          printf("Free Heap Size = %d\r\n", heap);
           xTaskResumeAll();
-          vTaskDelay(500);
+          vTaskDelay(100);
 
         }
-      vTaskDelay(100);
+
+      vTaskDelay(1000);
       taskYIELD();
   }
 
@@ -138,7 +148,8 @@ struct menu diag_menu[] =
     {
         {"Applet",              NULL,                           example_applet,                 NULL,                        example_applet_touch_handler},
         {"FlashLED",            NULL,                           NULL,                           item_2_callback,        NULL},
-        {"DS1820Diag",           NULL,                           vDS1820DiagApplet,              NULL,                   DS1820DiagKey},
+        {"DS1820Diag",           NULL,                           vDS1820DiagApplet,              NULL,                  DS1820DiagKey},
+        {"Flow1",                NULL,                           vFlow1Applet,                  NULL,                   iFlow1Key},
         {"Back",                 NULL,                           NULL,                           NULL,                   NULL},
         {NULL,                  NULL,                           NULL,                           NULL,                   NULL}
     };
@@ -146,7 +157,7 @@ struct menu diag_menu[] =
 
 struct menu manual_menu[] =
     {
-        {"Crane",       	NULL,				manual_crane_applet, 	        NULL, 			manual_crane_key},
+        {"Crane",       	NULL,				vCraneApplet, 	        NULL, 			iCraneKey},
         {"Valves",              NULL,                           vValvesApplet,                  NULL,                   iValvesKey},
         {"HopDropper",          NULL,                           vHopDropperApplet,              NULL,                   iHopDropperKey},
         {"HLT",                 NULL,                           vHLTApplet,                     vHLTAppletCallback,     HLTKey},
@@ -161,6 +172,7 @@ struct menu main_menu[] =
     {
         {"Manual Control",      manual_menu,    		NULL, 				NULL, 			NULL},
         {"Boil",                NULL,                           vBoilApplet,                    NULL,                   iBoilKey},
+        {"Stir",                NULL,                           vStirApplet,                    NULL,                   iStirKey},
         {"Diagnostics",         diag_menu,                      NULL,                           NULL,                   NULL},
         {NULL,                  NULL, 				NULL,                           NULL, 			NULL}
     };
@@ -174,10 +186,11 @@ int main( void )
     USARTInit(USART_PARAMS1);
 
 
+
     lcd_init();          
     vLEDInit();
-    vCraneInit();
-    hlt_init();
+
+
     vMillInit();
     vHLTPumpInit();
     vMashPumpInit();
@@ -185,30 +198,44 @@ int main( void )
     vDiagTempsInit();
     vHopsInit();
     vBoilInit();
+    vStirInit();
+    vCraneInit();
+    vStirInit();
+    hlt_init();
+    vFlow1Init();
 
-	menu_set_root(main_menu);
+
+    menu_set_root(main_menu);
 
     xTaskCreate( vTouchTask, 
                  ( signed portCHAR * ) "touch", 
-                 configMINIMAL_STACK_SIZE +500,
+                 configMINIMAL_STACK_SIZE +800,
                  NULL, 
                  tskIDLE_PRIORITY+1,
                  &xTouchTaskHandle );
 
     // Create you application tasks if needed here
     xTaskCreate( vTaskDS1820Convert,
-                 ( signed portCHAR * ) "DS1820",
-                 configMINIMAL_STACK_SIZE +500,
-                 NULL, 
-                 tskIDLE_PRIORITY,
-                 &xDS1820TaskHandle );
-    
+        ( signed portCHAR * ) "DS1820",
+        configMINIMAL_STACK_SIZE ,
+        NULL,
+        tskIDLE_PRIORITY + 4,
+        &xDS1820TaskHandle );
+
+    xTaskCreate( vTaskLitresDelivered,
+        ( signed portCHAR * ) "hlt_litres",
+        configMINIMAL_STACK_SIZE,
+        NULL,
+        tskIDLE_PRIORITY + 1,
+        &xLitresDeliveredHandle );
+
+
     xTaskCreate( vCheckTask,
-                   ( signed portCHAR * ) "check",
-                   configMINIMAL_STACK_SIZE +500,
-                   NULL,
-                   tskIDLE_PRIORITY,
-                   &xCheckTaskHandle );
+        ( signed portCHAR * ) "check",
+        configMINIMAL_STACK_SIZE +200,
+        NULL,
+        tskIDLE_PRIORITY,
+        &xCheckTaskHandle );
 
     /* Start the scheduler. */
     vTaskStartScheduler();

@@ -462,7 +462,7 @@ void LCD_SetDisplayWindow(uint8_t Xpos, uint16_t Ypos, uint8_t Height, uint16_t 
     }
     else
     {
-	printf("outside region\r\n");
+	//printf("outside region\r\n");
 	write_reg(0x0080, 0);
     }
     /* Horizontal GRAM End Address */
@@ -474,7 +474,7 @@ void LCD_SetDisplayWindow(uint8_t Xpos, uint16_t Ypos, uint8_t Height, uint16_t 
     }
     else
     {
-	printf("outside region\r\n");
+	//printf("outside region\r\n");
 	write_reg(0x0081, 0);
     }
     /* Vertical GRAM End Address */

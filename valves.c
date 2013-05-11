@@ -204,7 +204,7 @@ void vValvesAppletDisplay( void *pvParameters){
             xSemaphoreTake(xValvesAppletRunningSemaphore, portMAX_DELAY); //take the semaphore so that the key handler wont
                                                                                //return to the menu system until its returned
 
-
+            // Problem with code below.. when leaving the applet and returning, the colours are green instead of being their state..
             uHLTValveState = GPIO_ReadInputDataBit(HLT_VALVE_PORT, HLT_VALVE_PIN);
             uMashValveState = GPIO_ReadInputDataBit(MASH_VALVE_PORT, MASH_VALVE_PIN);
             uBoilValveState = GPIO_ReadInputDataBit(BOIL_VALVE_PORT, BOIL_VALVE_PIN);

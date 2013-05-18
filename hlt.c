@@ -338,9 +338,10 @@ int HLTKey(int xx, int yy)
       //delete the heating task
       if (xHeatHLTTaskHandle != NULL)
         {
-          vTaskDelete(xHeatHLTTaskHandle);
-          vTaskDelay(100);
-          xHeatHLTTaskHandle = NULL;
+          // commented out for test so can make beer!
+          //vTaskDelete(xHeatHLTTaskHandle);
+          //vTaskDelay(100);
+          //xHeatHLTTaskHandle = NULL;
         }
       //return the semaphore for taking by another task.
       xSemaphoreGive(xHLTAppletRunningSemaphore);

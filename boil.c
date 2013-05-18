@@ -114,7 +114,7 @@ void vBoilInit(void)
 uint8_t uGetBoilLevel(void)
 {
  // // **************OVERRIDDEN *************************
- // return 1;
+  return 1;
 
   return (GPIO_ReadInputDataBit(BOIL_LEVEL_PORT, BOIL_LEVEL_PIN) == 0);
 

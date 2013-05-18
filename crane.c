@@ -144,13 +144,13 @@ void vCraneInit(void)
           TIM_OCInitStruct.TIM_OutputState = TIM_OutputState_Enable;
           TIM_OCInitStruct.TIM_OCMode = TIM_OCMode_PWM1;
           // Initial duty cycle equals 25 which gives pulse of 5us
-          TIM_OCInitStruct.TIM_Pulse = 6;
+          TIM_OCInitStruct.TIM_Pulse = 25;
           TIM_OC3Init( TIM3, &TIM_OCInitStruct );
           TIM_OC4Init( TIM3, &TIM_OCInitStruct );
           //TIM_Cmd( TIM3, ENABLE );
           printf("Crane Initialised\r\n");
 
-          TIM_SetAutoreload(TIM3, 35000);
+          TIM_SetAutoreload(TIM3, 15000);
 
           vSemaphoreCreateBinary(xAppletRunningSemaphore);
 

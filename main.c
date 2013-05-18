@@ -58,7 +58,7 @@ static void prvSetupHardware( void );
 
 xTaskHandle xLCDTaskHandle, 
     xTouchTaskHandle, 
-    xAdcTaskHandle , 
+
     xBeepTaskHandle, 
     xTimerSetupHandle,
     xDS1820TaskHandle,
@@ -109,29 +109,29 @@ void vCheckTask(void *pvParameters)
 
   unsigned int touch, adc, ds1820, timer, litres, check, low_level = 100, heap;
   for (;;){
-      printf("check task: idle ticks = %lu\r\n", ulIdleCycleCount);
+
       touch = uxTaskGetStackHighWaterMark(xTouchTaskHandle);
-      adc = uxTaskGetStackHighWaterMark(xAdcTaskHandle);
+
       ds1820 =  uxTaskGetStackHighWaterMark(xDS1820TaskHandle);
       timer = uxTaskGetStackHighWaterMark(xTimerSetupHandle);
       litres = uxTaskGetStackHighWaterMark(xLitresDeliveredHandle);
       check = uxTaskGetStackHighWaterMark(NULL);
       heap = xPortGetFreeHeapSize();
 
-//      if (touch < low_level ||
-//          adc < low_level ||
-//          ds1820 < low_level ||
-//          timer < low_level)
+      if (touch < low_level ||
+          adc < low_level ||
+          ds1820 < low_level ||
+          timer < low_level)
         {
-          vTaskSuspendAll();
-          printf("ADCwm = %d\r\n", adc);
+          //vTaskSuspendAll();
+          printf("check task: idle ticks = %lu\r\n", ulIdleCycleCount);
           printf("touchwm = %d\r\n", touch);
           printf("DS1820wm = %d\r\n", ds1820);
           printf("TimerSetupwm = %d\r\n", timer);
           printf("litreswm = %d\r\n", litres);
           printf("check = %d\r\n", check);
           printf("Free Heap Size = %d\r\n", heap);
-          xTaskResumeAll();
+          //xTaskResumeAll();
           vTaskDelay(100);
 
         }
@@ -209,7 +209,7 @@ int main( void )
 
     xTaskCreate( vTouchTask, 
                  ( signed portCHAR * ) "touch", 
-                 configMINIMAL_STACK_SIZE +800,
+                 configMINIMAL_STACK_SIZE +400,
                  NULL, 
                  tskIDLE_PRIORITY+1,
                  &xTouchTaskHandle );
@@ -219,14 +219,14 @@ int main( void )
         ( signed portCHAR * ) "DS1820",
         configMINIMAL_STACK_SIZE ,
         NULL,
-        tskIDLE_PRIORITY + 1,
+        tskIDLE_PRIORITY,
         &xDS1820TaskHandle );
 
     xTaskCreate( vTaskLitresDelivered,
         ( signed portCHAR * ) "hlt_litres",
         configMINIMAL_STACK_SIZE,
         NULL,
-        tskIDLE_PRIORITY + 1,
+        tskIDLE_PRIORITY ,
         &xLitresDeliveredHandle );
 
 

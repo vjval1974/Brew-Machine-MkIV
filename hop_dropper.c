@@ -30,24 +30,78 @@ void vHopsInit(void)
 {
 
   GPIO_InitTypeDef GPIO_InitStructure;
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-  GPIO_InitStructure.GPIO_Pin =  HOP_DROPPER_DRIVE_PIN;
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;// Output - Push Pull
-  GPIO_Init( HOP_DROPPER_DRIVE_PORT, &GPIO_InitStructure );
-  GPIO_ResetBits(HOP_DROPPER_DRIVE_PORT, HOP_DROPPER_DRIVE_PIN);
+  TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;
+  NVIC_InitTypeDef NVIC_InitStructure;
 
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
   GPIO_InitStructure.GPIO_Pin =  HOP_DROPPER_LIMIT_PIN;
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;// Output - Push Pull
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;// Output - Push Pull
   GPIO_Init( HOP_DROPPER_LIMIT_PORT, &GPIO_InitStructure );
+
+
+  //HOP_DROPPER STEPPER DRIVE PINS ARE USING THE ALTERNATE FUNCTION OF THEIR DEFAULTS.
+  //THEY TAKE THE OUTPUT COMPARE FUNCTION OF TIMER 3 TO DRIVE WITH PWM VIA REMAPPING
+  GPIO_InitStructure.GPIO_Pin =  HOP_DROPPER_STEP_PIN;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;// Alt Function - Push Pull
+  GPIO_Init( HOP_DROPPER_DRIVE_PORT, &GPIO_InitStructure ); //Same as crane step pin
+
+
+  //CONTROL PINS
+  GPIO_InitStructure.GPIO_Pin =  HOP_DROPPER_ENABLE_PIN;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+  GPIO_Init( HOP_DROPPER_CONTROL_PORT, &GPIO_InitStructure );
+  GPIO_ResetBits(HOP_DROPPER_CONTROL_PORT, HOP_DROPPER_ENABLE_PIN);
+
+  // Direction Pin can be pulled up/down depending
+  //            GPIO_InitStructure.GPIO_Pin =  HOP_DROPPER_DIR_PIN;
+  //            GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+  //            GPIO_Init( HOP_DROPPER_CONTROL_PORT, &GPIO_InitStructure );
+  //            GPIO_SetBits(HOP_DROPPER_CONTROL_PORT, HOP_DROPPER_DIR_PIN);
+
+
+  // SET UP TIMER 3  FOR PWM - -NO NEED TO SET HERE AS THE CRANE DOES IT
+//            GPIO_PinRemapConfig( GPIO_FullRemap_TIM3, ENABLE );// Map TIM3_CH3 and CH4 to Step Pins
+//            //Period 10000, Prescaler 50, pulse = 26 gives 111Hz with 16us
+//            //Pulse width.
+//            TIM_TimeBaseStructure.TIM_Period = 10000;
+//            TIM_TimeBaseStructure.TIM_Prescaler = 50; //clock prescaler
+//            TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV4;
+//            TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
+//            TIM_TimeBaseInit( TIM5, &TIM_TimeBaseStructure );
+//            TIM_ARRPreloadConfig( TIM5, ENABLE );
+//
+//            TIM_OCInitTypeDef TIM_OCInitStruct;
+//            TIM_OCStructInit( &TIM_OCInitStruct );
+//            TIM_OCInitStruct.TIM_OutputState = TIM_OutputState_Enable;
+//            TIM_OCInitStruct.TIM_OCMode = TIM_OCMode_PWM1;
+//            // Initial duty cycle equals 25 which gives pulse of 5us
+//            TIM_OCInitStruct.TIM_Pulse = 6;
+//            TIM_OC3Init( TIM3, &TIM_OCInitStruct );
+//            TIM_OC4Init( TIM3, &TIM_OCInitStruct );
+//            //TIM_Cmd( TIM3, ENABLE );
+//            printf("Crane Initialised\r\n");
+//
+//            TIM_SetAutoreload(TIM3, 35000);
+
+
+
+  /// End of stepper setup code.
   vSemaphoreCreateBinary(xHopAppletRunningSemaphore);
 
 }
 
 void vHopsDrive(unsigned char state){
-
-      GPIO_WriteBit(HOP_DROPPER_DRIVE_PORT, HOP_DROPPER_DRIVE_PIN, state);
-
+  if (state == ON)
+    {
+      TIM_Cmd( TIM3, ENABLE );
+      GPIO_SetBits(HOP_DROPPER_CONTROL_PORT, HOP_DROPPER_ENABLE_PIN);
+      TIM_SetAutoreload(TIM3, 46000); // pulse that fucker
+  //    GPIO_WriteBit(HOP_DROPPER_DRIVE_PORT, HOP_DROPPER_DRIVE_PIN, state);
+    }
+  else
+    {
+      GPIO_ResetBits(HOP_DROPPER_CONTROL_PORT, HOP_DROPPER_ENABLE_PIN);
+    }
 }
 
 
@@ -57,41 +111,42 @@ void vTaskHopsNext(  void * pvParameters)
 {
   char gap = 0, in = 0;
   vHopsDrive(ON);
-  vTaskDelay(5); // wait for motor to start driving
-  //printf("looking for gap\r\n");
+  //vTaskDelay(5); // wait for motor to start driving
+  // Looking for a gap between the cups.
   while (gap == 0)
     {
       in = GPIO_ReadInputDataBit(HOP_DROPPER_LIMIT_PORT, HOP_DROPPER_LIMIT_PIN); //sit in loop waiting for the gap
-      //debounce
-      if (in)
-        vTaskDelay(5);
-      // check again
-      in = GPIO_ReadInputDataBit(HOP_DROPPER_LIMIT_PORT, HOP_DROPPER_LIMIT_PIN); //sit in loop waiting for the gap
-      if (in)
-        gap = 1;
-      else gap = 0;
+
+      if (in){
+          //debounce
+          vTaskDelay(5);
+          // check again
+          in = GPIO_ReadInputDataBit(HOP_DROPPER_LIMIT_PORT, HOP_DROPPER_LIMIT_PIN); //sit in loop waiting for the gap
+          if (in)
+            gap = 1;
+          else gap = 0;
+      }
     }
- //printf("found gap\r\n");
-  // we get here if we have a gap.
- //printf("looking for next limit\r\n");
+
+  // we get here if we have a gap (ie, the limit has moved from the cup edge).
+  // Keep driving now until we get the next cup edge.
   for(;;)
     {
-      //wait until we get another limit
-
+      // Check the limit
       in = GPIO_ReadInputDataBit(HOP_DROPPER_LIMIT_PORT, HOP_DROPPER_LIMIT_PIN); //sit in loop waiting for the gap
       //debounce
-      if (!in)
-        vTaskDelay(5);
-      // check again
-      in = GPIO_ReadInputDataBit(HOP_DROPPER_LIMIT_PORT, HOP_DROPPER_LIMIT_PIN); //sit in loop waiting for the gap
-      if (!in) //we have hit the next stop
-        {
-   //       printf("found next limit!\r\n");
-          vHopsDrive(OFF);
-          xHopsNextTaskHandle = NULL;
-          vTaskDelete(NULL);
-        }
-vTaskDelay(10);
+      if (!in){
+          vTaskDelay(5);
+          // check again
+          in = GPIO_ReadInputDataBit(HOP_DROPPER_LIMIT_PORT, HOP_DROPPER_LIMIT_PIN); //sit in loop waiting for the gap
+          if (!in) //we have hit the next stop
+            {
+              vHopsDrive(OFF); // stop the motor
+              xHopsNextTaskHandle = NULL; // delete this task handle
+              vTaskDelete(NULL); //delete this task.
+            }
+      }
+      vTaskDelay(10);
     }
 
 
@@ -106,7 +161,7 @@ void vHopDropperAppletDisplay( void *pvParameters){
 
         for(;;)
         {
-            hop_dropper_state = GPIO_ReadInputDataBit(HOP_DROPPER_DRIVE_PORT, HOP_DROPPER_DRIVE_PIN);
+            hop_dropper_state = GPIO_ReadInputDataBit(HOP_DROPPER_CONTROL_PORT, HOP_DROPPER_ENABLE_PIN);
             xSemaphoreTake(xHopAppletRunningSemaphore, portMAX_DELAY); //take the semaphore so that the key handler wont
                                                                     //return to the menu system until its returned
                 switch (hop_dropper_state)

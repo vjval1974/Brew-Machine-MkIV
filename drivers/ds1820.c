@@ -46,6 +46,8 @@
 #define HLT_SSR_TEMP_SENSOR "\x10\xA5\x91\x1E\x02\x08\x00\x22"
 #define BOIL_SSR_TEMP_SENSOR "\x10\5Dc\xB0\x1E\x02\x08\x00\xC4"
 
+#define SPARE_2_PIN_SENSOR "\x10\x81\x45\x18\x00\x08\x00\x04"
+
 // BUS COMMANDS
 #define DQ_IN()  {DS1820_PORT->CRH&=0xFFFFF0FF;DS1820_PORT->CRH |= 0x00000400;}
 #define DQ_OUT() {DS1820_PORT->CRH&=0xFFFFF0FF;DS1820_PORT->CRH |= 0x00000300;}
@@ -67,7 +69,7 @@ static void ds1820_convert(void);
 static uint8_t ds1820_search();
 static float ds1820_read_device(uint8_t * rom_code);
 static void delay_us(uint16_t count); 
-
+static void ds1820_error(uint8_t code);
 
 
 
@@ -87,7 +89,7 @@ void vTaskDS1820Convert( void *pvParameters ){
     ds1820_init();
     if (ds1820_reset() ==PRESENCE_ERROR)
     {
-        printf("NO SENSOR DETECTED\r\n");
+        ds1820_error(PRESENCE_ERROR);
         vTaskDelete(NULL); // if this task fails... delete it
     }
   
@@ -121,6 +123,7 @@ void vTaskDS1820Convert( void *pvParameters ){
 
     for (;;)
     {
+
         ds1820_convert();
         
         vTaskDelay(200); // wait for conversion
@@ -139,7 +142,9 @@ void vTaskDS1820Convert( void *pvParameters ){
         printf("HLT SSR Temp = %.2fDeg-C\r\n", temps[HLT_SSR]);
         printf("BOIL SSR Temp = %.2fDeg-C\r\n", temps[BOIL_SSR]);
 */
-        taskYIELD();
+        vTaskDelay(200); // I put this in here to check that this process
+        // wasnt getting switched in if theres a problem with a sensor.
+
     }
     
 }
@@ -150,6 +155,29 @@ float ds1820_get_temp(unsigned char sensor){
     return temps[sensor];
 }
 ////////////////////////////////////////////////////////////////////////////
+
+
+void ds1820_error(uint8_t code){
+
+  switch(code)
+  {
+  case PRESENCE_ERROR:
+    {
+      printf("DS1820 No sensor present on Bus. Bus OK.");
+      break;
+    }
+  case BUS_ERROR:
+    {
+      printf("DS1820 Bus Fault");
+      break;
+    }
+  default:
+    {
+      printf("DS1820 Undefined error");
+      break;
+    }
+  }
+}
 
 void ds1820_search_key(uint16_t x, uint16_t y){
     uint16_t window = 255;
@@ -422,8 +450,12 @@ static uint8_t ds1820_read_byte(void){
 ////////////////////////////////////////////////////////////////////////////
 
 static void ds1820_convert(void){
+    int code = 0;
     portENTER_CRITICAL();
-    ds1820_reset();
+    code = ds1820_reset();
+    if (code!= NO_ERROR)
+      ds1820_error(code);
+
     ds1820_write_byte(SKIP_ROM); 
     ds1820_write_byte(CONVERT_TEMP);
     ds1820_reset();
@@ -455,11 +487,14 @@ static float ds1820_read_device(uint8_t * rom_code){
     float retval;
     uint16_t ds1820_temperature1 = 10000;
     int ii; 
+    uint8_t code = 0;
     uint8_t sp1[9]; //temp to hold scratchpad memory
    
+    //portENTER_CRITICAL();
+    code = ds1820_reset();
+    if (code != NO_ERROR)
+        ds1820_error(code);
     portENTER_CRITICAL();
-    if (ds1820_reset()!= NO_ERROR)
-        return 211.00;
     ds1820_reset();
     ds1820_write_byte(MATCH_ROM);
 

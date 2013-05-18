@@ -6,6 +6,7 @@
  */
 #include <stdint.h>
 #include <stdio.h>
+#include <math.h>
 #include "stm32f10x.h"
 #include "FreeRTOS.h"
 #include "lcd.h"
@@ -75,13 +76,19 @@ void  vTaskDS1820DisplayTemps( void *pvParameters){
                 //portENTER_CRITICAL();
                 lcd_fill(1,50, 200, 190, Black);
 
-
-                lcd_printf(1, 5, 10, "HLT = %.2f", ds1820_get_temp(HLT));
-                lcd_printf(1, 6, 10, "Mash = %.2f", ds1820_get_temp(MASH));
-                lcd_printf(1, 7, 10, "Cabinet = %.2f", ds1820_get_temp(CABINET));
-                lcd_printf(1, 8, 10, "Ambient = %.2f", ds1820_get_temp(AMBIENT));
-                lcd_printf(1, 9, 10, "HLT_SSR = %.2f", ds1820_get_temp(HLT_SSR));
-                lcd_printf(1, 10, 10, "BOIL_SSR = %.2f", ds1820_get_temp(BOIL_SSR));
+                lcd_printf(1, 5, 10, "HLT = %d.%d", (unsigned int)floor(ds1820_get_temp(HLT)), (unsigned int)(ds1820_get_temp(HLT)-floor(ds1820_get_temp(HLT)))*pow(10, 3));
+                lcd_printf(1, 6, 10, "MASH = %d.%d", (unsigned int)floor(ds1820_get_temp(MASH)), (unsigned int)(ds1820_get_temp(MASH)-floor(ds1820_get_temp(MASH)))*pow(10, 3));
+                lcd_printf(1, 7, 10, "Cabinet = %d.%d", (unsigned int)floor(ds1820_get_temp(CABINET)), (unsigned int)(ds1820_get_temp(CABINET)-floor(ds1820_get_temp(CABINET)))*pow(10, 3));
+                lcd_printf(1, 8, 10, "Ambient = %d.%d", (unsigned int)floor(ds1820_get_temp(AMBIENT)), (unsigned int)(ds1820_get_temp(AMBIENT)-floor(ds1820_get_temp(AMBIENT)))*pow(10, 3));
+                lcd_printf(1, 9, 10, "HLT_SSR = %d.%d", (unsigned int)floor(ds1820_get_temp(HLT_SSR)), (unsigned int)(ds1820_get_temp(HLT_SSR)-floor(ds1820_get_temp(HLT_SSR)))*pow(10, 3));
+                lcd_printf(1, 10, 10, "MASH_SSR = %d.%d", (unsigned int)floor(ds1820_get_temp(BOIL_SSR)), (unsigned int)(ds1820_get_temp(BOIL_SSR)-floor(ds1820_get_temp(BOIL_SSR)))*pow(10, 3));
+//
+//                lcd_printf(1, 5, 10, "HLT = %.2f", ds1820_get_temp(HLT));
+//                lcd_printf(1, 6, 10, "Mash = %.2f", ds1820_get_temp(MASH));
+//                lcd_printf(1, 7, 10, "Cabinet = %.2f", ds1820_get_temp(CABINET));
+//                lcd_printf(1, 8, 10, "Ambient = %.2f", ds1820_get_temp(AMBIENT));
+//                lcd_printf(1, 9, 10, "HLT_SSR = %.2f", ds1820_get_temp(HLT_SSR));
+//                lcd_printf(1, 10, 10, "BOIL_SSR = %.2f", ds1820_get_temp(BOIL_SSR));
 
                 //printf("Display High water = %u\r\n",uxTaskGetStackHighWaterMark(NULL));
                 //portEXIT_CRITICAL();

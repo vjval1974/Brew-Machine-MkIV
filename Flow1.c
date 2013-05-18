@@ -27,8 +27,10 @@ xQueueHandle xHLTLitresQueue;
 #define FLOWING 1
 #define NOT_FLOWING 0
 volatile unsigned long pulses = 0;
-const float fLitresPerPulseL = 0.0033;
-const float fLitresPerPulseH = 0.0042;
+const float fLitresPerPulseL = (0.0033/2)*1.5;
+
+const float fLitresPerPulseH = (0.0042/2)*1.5;
+
 const unsigned long ulLowerThresh = 26/2;
 float fLitresDelivered = 0;
 volatile uint8_t flow_state = NOT_FLOWING;
@@ -116,7 +118,7 @@ void vTaskLitresDelivered ( void * pvParameters )
   unsigned long * xMessage;
   static unsigned long ulPulsesLast = 0;
   unsigned long ulPulsesSinceLast;
-
+//
 
     portBASE_TYPE xStatus;
     for (;;)
@@ -148,7 +150,7 @@ void vTaskLitresDelivered ( void * pvParameters )
               {
                 fLitresDelivered = fLitresDelivered + ((float)ulPulsesSinceLast * fLitresPerPulseH);
               }
-            if (fLitresDelivered < 0.01 || fLitresDelivered > 500)
+            if (fLitresDelivered < 0.01 || fLitresDelivered > 50000)
               fLitresDelivered = 0.001;
             if (ulPulsesSinceLast > 0)
               flow_state = FLOWING;

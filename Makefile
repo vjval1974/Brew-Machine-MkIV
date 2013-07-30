@@ -108,13 +108,17 @@ SOURCE=	main.c 	drivers/lcd.c \
 		drivers/speaker.c \
 		drivers/timer.c \
 		drivers/ds1820.c \
-		Flow1.c
+		Flow1.c \
+		diag_pwm.c \
+		I2C-IO.c
+		
 
 # ST Library source files.
 ST_LIB_SOURCE= \
 		$(ARM_CMSIS_DIR)/core_cm3.c \
 		$(ARM_CMSIS_DIR)/system_stm32f10x.c \
 		$(ARM_CMSIS_DIR)/stm32f10x_it.c \
+		$(ST_LIB_DIR)/src/stm32f10x_i2c.c \
 		$(ST_LIB_DIR)/src/misc.c \
 		$(ST_LIB_DIR)/src/stm32f10x_rcc.c \
 		$(ST_LIB_DIR)/src/stm32f10x_gpio.c \
@@ -125,6 +129,7 @@ ST_LIB_SOURCE= \
 		$(ST_LIB_DIR)/src/stm32f10x_flash.c \
 		$(ST_LIB_DIR)/src/stm32f10x_adc.c \
 		$(ST_LIB_DIR)/src/stm32f10x_exti.c 
+		 
 
 # FreeRTOS source files.
 FREERTOS_SOURCE= $(RTOS_SOURCE_DIR)/list.c \

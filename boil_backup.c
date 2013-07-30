@@ -16,8 +16,8 @@
 #include "leds.h"
 #include "semphr.h"
 #include "queue.h"
-#define BOIL_PORT GPIOD
-#define BOIL_PIN GPIO_Pin_12
+#define BOIL_PORT GPIOB
+#define BOIL_PIN GPIO_Pin_8
 
 #define BOIL_LEVEL_PORT GPIOC
 #define BOIL_LEVEL_PIN GPIO_Pin_12
@@ -28,7 +28,7 @@
 xQueueHandle xBoilQueue;
 
 
-#define TIM_ARR_TOP 10000
+#define TIM4_ARR_TOP 10000
 
 uint8_t diag_duty= 50;
 volatile uint8_t boil_state = OFF;
@@ -83,13 +83,12 @@ void vBoilInit(void)
   TIM_OCInitStruct.TIM_OutputState = TIM_OutputState_Enable;
   TIM_OCInitStruct.TIM_OCMode = TIM_OCMode_PWM1;
   TIM_OCInitStruct.TIM_Pulse = 5000; //50% for the start, not enabled until set by calling vBoil()
-  TIM_OC1Init( TIM4, &TIM_OCInitStruct ); //Pd12
+  TIM_OC3Init( TIM4, &TIM_OCInitStruct ); //PB8
   //TIM_OC3Init( TIM4, &TIM_OCInitStruct );
-  TIM_SetAutoreload(TIM4, TIM_ARR_TOP);
+  TIM_SetAutoreload(TIM4, TIM4_ARR_TOP);
   //
-  GPIO_PinRemapConfig( GPIO_Remap_TIM4, ENABLE );
 
-  TIM_SetCompare1(TIM4, 0);
+  TIM_SetCompare3(TIM4, 0);
   TIM_Cmd( TIM4, DISABLE );
   GPIO_ResetBits(BOIL_PORT, BOIL_PIN);
   boil_state = OFF;
@@ -136,7 +135,7 @@ void vTaskBoil( void * pvParameters)
           if (duty > 100)
             duty = 100;
 
-          compare = ((TIM_ARR_TOP/100) * duty);
+          compare = ((TIM4_ARR_TOP/100) * duty);
 
 
 
@@ -146,7 +145,7 @@ void vTaskBoil( void * pvParameters)
           if (boil_level && duty > 0)
             {
 
-              TIM_SetCompare1(TIM4, compare);
+              TIM_SetCompare3(TIM4, compare);
               TIM_Cmd( TIM4, ENABLE );
               boil_state = BOILING;
          //     printf("Boiling, duty = %d\r\n", duty);
@@ -155,7 +154,7 @@ void vTaskBoil( void * pvParameters)
 
             else
             {
-              TIM_SetCompare1(TIM4, 0);
+              TIM_SetCompare3(TIM4, 0);
               TIM_Cmd( TIM4, DISABLE );
               GPIO_ResetBits(BOIL_PORT, BOIL_PIN);
               boil_state = OFF;
@@ -166,7 +165,7 @@ void vTaskBoil( void * pvParameters)
         {
           if (!boil_level && boil_state == BOILING)
             {
-              TIM_SetCompare1(TIM4, 0);
+              TIM_SetCompare3(TIM4, 0);
               TIM_Cmd( TIM4, DISABLE );
               GPIO_ResetBits(BOIL_PORT, BOIL_PIN);
               boil_state = OFF;

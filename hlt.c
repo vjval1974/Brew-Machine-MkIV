@@ -58,12 +58,18 @@ void hlt_init()
 }
 
 float fGetHLTLevel(void){
-  short raw_adc_value = read_adc(HLT_LEVEL_ADC_CHAN);
+  short raw_adc_value;
+
   float litres = 0;
-  //scale the adc value to indicate the amount of litres left in the HLT
-  ////*********************OVERRIDDEN**********************************************************
-  //return 5; //remove me to take out override.
-  litres = (float)((float)raw_adc_value/(float)HLT_ANALOGUE_MAX) * (float)HLT_MAX_LITRES;
+  float gradient = (HLT_ANALOGUE_MAX - HLT_ANALOGUE_MIN)/(HLT_MAX_LITRES - HLT_MIN_LITRES);
+
+  raw_adc_value = read_adc(HLT_LEVEL_ADC_CHAN);
+
+  litres = ((float)raw_adc_value - (float)HLT_ANALOGUE_MIN + ((float)(HLT_MIN_LITRES) * gradient))/gradient;
+
+  //litres = (float)((float)raw_adc_value/(float)HLT_ANALOGUE_MAX) * (float)HLT_MAX_LITRES;
+  litres = 5.0;
+
   if ((GPIO_ReadInputDataBit(HLT_LEVEL_CHECK_PORT, HLT_LEVEL_CHECK_PIN)^1) || (litres < 4.0))
       {
       return litres;
@@ -72,6 +78,7 @@ float fGetHLTLevel(void){
 
 }
 
+// Problem with HLT task.. if setpoint is changed during heating, its not recognised.. I think
 
 
 

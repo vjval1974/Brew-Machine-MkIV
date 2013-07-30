@@ -67,22 +67,28 @@ void  vTaskDS1820DisplayTemps( void *pvParameters){
 
         //char lcd_string[20];
         static int count = 0;
+        float fTempHLT = 0, fTempMash = 0, fTempCabinet = 0;
         lcd_printf(1,1, 12, "TEMPERATURES");
         for (;;)
         {
             xSemaphoreTake(xAppletRunningSemaphore, portMAX_DELAY); //take the semaphore so that the key handler wont
                                                                             //return to the menu system until its returned
-                count++;
+            fTempHLT = ds1820_get_temp(HLT);
+            fTempMash = ds1820_get_temp(MASH);
+            fTempCabinet = ds1820_get_temp(CABINET);
+
+            count++;
                 //portENTER_CRITICAL();
                 lcd_fill(1,50, 200, 190, Black);
 
-                lcd_printf(1, 5, 10, "HLT = %d.%d", (unsigned int)floor(ds1820_get_temp(HLT)), (unsigned int)(ds1820_get_temp(HLT)-floor(ds1820_get_temp(HLT)))*pow(10, 3));
-                lcd_printf(1, 6, 10, "MASH = %d.%d", (unsigned int)floor(ds1820_get_temp(MASH)), (unsigned int)(ds1820_get_temp(MASH)-floor(ds1820_get_temp(MASH)))*pow(10, 3));
-                lcd_printf(1, 7, 10, "Cabinet = %d.%d", (unsigned int)floor(ds1820_get_temp(CABINET)), (unsigned int)(ds1820_get_temp(CABINET)-floor(ds1820_get_temp(CABINET)))*pow(10, 3));
-                lcd_printf(1, 8, 10, "Ambient = %d.%d", (unsigned int)floor(ds1820_get_temp(AMBIENT)), (unsigned int)(ds1820_get_temp(AMBIENT)-floor(ds1820_get_temp(AMBIENT)))*pow(10, 3));
-                lcd_printf(1, 9, 10, "HLT_SSR = %d.%d", (unsigned int)floor(ds1820_get_temp(HLT_SSR)), (unsigned int)(ds1820_get_temp(HLT_SSR)-floor(ds1820_get_temp(HLT_SSR)))*pow(10, 3));
-                lcd_printf(1, 10, 10, "MASH_SSR = %d.%d", (unsigned int)floor(ds1820_get_temp(BOIL_SSR)), (unsigned int)(ds1820_get_temp(BOIL_SSR)-floor(ds1820_get_temp(BOIL_SSR)))*pow(10, 3));
-//
+                lcd_printf(1, 5, 10, "HLT = %u.%u", (unsigned int)floor(fTempHLT), (unsigned int)((fTempHLT-floor(fTempHLT))*pow(10, 3)));
+                lcd_printf(1, 6, 10, "MASH = %u.%u", (unsigned int)floor(fTempMash), (unsigned int)((fTempMash-floor(fTempMash))*pow(10, 3)));
+                lcd_printf(1, 7, 10, "Cabinet = %u.%u", (unsigned int)floor(fTempCabinet), (unsigned int)((fTempCabinet-floor(fTempCabinet))*pow(10, 3)));
+                //(unsigned int)((current_temp-floor(current_temp))*pow(10, 3))
+                //                lcd_printf(1, 8, 10, "Ambient = %d.%d", (unsigned int)floor(ds1820_get_temp(AMBIENT)), (unsigned int)(ds1820_get_temp(AMBIENT)-floor(ds1820_get_temp(AMBIENT)))*pow(10, 3));
+//                lcd_printf(1, 9, 10, "HLT_SSR = %d.%d", (unsigned int)floor(ds1820_get_temp(HLT_SSR)), (unsigned int)(ds1820_get_temp(HLT_SSR)-floor(ds1820_get_temp(HLT_SSR)))*pow(10, 3));
+//                lcd_printf(1, 10, 10, "MASH_SSR = %d.%d", (unsigned int)floor(ds1820_get_temp(BOIL_SSR)), (unsigned int)(ds1820_get_temp(BOIL_SSR)-floor(ds1820_get_temp(BOIL_SSR)))*pow(10, 3));
+////
 //                lcd_printf(1, 5, 10, "HLT = %.2f", ds1820_get_temp(HLT));
 //                lcd_printf(1, 6, 10, "Mash = %.2f", ds1820_get_temp(MASH));
 //                lcd_printf(1, 7, 10, "Cabinet = %.2f", ds1820_get_temp(CABINET));

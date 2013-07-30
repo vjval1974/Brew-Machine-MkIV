@@ -11,9 +11,10 @@
 void vFlow1Init(void);
 void vResetFlow1Pulses(void);
 
-void vTaskLitresDelivered( void * pvParameters );
+void vTaskLitresToBoil( void * pvParameters );
+void vTaskLitresToMash( void * pvParameters );
 int iFlow1Key(int xx, int yy);
 void vFlow1Applet(int init);
-float fGetFlow1Litres(void);
-
+float fGetBoilFlowLitres(void);
+float fGetMashFlowLitres(void);
 #endif /* FLOW1_H_ */

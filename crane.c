@@ -33,6 +33,11 @@
 #define DRIVING 1
 #define STOPPED -1
 
+
+#define TIMER_USED TIM3
+
+
+
 xQueueHandle xCraneQueueHandle;
 
 xSemaphoreHandle xAppletRunningSemaphore;
@@ -76,7 +81,7 @@ struct Step DN_Step = {DN, 100, 10};
 //};
 
 xQueueHandle xCraneQueue1, xCraneQueue2;
-
+#if 1
 void vCraneInit(void)
 {
   //unsigned long ulFrequency;
@@ -89,7 +94,7 @@ void vCraneInit(void)
           GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 
            //Initialise Ports, pins and timer
-          TIM_DeInit( TIM3 );
+          TIM_DeInit( TIMER_USED );
           TIM_TimeBaseStructInit( &TIM_TimeBaseStructure );
 
 
@@ -132,25 +137,126 @@ void vCraneInit(void)
           GPIO_PinRemapConfig( GPIO_FullRemap_TIM3, ENABLE );// Map TIM3_CH3 and CH4 to Step Pins
           //Period 10000, Prescaler 50, pulse = 26 gives 111Hz with 16us
           //Pulse width.
-          TIM_TimeBaseStructure.TIM_Period = 10000;
+          TIM_TimeBaseStructure.TIM_Period = 20000; // this means nothing.. original val loaded into ARR... its changed later
           TIM_TimeBaseStructure.TIM_Prescaler = 50; //clock prescaler
-          TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV4;
+          TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV4; // does fuck all except for using input pin for counter
           TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
-          TIM_TimeBaseInit( TIM3, &TIM_TimeBaseStructure );
-          TIM_ARRPreloadConfig( TIM3, ENABLE );
+          TIM_TimeBaseInit( TIMER_USED, &TIM_TimeBaseStructure );
+          TIM_ARRPreloadConfig( TIMER_USED, ENABLE );
 
           TIM_OCInitTypeDef TIM_OCInitStruct;
           TIM_OCStructInit( &TIM_OCInitStruct );
           TIM_OCInitStruct.TIM_OutputState = TIM_OutputState_Enable;
           TIM_OCInitStruct.TIM_OCMode = TIM_OCMode_PWM1;
+          TIM_OCInitStruct.TIM_OCPolarity = TIM_OCPolarity_Low; // Added this line to see if it goes active low.
           // Initial duty cycle equals 25 which gives pulse of 5us
           TIM_OCInitStruct.TIM_Pulse = 25;
-          TIM_OC3Init( TIM3, &TIM_OCInitStruct );
-          TIM_OC4Init( TIM3, &TIM_OCInitStruct );
-          //TIM_Cmd( TIM3, ENABLE );
+          TIM_OC3Init( TIMER_USED, &TIM_OCInitStruct );
+          TIM_OC4Init( TIMER_USED, &TIM_OCInitStruct );
+          //TIM_Cmd( TIMER_USED, ENABLE );
           printf("Crane Initialised\r\n");
 
-          TIM_SetAutoreload(TIM3, 15000);
+          TIM_SetAutoreload(TIMER_USED, 15000);
+
+          vSemaphoreCreateBinary(xAppletRunningSemaphore);
+
+          //xCraneQueueHandle = xQueueCreate(10, sizeof(struct Step *));
+
+          // Create a queue capable of containing 10 unsigned long values.
+          //xCraneQueue1 = xQueueCreate( 10, sizeof( unsigned long ) );
+
+          // Create a queue capable of containing 10 pointers to AMessage structures.
+          // These should be passed by pointer as they contain a lot of data.
+          xCraneQueue2 = xQueueCreate( 1, sizeof( struct Step * ) );
+
+          xTaskCreate( vTaskCrane,
+              ( signed portCHAR * ) "Crane",
+              configMINIMAL_STACK_SIZE +500,
+              NULL,
+              tskIDLE_PRIORITY,
+              &xCraneTaskHandle );
+
+}
+#endif
+// *************************************************************
+// Testing below.
+// *************************************************************
+#if 0
+void vCraneInit(void)
+{
+  //unsigned long ulFrequency;
+  //GPIO_InitTypeDef GPIO_InitStructure;
+  unsigned long ulFrequency;
+          TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;
+          NVIC_InitTypeDef NVIC_InitStructure;
+          GPIO_InitTypeDef GPIO_InitStructure;
+
+          GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+
+           //Initialise Ports, pins and timer
+          TIM_DeInit( TIM1 );
+          TIM_TimeBaseStructInit( &TIM_TimeBaseStructure );
+
+
+          // Enable timer clocks
+          RCC_APB1PeriphClockCmd( RCC_APB2Periph_TIM1, ENABLE );
+
+
+
+          //CRANE STEPPER DRIVE PINS ARE USING THE ALTERNATE FUNCTION OF THEIR DEFAULTS.
+          //THEY TAKE THE OUTPUT COMPARE FUNCTION OF TIMER 3 TO DRIVE WITH PWM VIA REMAPPING
+          GPIO_InitStructure.GPIO_Pin =  CRANE_STEP_PIN;
+          GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;// Alt Function - Push Pull
+          GPIO_Init( CRANE_DRIVE_PORT, &GPIO_InitStructure );
+
+
+
+
+          //CONTROL PINS
+          GPIO_InitStructure.GPIO_Pin =  CRANE_ENABLE_PIN;
+          GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+          GPIO_Init( CRANE_CONTROL_PORT, &GPIO_InitStructure );
+          GPIO_ResetBits(CRANE_CONTROL_PORT, CRANE_ENABLE_PIN);
+
+          GPIO_InitStructure.GPIO_Pin =  CRANE_DIR_PIN;
+          GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+          GPIO_Init( CRANE_CONTROL_PORT, &GPIO_InitStructure );
+          GPIO_SetBits(CRANE_CONTROL_PORT, CRANE_DIR_PIN);
+
+
+          //LIMIT INPUTS
+          GPIO_InitStructure.GPIO_Pin =  CRANE_UPPER_LIMIT_PIN;
+          GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
+          GPIO_Init( CRANE_LIMIT_PORT, &GPIO_InitStructure );
+
+          GPIO_InitStructure.GPIO_Pin =  CRANE_LOWER_LIMIT_PIN;
+          GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
+          GPIO_Init( CRANE_LIMIT_PORT, &GPIO_InitStructure );
+
+          // SET UP TIMER 3  FOR PWM
+          //GPIO_PinRemapConfig( GPIO_FullRemap_TIM3, ENABLE );// Map TIM3_CH3 and CH4 to Step Pins
+          //Period 10000, Prescaler 50, pulse = 26 gives 111Hz with 16us
+          //Pulse width.
+          TIM_TimeBaseStructure.TIM_Period = 20000; // this means nothing.. original val loaded into ARR... its changed later
+          TIM_TimeBaseStructure.TIM_Prescaler = 50; //clock prescaler
+          TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV4; // does fuck all except for using input pin for counter
+          TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
+          TIM_TimeBaseInit( TIM1, &TIM_TimeBaseStructure );
+          TIM_ARRPreloadConfig( TIM1, ENABLE );
+
+          TIM_OCInitTypeDef TIM_OCInitStruct;
+          TIM_OCStructInit( &TIM_OCInitStruct );
+          TIM_OCInitStruct.TIM_OutputState = TIM_OutputState_Enable;
+          TIM_OCInitStruct.TIM_OCMode = TIM_OCMode_PWM1;
+          TIM_OCInitStruct.TIM_OCPolarity = TIM_OCPolarity_Low; // Added this line to see if it goes active low.
+          // Initial duty cycle equals 25 which gives pulse of 5us
+          TIM_OCInitStruct.TIM_Pulse = 25;
+          TIM_OC3Init( TIM1, &TIM_OCInitStruct );
+          TIM_OC4Init( TIM1, &TIM_OCInitStruct );
+          //TIM_Cmd( TIMER_USED, ENABLE );
+          printf("Crane Initialised\r\n");
+
+          TIM_SetAutoreload(TIM1, 15000);
 
           vSemaphoreCreateBinary(xAppletRunningSemaphore);
 
@@ -172,16 +278,21 @@ void vCraneInit(void)
 
 }
 
+// *************************************************************
+#endif
+
+
+
 volatile int8_t crane_state = STOPPED;
 
 #define MAX_SPEED_ARR 11800 //The maximum speed. (the lower, the faster)
-#define MIN_SPEED_ARR 39000 //Motor stopped ARR value
+#define MIN_SPEED_ARR 35000 //Motor stopped ARR value
 #define SPEED_RANGE (MIN_SPEED_ARR - MAX_SPEED_ARR)
 
 void vCraneFunc(struct Step * step)
 {
-  TIM_Cmd( TIM3, ENABLE );
-  uint16_t uInitialSpeed = TIM3->ARR, uSetSpeed;
+  TIM_Cmd( TIMER_USED, ENABLE );
+  uint16_t uInitialSpeed = TIMER_USED->ARR, uSetSpeed;
   static uint16_t uCurrentSpeed = MIN_SPEED_ARR;
  // printf("-----------------------\r\n");
  // printf("**vCraneFunc called\r\n");
@@ -197,7 +308,7 @@ void vCraneFunc(struct Step * step)
   GPIO_WriteBit(CRANE_CONTROL_PORT, CRANE_ENABLE_PIN, ON);
 
   uSetSpeed = (MIN_SPEED_ARR - (step->uSpeed * (SPEED_RANGE/100))); //convert speed % to ARR value
-  uCurrentSpeed = TIM3->ARR;
+  uCurrentSpeed = TIMER_USED->ARR;
 
   if (uSetSpeed > uInitialSpeed) //are we increasing from here or decreasing?
     {
@@ -211,14 +322,14 @@ void vCraneFunc(struct Step * step)
 
           if (limit == 0 || uCurrentSpeed >= MIN_SPEED_ARR || step->uTime == 0)
             {
-              TIM_Cmd(TIM3, DISABLE);
-              TIM_SetAutoreload(TIM3, MIN_SPEED_ARR);
+              TIM_Cmd(TIMER_USED, DISABLE);
+              TIM_SetAutoreload(TIMER_USED, MIN_SPEED_ARR);
               crane_state = STOPPED;
       //        printf("timer3 disabled\r\n");
               GPIO_WriteBit(CRANE_CONTROL_PORT, CRANE_ENABLE_PIN, OFF);
               break;
             }
-          TIM_SetAutoreload(TIM3, uCurrentSpeed);
+          TIM_SetAutoreload(TIMER_USED, uCurrentSpeed);
           vTaskDelay(step->uTime); //controls the acceleration time
         }
 
@@ -233,13 +344,13 @@ void vCraneFunc(struct Step * step)
           limit = GPIO_ReadInputDataBit(CRANE_LIMIT_PORT, CRANE_UPPER_LIMIT_PIN) &
               GPIO_ReadInputDataBit(CRANE_LIMIT_PORT, CRANE_LOWER_LIMIT_PIN);
           vTaskDelay(step->uTime);
-          TIM_SetAutoreload(TIM3, uCurrentSpeed);
-          //printf("Counter = %d\r\n", TIM3->CNT);
+          TIM_SetAutoreload(TIMER_USED, uCurrentSpeed);
+          //printf("Counter = %d\r\n", TIMER_USED->CNT);
           if (limit == 0)
             {
-              TIM_SetAutoreload(TIM3, MIN_SPEED_ARR);
+              TIM_SetAutoreload(TIMER_USED, MIN_SPEED_ARR);
 
-              TIM_Cmd(TIM3, DISABLE);
+              TIM_Cmd(TIMER_USED, DISABLE);
               crane_state = STOPPED; // Not correct code... used for testing at the moment
               //GPIO_WriteBit(CRANE_CONTROL_PORT, CRANE_ENABLE_PIN, OFF);
               break;

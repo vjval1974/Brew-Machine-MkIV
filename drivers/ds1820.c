@@ -163,17 +163,17 @@ void ds1820_error(uint8_t code){
   {
   case PRESENCE_ERROR:
     {
-      printf("DS1820 No sensor present on Bus. Bus OK.");
+      printf("DS1820 No sensor present on Bus. Bus OK.\r\n");
       break;
     }
   case BUS_ERROR:
     {
-      printf("DS1820 Bus Fault");
+      printf("DS1820 Bus Fault\r\n");
       break;
     }
   default:
     {
-      printf("DS1820 Undefined error");
+      printf("DS1820 Undefined error\r\n");
       break;
     }
   }

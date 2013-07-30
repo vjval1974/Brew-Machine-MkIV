@@ -18,7 +18,7 @@
 #include "leds.h"
 #include "semphr.h"
 #include "Flow1.h"
-
+#include "drivers/ds1820.h"
 void vValvesAppletDisplay( void *pvParameters);
 
 void vValvesApplet(int init);
@@ -265,6 +265,7 @@ void vValvesAppletDisplay( void *pvParameters){
         uint8_t uBoilValveState = CLOSED;
         uint8_t uInletValveState = CLOSED;
         unsigned int uiDecimalPlaces = 3;
+        float fHLTTemp = 0, fMashTemp = 0;
         float fNumber = 54.3211;
         //TEMPLATE
 //        printf("***********whole = %d.%d \n\r", (unsigned int)floor(fNumber), (unsigned int)((fNumber-floor(fNumber))*pow(10, uiDecimalPlaces)));
@@ -276,6 +277,8 @@ void vValvesAppletDisplay( void *pvParameters){
             xSemaphoreTake(xValvesAppletRunningSemaphore, portMAX_DELAY); //take the semaphore so that the key handler wont
                                                                                //return to the menu system until its returned
 
+            fHLTTemp = ds1820_get_temp(HLT);
+            fMashTemp = ds1820_get_temp(MASH);
 
             uHLTValveState = GPIO_ReadInputDataBit(HLT_VALVE_PORT, HLT_VALVE_PIN);
             uMashValveState = GPIO_ReadInputDataBit(MASH_VALVE_PORT, MASH_VALVE_PIN);
@@ -346,17 +349,16 @@ void vValvesAppletDisplay( void *pvParameters){
 
             if(tog)
               {
-                lcd_fill(1,220, 180,29, Black);
-                // the following line causes a hard fault if uncommented.
-                lcd_printf(1, 13, 25, "Currently @ %d.%d ml", (unsigned int)floor(fGetFlow1Litres()), (unsigned int)((fGetFlow1Litres()-floor(fGetFlow1Litres()))*pow(10, 3)));
-               // lcd_printf(1,13,15,"Currently @ %2.1flitres", fGetFlow1Litres());
+                lcd_fill(1,190, 180,29, Black);
+
+                lcd_printf(1, 12, 25, "HLT = %d.%ddegC", (unsigned int)floor(fHLTTemp), (unsigned int)((fHLTTemp-floor(fHLTTemp))*pow(10, 3)));
+                lcd_printf(1, 13, 25, "MASH = %d.%ddegC", (unsigned int)floor(fMashTemp), (unsigned int)((fMashTemp-floor(fMashTemp))*pow(10, 3)));
+                lcd_printf(1, 14, 25, "Currently @ %d.%d ml", (unsigned int)floor(fGetBoilFlowLitres()), (unsigned int)((fGetBoilFlowLitres()-floor(fGetBoilFlowLitres()))*pow(10, 3)));
+
               }
             else{
                 lcd_fill(1,210, 180,17, Black);
             }
-
-
-
 
             tog = tog ^ 1;
 

@@ -19,32 +19,33 @@
 // semaphore that stops the returning from the applet to the menu system until the applet goes into the blocked state.
 xSemaphoreHandle xFlow1AppletRunningSemaphore;
 
-
-
-
-xQueueHandle xHLTLitresQueue;
+xQueueHandle xLitresToMashQueue, xLitresToBoilQueue;
 
 #define FLOWING 1
 #define NOT_FLOWING 0
-volatile unsigned long pulses = 0;
-const float fLitresPerPulseL = (0.0033/2)*1.5;
 
-const float fLitresPerPulseH = (0.0042/2)*1.5;
 
+//globals
+volatile unsigned long ulBoilFlowPulses = 0, ulMashFlowPulses;
+const float fBoilLitresPerPulseL = (0.0033/2)*1.5;
+const float fMashLitresPerPulseL = (0.0033/2)*1.5;
+const float fBoilLitresPerPulseH = (0.0042/2)*1.5;
+const float fMashLitresPerPulseH = (0.0042/2)*1.5;
 const unsigned long ulLowerThresh = 26/2;
-float fLitresDelivered = 0;
-volatile uint8_t flow_state = NOT_FLOWING;
+float fLitresDeliveredToBoil = 0, fLitresDeliveredToMash = 0;
+volatile uint8_t uBoilFlowState = NOT_FLOWING, uMashFlowState = NOT_FLOWING;
 
 
 
 
-xTaskHandle xLitresDeliveredHandle = NULL, xFlow1AppletDisplayHandle = NULL;
+xTaskHandle xLitresToBoilHandle = NULL, xLitresToMashHandle = NULL, xFlow1AppletDisplayHandle = NULL;
 
-
-void vTaskLitresDelivered ( void * pvParameters );
+// function prototypes
 void vFlow1AppletDisplay( void *pvParameters);
-
 void vResetFlow1( void );
+void vResetFlow2( void );
+
+
 void vFlow1Init( void )
 {
 
@@ -96,7 +97,9 @@ void vFlow1Init( void )
 
 
   // Create a queue capable of containing 2 unsigned long values.
-    xHLTLitresQueue = xQueueCreate( 2, sizeof( unsigned long ) );
+    xLitresToMashQueue = xQueueCreate( 2, sizeof( unsigned long ) );
+    xLitresToBoilQueue = xQueueCreate( 2, sizeof( unsigned long ) );
+
     vSemaphoreCreateBinary(xFlow1AppletRunningSemaphore);
 
     printf("Flow Sensor Initialised\r\n");
@@ -106,14 +109,21 @@ void vFlow1Init( void )
 // interrupt service routine for external input line 4 (PA4,PB4...PF4)
 void EXTI4_IRQHandler(void)
 {
-  pulses++;
+  ulBoilFlowPulses++;
   //printf("external interrupt triggered %f \r\n", 5.3221);
   EXTI_ClearITPendingBit(EXTI_Line4); // need to clear the bit before leaving.
   portEND_SWITCHING_ISR(pdFALSE);
 }
 
+void EXTIX_IRQHandler(void)
+{
+  // Interrupt for flow sensor going into the mash.
+  // Change the "X" above and set up the init function for that interrupt.
+  //EXTI_ClearITPendingBit(EXTI_LineX); // need to clear the bit before leaving.
+  //  portEND_SWITCHING_ISR(pdFALSE);
+}
 
-void vTaskLitresDelivered ( void * pvParameters )
+void vTaskLitresToBoil ( void * pvParameters )
 {
   unsigned long * xMessage;
   static unsigned long ulPulsesLast = 0;
@@ -124,38 +134,88 @@ void vTaskLitresDelivered ( void * pvParameters )
     for (;;)
       {
         // check the queue for a message
-        xStatus = xQueueReceive(xHLTLitresQueue, &(xMessage), 500); // wait 0.5 seconds for a message (DONT CHANGE)
+        xStatus = xQueueReceive(xLitresToBoilQueue, &(xMessage), 500); // wait 0.5 seconds for a message (DONT CHANGE)
         if (xStatus == pdTRUE) // message recieved
           {
             //printf("received message: %d\r\n", *xMessage);
-            pulses = 0; // probably what we want to do here
+            ulBoilFlowPulses = 0; // probably what we want to do here
             ulPulsesSinceLast = 0;
-            fLitresDelivered = 0.001;
+            fLitresDeliveredToBoil = 0.001;
             //vTaskDelay(1000);
 
           }
         else // no message
           {
-            ulPulsesSinceLast = pulses - ulPulsesLast;
-            ulPulsesLast = pulses;
+            ulPulsesSinceLast = ulBoilFlowPulses - ulPulsesLast;
+            ulPulsesLast = ulBoilFlowPulses;
 
             // Calculates the accumulated litres delivered by deriving the amount of pulses
             // that have occurred in the last half second, then determining which multiplier to
             // use to make the next calculation depending on the rate of flow.
             if (ulPulsesSinceLast <= ulLowerThresh)
               {
-                fLitresDelivered = fLitresDelivered + ((float)ulPulsesSinceLast * fLitresPerPulseL);
+                fLitresDeliveredToBoil = fLitresDeliveredToBoil + ((float)ulPulsesSinceLast * fBoilLitresPerPulseL);
               }
             else
               {
-                fLitresDelivered = fLitresDelivered + ((float)ulPulsesSinceLast * fLitresPerPulseH);
+                fLitresDeliveredToBoil = fLitresDeliveredToBoil + ((float)ulPulsesSinceLast * fBoilLitresPerPulseH);
               }
-            if (fLitresDelivered < 0.01 || fLitresDelivered > 50000)
-              fLitresDelivered = 0.001;
+            if (fLitresDeliveredToBoil < 0.01 || fLitresDeliveredToBoil > 50000)
+              fLitresDeliveredToBoil = 0.001;
             if (ulPulsesSinceLast > 0)
-              flow_state = FLOWING;
+              uBoilFlowState = FLOWING;
             else
-              flow_state = NOT_FLOWING;
+              uBoilFlowState = NOT_FLOWING;
+          }
+        taskYIELD();
+
+      }
+
+}
+
+void vTaskLitresToMash ( void * pvParameters )
+{
+  unsigned long * xMessage;
+  static unsigned long ulPulsesLast = 0;
+  unsigned long ulPulsesSinceLast;
+//
+
+    portBASE_TYPE xStatus;
+    for (;;)
+      {
+        // check the queue for a message
+        xStatus = xQueueReceive(xLitresToMashQueue, &(xMessage), 500); // wait 0.5 seconds for a message (DONT CHANGE)
+        if (xStatus == pdTRUE) // message received
+          {
+            //printf("received message: %d\r\n", *xMessage);
+            ulMashFlowPulses = 0; // probably what we want to do here
+            ulPulsesSinceLast = 0;
+            fLitresDeliveredToMash = 0.001;
+            //vTaskDelay(1000);
+
+          }
+        else // no message
+          {
+            ulPulsesSinceLast = ulMashFlowPulses - ulPulsesLast;
+            ulPulsesLast = ulMashFlowPulses;
+
+            // Calculates the accumulated litres delivered by deriving the amount of ulBoilFlowPulses
+            // that have occurred in the last half second, then determining which multiplier to
+            // use to make the next calculation depending on the rate of flow.
+            if (ulPulsesSinceLast <= ulLowerThresh)
+              {
+                fLitresDeliveredToMash = fLitresDeliveredToMash + ((float)ulPulsesSinceLast * fMashLitresPerPulseL);
+              }
+            else
+              {
+                fLitresDeliveredToMash = fLitresDeliveredToMash + ((float)ulPulsesSinceLast * fMashLitresPerPulseH);
+              }
+            if (fLitresDeliveredToMash < 0.01 || fLitresDeliveredToMash > 50000)
+              fLitresDeliveredToMash = 0.001;
+            if (ulPulsesSinceLast > 0)
+              uMashFlowState = FLOWING;
+            else
+              uMashFlowState = NOT_FLOWING;
           }
         taskYIELD();
 
@@ -173,18 +233,24 @@ void vResetFlow1(void)
  int * xx = &x;
 
 
- xQueueSendToBack(xHLTLitresQueue, xx, portMAX_DELAY);
+ xQueueSendToBack(xLitresToBoilQueue, xx, portMAX_DELAY);
 }
 
 void vResetFlow2(void)
 {
-
+  int xx = 1;
+  xQueueSendToBack(xLitresToMashQueue, &xx, portMAX_DELAY);
 }
 
-float fGetFlow1Litres(void)
+float fGetBoilFlowLitres(void)
 {
-  //printf("%2.1f\r\n", fLitresDelivered);
-  return fLitresDelivered;
+  //printf("%2.1f\r\n", fLitresDeliveredToBoil);
+  return fLitresDeliveredToBoil;
+}
+
+float fGetMashFlowLitres(void)
+{
+  return fLitresDeliveredToMash;
 }
 #define RESET_FLOW1_X1 0
 #define RESET_FLOW1_Y1 30
@@ -251,10 +317,10 @@ void vFlow1AppletDisplay( void *pvParameters){
 
             xSemaphoreTake(xFlow1AppletRunningSemaphore, portMAX_DELAY); //take the semaphore so that the key handler wont
                                                                     //return to the menu system until its returned
-            ml = fLitresDelivered * 1000;
+            ml = fLitresDeliveredToBoil * 1000;
             mlu = (unsigned long)ml;
 
-            switch (flow_state)
+            switch (uBoilFlowState)
             {
             case FLOWING:
               {
@@ -264,8 +330,8 @@ void vFlow1AppletDisplay( void *pvParameters){
                     lcd_fill(1,220, 180,29, Black);
                     //lcd_printf(1,13,15,"FLOWING\n");
 
-                    //lcd_printf(1,14,15,"Currently @ %2.1flitres", fLitresDelivered);
-                    lcd_printf(1, 13, 25, "Currently @ %d.%dl", (unsigned int)floor(fGetFlow1Litres()), (unsigned int)((fGetFlow1Litres()-floor(fGetFlow1Litres()))*pow(10, 3)));
+                    //lcd_printf(1,14,15,"Currently @ %2.1flitres", fLitresDeliveredToBoil);
+                    lcd_printf(1, 13, 25, "Currently @ %d.%dl", (unsigned int)floor(fGetBoilFlowLitres()), (unsigned int)((fGetBoilFlowLitres()-floor(fGetBoilFlowLitres()))*pow(10, 3)));
                     //lcd_printf(1,14,15,"Currently @ %dml", mlu);
                   }
                 else{
@@ -280,7 +346,7 @@ void vFlow1AppletDisplay( void *pvParameters){
                     //printf("%u\r\n",uxTaskGetStackHighWaterMark(NULL));
                     lcd_fill(1,210, 180,29, Black);
                     //lcd_printf(1,13,11,"NOT FLOWING\n");
-                    lcd_printf(1, 13, 25, "Currently @ %d.%d ml", (unsigned int)floor(fGetFlow1Litres()), (unsigned int)((fGetFlow1Litres()-floor(fGetFlow1Litres()))*pow(10, 3)));
+                    lcd_printf(1, 13, 25, "Currently @ %d.%d ml", (unsigned int)floor(fGetBoilFlowLitres()), (unsigned int)((fGetBoilFlowLitres()-floor(fGetBoilFlowLitres()))*pow(10, 3)));
                     //lcd_printf(1,14,15,"Currently @ %dml", mlu);
 
                   }

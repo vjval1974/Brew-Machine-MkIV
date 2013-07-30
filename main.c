@@ -16,6 +16,7 @@
 #include "misc.h"
 #include "stm32f10x_it.h"
 #include "stm32f10x_rcc.h"
+#include "stm32f10x_i2c.h"
 
 /*app includes. */
 //#include "stm3210e_lcd.h"
@@ -39,6 +40,8 @@
 #include "boil.h"
 #include "stir.h"
 #include "Flow1.h"
+#include "diag_pwm.h"
+#include "I2C-IO.h"
 
 /*-----------------------------------------------------------*/
 
@@ -63,8 +66,10 @@ xTaskHandle xLCDTaskHandle,
     xTimerSetupHandle,
     xDS1820TaskHandle,
     xCheckTaskHandle,
-    xLitresDeliveredHandle ;
-
+    xLitresToBoilHandle,
+    xI2C_TestHandle,
+    xI2C_SendHandle,
+    xLitresToMashHandle ;
 
 
 // Needed by file core_cm3.h
@@ -107,14 +112,14 @@ int example_applet_touch_handler(int xx, int yy)
 void vCheckTask(void *pvParameters)
 {
 
-  unsigned int touch, adc, ds1820, timer, litres, check, low_level = 100, heap;
+  unsigned int touch, adc, ds1820, timer, litres, check, low_level = 90, heap;
   for (;;){
 
       touch = uxTaskGetStackHighWaterMark(xTouchTaskHandle);
 
       ds1820 =  uxTaskGetStackHighWaterMark(xDS1820TaskHandle);
       timer = uxTaskGetStackHighWaterMark(xTimerSetupHandle);
-      litres = uxTaskGetStackHighWaterMark(xLitresDeliveredHandle);
+      litres = uxTaskGetStackHighWaterMark(xLitresToBoilHandle);
       check = uxTaskGetStackHighWaterMark(NULL);
       heap = xPortGetFreeHeapSize();
 
@@ -131,8 +136,9 @@ void vCheckTask(void *pvParameters)
           printf("litreswm = %d\r\n", litres);
           printf("check = %d\r\n", check);
           printf("Free Heap Size = %d\r\n", heap);
+
           //xTaskResumeAll();
-          vTaskDelay(100);
+          vTaskDelay(500);
 
         }
 
@@ -146,11 +152,13 @@ void vCheckTask(void *pvParameters)
 
 struct menu diag_menu[] =
     {
-        {"Applet",              NULL,                           example_applet,                 NULL,                        example_applet_touch_handler},
-        {"FlashLED",            NULL,                           NULL,                           item_2_callback,        NULL},
-        {"DS1820Diag",           NULL,                           vDS1820DiagApplet,              NULL,                  DS1820DiagKey},
-        {"Flow1",                NULL,                           vFlow1Applet,                  NULL,                   iFlow1Key},
-        {"Back",                 NULL,                           NULL,                           NULL,                   NULL},
+        {"Applet",              NULL,                           example_applet,                 NULL,                  example_applet_touch_handler},
+        {"FlashLED",            NULL,                           NULL,                           item_2_callback,       NULL},
+        {"DS1820Diag",          NULL,                           vDS1820DiagApplet,             NULL,                   DS1820DiagKey},
+        {"Flow1",               NULL,                           vFlow1Applet,                  NULL,                   iFlow1Key},
+        {"PWM Diag",            NULL,                           vDiagPWMApplet,                NULL,                  iDiagPWMKey},
+        {"Back",                NULL,                           NULL,                          NULL,                   NULL},
+
         {NULL,                  NULL,                           NULL,                           NULL,                   NULL}
     };
 
@@ -160,7 +168,7 @@ struct menu manual_menu[] =
         {"Crane",       	NULL,				vCraneApplet, 	        NULL, 			iCraneKey},
         {"Valves",              NULL,                           vValvesApplet,                  NULL,                   iValvesKey},
         {"HopDropper",          NULL,                           vHopDropperApplet,              NULL,                   iHopDropperKey},
-        {"HLT",                 NULL,                           vHLTApplet,                     vHLTAppletCallback,     HLTKey},
+        {"HLT",                 NULL,                           vHLTApplet,                     NULL,     HLTKey},
         {"HLT Pump",            NULL,                           vHLTPumpApplet,                 NULL,                   iHLTPumpKey},
         {"Mash Pump",           NULL,                           vMashPumpApplet,                NULL,                   iMashPumpKey},
         {"Mill",                NULL,                           vMillApplet,                    NULL,                   iMillKey},
@@ -189,6 +197,8 @@ int main( void )
 
     lcd_init();          
     vLEDInit();
+    vI2C_Init();
+
 
 
     vMillInit();
@@ -203,6 +213,7 @@ int main( void )
     vStirInit();
     hlt_init();
     vFlow1Init();
+    vDiagPWMInit();
 
 
     menu_set_root(main_menu);
@@ -222,13 +233,19 @@ int main( void )
         tskIDLE_PRIORITY,
         &xDS1820TaskHandle );
 
-    xTaskCreate( vTaskLitresDelivered,
+    xTaskCreate( vTaskLitresToBoil,
         ( signed portCHAR * ) "hlt_litres",
         configMINIMAL_STACK_SIZE,
         NULL,
         tskIDLE_PRIORITY ,
-        &xLitresDeliveredHandle );
+        &xLitresToBoilHandle );
 
+    xTaskCreate( vTaskLitresToMash,
+            ( signed portCHAR * ) "hlt_litres",
+            configMINIMAL_STACK_SIZE,
+            NULL,
+            tskIDLE_PRIORITY ,
+            &xLitresToMashHandle );
 
     xTaskCreate( vCheckTask,
         ( signed portCHAR * ) "check",
@@ -236,6 +253,25 @@ int main( void )
         NULL,
         tskIDLE_PRIORITY,
         &xCheckTaskHandle );
+
+
+    xTaskCreate( vI2C_TestTask,
+          ( signed portCHAR * ) "i2c_test",
+          configMINIMAL_STACK_SIZE +400,
+          NULL,
+          tskIDLE_PRIORITY,
+          &xI2C_TestHandle );
+
+
+    xTaskCreate(  vI2C_SendTask,
+              ( signed portCHAR * ) "i2c_send",
+              configMINIMAL_STACK_SIZE +400,
+              NULL,
+              tskIDLE_PRIORITY,
+              & xI2C_SendHandle );
+
+
+
 
     /* Start the scheduler. */
     vTaskStartScheduler();

@@ -24,4 +24,19 @@ void vI2C_TestTask(void *pvParameters);
 #define I2C_SLAVE_ADDRESS6 0x7C
 #define I2C_SLAVE_ADDRESS7 0x7E
 
+#define PCF_PIN0  0
+#define PCF_PIN1  1
+#define PCF_PIN2  2
+#define PCF_PIN3  3
+#define PCF_PIN4  4
+#define PCF_PIN5  5
+#define PCF_PIN6  6
+#define PCF_PIN7  7
+
+#define PORTU I2C_SLAVE_ADDRESS0
+#define PORTV I2C_SLAVE_ADDRESS1
+#define PORTW I2C_SLAVE_ADDRESS2
+#define PORTX I2C_SLAVE_ADDRESS3
+#define PORTY I2C_SLAVE_ADDRESS4
+
 #endif /* I2C_IO_H_ */

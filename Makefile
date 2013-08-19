@@ -110,7 +110,8 @@ SOURCE=	main.c 	drivers/lcd.c \
 		drivers/ds1820.c \
 		Flow1.c \
 		diag_pwm.c \
-		I2C-IO.c
+		I2C-IO.c \
+		chiller_pump.c
 		
 
 # ST Library source files.

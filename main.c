@@ -42,6 +42,7 @@
 #include "Flow1.h"
 #include "diag_pwm.h"
 #include "I2C-IO.h"
+#include "chiller_pump.h"
 
 /*-----------------------------------------------------------*/
 
@@ -176,9 +177,17 @@ struct menu manual_menu[] =
         {NULL, 			NULL, 				NULL, 				NULL, 			NULL}
     };
 
+struct menu manual_menu2[] =
+    {
+        {"Chiller Pump",        NULL,                           vChillerPumpApplet,           NULL,                   iChillerPumpKey},
+        {"Back",                NULL,                           NULL,                           NULL,                   NULL},
+        {NULL,                  NULL,                           NULL,                           NULL,                   NULL}
+    };
+
 struct menu main_menu[] =
     {
         {"Manual Control",      manual_menu,    		NULL, 				NULL, 			NULL},
+        {"Manual Control2",     manual_menu2,                   NULL,                           NULL,                   NULL},
         {"Boil",                NULL,                           vBoilApplet,                    NULL,                   iBoilKey},
         {"Stir",                NULL,                           vStirApplet,                    NULL,                   iStirKey},
         {"Diagnostics",         diag_menu,                      NULL,                           NULL,                   NULL},
@@ -193,30 +202,36 @@ int main( void )
     prvSetupHardware();// set up peripherals etc 
     USARTInit(USART_PARAMS1);
 
-
-
     lcd_init();          
+
     vLEDInit();
+
     vI2C_Init();
 
+    menu_set_root(main_menu);
 
 
     vMillInit();
     vHLTPumpInit();
+
     vMashPumpInit();
     vValvesInit();
     vDiagTempsInit();
+
     vHopsInit();
+
     vBoilInit();
-    vStirInit();
+
+    //vStirInit();
     vCraneInit();
-    vStirInit();
+    //vStirInit();
     hlt_init();
+
     vFlow1Init();
     vDiagPWMInit();
+    vChillerPumpInit();
 
 
-    menu_set_root(main_menu);
 
     xTaskCreate( vTouchTask, 
                  ( signed portCHAR * ) "touch", 
@@ -228,7 +243,7 @@ int main( void )
     // Create you application tasks if needed here
     xTaskCreate( vTaskDS1820Convert,
         ( signed portCHAR * ) "DS1820",
-        configMINIMAL_STACK_SIZE ,
+        configMINIMAL_STACK_SIZE + 200,
         NULL,
         tskIDLE_PRIORITY,
         &xDS1820TaskHandle );
@@ -255,12 +270,12 @@ int main( void )
         &xCheckTaskHandle );
 
 
-    xTaskCreate( vI2C_TestTask,
-          ( signed portCHAR * ) "i2c_test",
-          configMINIMAL_STACK_SIZE +400,
-          NULL,
-          tskIDLE_PRIORITY,
-          &xI2C_TestHandle );
+  //    xTaskCreate( vI2C_TestTask,
+  //        ( signed portCHAR * ) "i2c_test",
+  //        configMINIMAL_STACK_SIZE +400,
+  //        NULL,
+  //        tskIDLE_PRIORITY,
+  //        &xI2C_TestHandle );
 
 
     xTaskCreate(  vI2C_SendTask,

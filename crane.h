@@ -32,6 +32,9 @@
 #define CRANE_LIMIT_PORT GPIOA
 
 
+#define CRANE_PORT PORTU
+#define CRANE_PIN1 PCF_PIN6
+#define CRANE_PIN2 PCF_PIN7
 
 
 void vCraneInit(void);

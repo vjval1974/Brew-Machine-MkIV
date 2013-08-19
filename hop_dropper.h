@@ -8,14 +8,17 @@
 #ifndef HOP_DROPPER_H_
 #define HOP_DROPPER_H_
 
-#define HOP_DROPPER_DRIVE_PORT GPIOC
-#define HOP_DROPPER_STEP_PIN GPIO_Pin_8
 
-#define HOP_DROPPER_ENABLE_PIN GPIO_Pin_14
-#define HOP_DROPPER_CONTROL_PORT GPIOB
+
+
+
+
 
 #define HOP_DROPPER_LIMIT_PORT GPIOA
 #define HOP_DROPPER_LIMIT_PIN GPIO_Pin_11
+
+#define HOP_DROPPER_DRIVE_PIN PCF_PIN5
+#define HOP_DROPPER_DRIVE_PORT PORTU
 
 void vHopDropperApplet(int init);
 int iHopDropperKey(int xx, int yy);

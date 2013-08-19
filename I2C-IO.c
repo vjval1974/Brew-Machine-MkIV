@@ -68,7 +68,8 @@ void vI2C_Init(void){
     // Creates a queue for the send task.
     xI2C_SendQueue = xQueueCreate(20, sizeof(uint16_t));
 
-    vI2C_Send(I2C_SLAVE_ADDRESS0, 0x00);
+    vI2C_Send(I2C_SLAVE_ADDRESS0, 0xFF);
+    printf("I2C address %x Initialised with value %x", I2C_SLAVE_ADDRESS0, 0xFF);
 
   return;
 
@@ -146,6 +147,7 @@ void vI2C_TestTask(void *pvParameters)
       uTestMessage = uTestMessage | (uint16_t)(uData & 0x000F);
       if (uDirection)
           uTestMessage |= 1<<4;
+
       vI2C_Receive(uAddress, &uRData);
       //printf("\r\n******I2C Test Task Start\r\n");
       //printf("received = %x\r\n", uRData);
@@ -154,15 +156,15 @@ void vI2C_TestTask(void *pvParameters)
       //printf("address = %x\r\n", uAddress);
       //printf("data = %x\r\n", uData);
       if (flag == 0){
-          vPCF_SetBits(1, I2C_SLAVE_ADDRESS0);
+          vPCF_SetBits(0, I2C_SLAVE_ADDRESS0);
           flag= 1;
       }
       else
         {
-          vPCF_ResetBits(1, I2C_SLAVE_ADDRESS0);
+          vPCF_ResetBits(0, I2C_SLAVE_ADDRESS0);
           flag = 0;
         }
-      vTaskDelay(4);
+      vTaskDelay(1000);
       //xQueueSendToBack(xI2C_SendQueue, &uTestMessage, portMAX_DELAY);
       //xQueueSendToBack(xI2C_SendQueue, &uTestMessage+1, portMAX_DELAY);
       //xQueueSendToBack(xI2C_SendQueue, &uTestMessage+2, portMAX_DELAY);
@@ -185,25 +187,26 @@ for (;;)
     if (xStatus == pdPASS)
       {
  //       I2C_SoftwareResetCmd(I2C1, ENABLE);
-        //printf("Message Received:\r\n");
-        //printf("Message =  %x\r\n", message);
+        printf("Message Received:\r\n");
+        printf("Message =  %x\r\n", message);
         portENTER_CRITICAL();
         uAddress = message>>8;
+        printf("Address - %x\r\n", uAddress);
         vI2C_Receive(uAddress, &uCurrent);
         uBitNum = (uint8_t)message&(0x0F);
         //printf("RAddress =  %x\r\n", uAddress);
         if (uBitNum > 7 || uBitNum <= 0)
           uBitNum = 0;
 
-        //printf("uBitNum =  %d\r\n", uBitNum);
-        //printf("uCurrent =  %d\r\n", uCurrent);
-       // printf("Direction =  %d\r\n", ((uint8_t)message&0xF0)>>4);
+        printf("uBitNum =  %d\r\n", uBitNum);
+        printf("uCurrent =  %d\r\n", uCurrent);
+        printf("Direction =  %d\r\n", ((uint8_t)message&0xF0)>>4);
         uDirection = ((uint8_t)message&0xF0)>>4;
-        if (uDirection  == 0)
+        if (uDirection  == 1)
           uToSend = uCurrent&=~(1<<uBitNum);
         else
           uToSend = uCurrent |= 1<<uBitNum;
-       // printf("utoSend =  %x\r\n", uToSend);
+       printf("utoSend =  %x\r\n", uToSend);
         //vTaskDelay(100);
         vI2C_Send(uAddress, uToSend);
         portEXIT_CRITICAL();
@@ -216,24 +219,27 @@ for (;;)
   }
 }
 
-void vPCF_SetBits(uint8_t bitnum, uint8_t add){
+// SET BITS TAKES THAT LINE DOWN TO 0V..
+void vPCF_ResetBits(uint8_t bitnum, uint8_t add){
   uint16_t uMessage = 0x00;
 
   uMessage = (uint16_t)(add << 8) & 0xFF00;
   uMessage = uMessage | (uint16_t)(bitnum & 0x000F);
-  uMessage |= 1<<4;
+  printf("address from pcf = %x\r\n", add);
+  //uMessage |= 1<<4;
   //printf("Bit number = %d\r\n", bitnum);
   //vTaskDelay(10);
   xQueueSendToBack(xI2C_SendQueue, &uMessage, portMAX_DELAY);
 
 }
 
-void vPCF_ResetBits(uint8_t bitnum, uint8_t add){
+void vPCF_SetBits(uint8_t bitnum, uint8_t add){
   uint16_t uMessage = 0x00;
 
   uMessage = (uint16_t)(add << 8) & 0xFF00;
   uMessage = uMessage | (uint16_t)(bitnum & 0x000F);
-  //uMessage |= 1<<4;
+  printf("address from pcf = %x\r\n", add);
+  uMessage |= 1<<4;
   //printf("Bit number = %d\r\n", bitnum);
   //vTaskDelay(10);
   xQueueSendToBack(xI2C_SendQueue, &uMessage, portMAX_DELAY);

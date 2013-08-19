@@ -26,6 +26,7 @@
 #include "leds.h"
 #include "semphr.h"
 #include "queue.h"
+#include "I2C-IO.h"
 
 
 #define UP 1
@@ -45,332 +46,77 @@ xSemaphoreHandle xAppletRunningSemaphore;
 xTaskHandle xCraneTaskHandle = NULL, xCraneAppletDisplayHandle = NULL;
 void vTaskCrane(void * pvParameters);
 
-
 struct Step
 {
   unsigned char ucDirection; //1 = up, -1 = down
-  int uSpeed; //final speed in percent
-  int uTime; //acceleration delay (controls rate of acceleration)
+  unsigned char ucEnable;
+  //int uSpeed; //final speed in percent
+  //int uTime; //acceleration delay (controls rate of acceleration)
 
   //        char ucMessageID;
   //        char ucData[ 20 ];
 };
 
-struct Step LimitStop = {UP, 0, 0};
-struct Step STOP_Step = {UP, 0, 5};
-struct Step UP_Step = {UP, 100, 10};
-struct Step DN_Step = {DN, 100, 10};
+struct Step Stop = {UP, STOPPED};
 
-//struct Step xSteps[] = {
-//      {UP,100,1},
-//      {DN,50,1}
-//};
+struct Step Up = {UP, DRIVING};
+struct Step Down = {DN, DRIVING};
 
-//struct Step MashStirSteps[] = {
-//      {UP,100,10},
-//      {UP,0,10},
-//      {DN,50,5},
-//      {DN,75,5},
-//      {DN,100,5},
-//      {DN,0,10},
-//      {UP,100,1},
-//      {UP,100,1},
-//      {UP,100,1},
-//      {DN,50,1},
-//      {0, 0, 0}
-//};
+
 
 xQueueHandle xCraneQueue1, xCraneQueue2;
 #if 1
 void vCraneInit(void)
 {
-  //unsigned long ulFrequency;
-  //GPIO_InitTypeDef GPIO_InitStructure;
-  unsigned long ulFrequency;
-          TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;
-          NVIC_InitTypeDef NVIC_InitStructure;
-          GPIO_InitTypeDef GPIO_InitStructure;
-
-          GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-
-           //Initialise Ports, pins and timer
-          TIM_DeInit( TIMER_USED );
-          TIM_TimeBaseStructInit( &TIM_TimeBaseStructure );
 
 
-          // Enable timer clocks
-          RCC_APB1PeriphClockCmd( RCC_APB1Periph_TIM3, ENABLE );
+  vPCF_ResetBits(CRANE_PIN1, CRANE_PORT); //pull low
+  vPCF_ResetBits(CRANE_PIN2, CRANE_PORT); //pull low
+    printf("Crane Initialised\r\n");
 
 
+  vSemaphoreCreateBinary(xAppletRunningSemaphore);
+  xCraneQueue2 = xQueueCreate( 1, sizeof( struct Step * ) );
 
-          //CRANE STEPPER DRIVE PINS ARE USING THE ALTERNATE FUNCTION OF THEIR DEFAULTS.
-          //THEY TAKE THE OUTPUT COMPARE FUNCTION OF TIMER 3 TO DRIVE WITH PWM VIA REMAPPING
-          GPIO_InitStructure.GPIO_Pin =  CRANE_STEP_PIN;
-          GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;// Alt Function - Push Pull
-          GPIO_Init( CRANE_DRIVE_PORT, &GPIO_InitStructure );
-
-
-
-
-          //CONTROL PINS
-          GPIO_InitStructure.GPIO_Pin =  CRANE_ENABLE_PIN;
-          GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-          GPIO_Init( CRANE_CONTROL_PORT, &GPIO_InitStructure );
-          GPIO_ResetBits(CRANE_CONTROL_PORT, CRANE_ENABLE_PIN);
-
-          GPIO_InitStructure.GPIO_Pin =  CRANE_DIR_PIN;
-          GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-          GPIO_Init( CRANE_CONTROL_PORT, &GPIO_InitStructure );
-          GPIO_SetBits(CRANE_CONTROL_PORT, CRANE_DIR_PIN);
-
-
-          //LIMIT INPUTS
-          GPIO_InitStructure.GPIO_Pin =  CRANE_UPPER_LIMIT_PIN;
-          GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
-          GPIO_Init( CRANE_LIMIT_PORT, &GPIO_InitStructure );
-
-          GPIO_InitStructure.GPIO_Pin =  CRANE_LOWER_LIMIT_PIN;
-          GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
-          GPIO_Init( CRANE_LIMIT_PORT, &GPIO_InitStructure );
-
-          // SET UP TIMER 3  FOR PWM
-          GPIO_PinRemapConfig( GPIO_FullRemap_TIM3, ENABLE );// Map TIM3_CH3 and CH4 to Step Pins
-          //Period 10000, Prescaler 50, pulse = 26 gives 111Hz with 16us
-          //Pulse width.
-          TIM_TimeBaseStructure.TIM_Period = 20000; // this means nothing.. original val loaded into ARR... its changed later
-          TIM_TimeBaseStructure.TIM_Prescaler = 50; //clock prescaler
-          TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV4; // does fuck all except for using input pin for counter
-          TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
-          TIM_TimeBaseInit( TIMER_USED, &TIM_TimeBaseStructure );
-          TIM_ARRPreloadConfig( TIMER_USED, ENABLE );
-
-          TIM_OCInitTypeDef TIM_OCInitStruct;
-          TIM_OCStructInit( &TIM_OCInitStruct );
-          TIM_OCInitStruct.TIM_OutputState = TIM_OutputState_Enable;
-          TIM_OCInitStruct.TIM_OCMode = TIM_OCMode_PWM1;
-          TIM_OCInitStruct.TIM_OCPolarity = TIM_OCPolarity_Low; // Added this line to see if it goes active low.
-          // Initial duty cycle equals 25 which gives pulse of 5us
-          TIM_OCInitStruct.TIM_Pulse = 25;
-          TIM_OC3Init( TIMER_USED, &TIM_OCInitStruct );
-          TIM_OC4Init( TIMER_USED, &TIM_OCInitStruct );
-          //TIM_Cmd( TIMER_USED, ENABLE );
-          printf("Crane Initialised\r\n");
-
-          TIM_SetAutoreload(TIMER_USED, 15000);
-
-          vSemaphoreCreateBinary(xAppletRunningSemaphore);
-
-          //xCraneQueueHandle = xQueueCreate(10, sizeof(struct Step *));
-
-          // Create a queue capable of containing 10 unsigned long values.
-          //xCraneQueue1 = xQueueCreate( 10, sizeof( unsigned long ) );
-
-          // Create a queue capable of containing 10 pointers to AMessage structures.
-          // These should be passed by pointer as they contain a lot of data.
-          xCraneQueue2 = xQueueCreate( 1, sizeof( struct Step * ) );
-
-          xTaskCreate( vTaskCrane,
-              ( signed portCHAR * ) "Crane",
-              configMINIMAL_STACK_SIZE +500,
-              NULL,
-              tskIDLE_PRIORITY,
-              &xCraneTaskHandle );
+  xTaskCreate( vTaskCrane,
+      ( signed portCHAR * ) "Crane",
+      configMINIMAL_STACK_SIZE +500,
+      NULL,
+      tskIDLE_PRIORITY,
+      &xCraneTaskHandle );
 
 }
-#endif
-// *************************************************************
-// Testing below.
-// *************************************************************
-#if 0
-void vCraneInit(void)
-{
-  //unsigned long ulFrequency;
-  //GPIO_InitTypeDef GPIO_InitStructure;
-  unsigned long ulFrequency;
-          TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;
-          NVIC_InitTypeDef NVIC_InitStructure;
-          GPIO_InitTypeDef GPIO_InitStructure;
-
-          GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-
-           //Initialise Ports, pins and timer
-          TIM_DeInit( TIM1 );
-          TIM_TimeBaseStructInit( &TIM_TimeBaseStructure );
-
-
-          // Enable timer clocks
-          RCC_APB1PeriphClockCmd( RCC_APB2Periph_TIM1, ENABLE );
-
-
-
-          //CRANE STEPPER DRIVE PINS ARE USING THE ALTERNATE FUNCTION OF THEIR DEFAULTS.
-          //THEY TAKE THE OUTPUT COMPARE FUNCTION OF TIMER 3 TO DRIVE WITH PWM VIA REMAPPING
-          GPIO_InitStructure.GPIO_Pin =  CRANE_STEP_PIN;
-          GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;// Alt Function - Push Pull
-          GPIO_Init( CRANE_DRIVE_PORT, &GPIO_InitStructure );
-
-
-
-
-          //CONTROL PINS
-          GPIO_InitStructure.GPIO_Pin =  CRANE_ENABLE_PIN;
-          GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-          GPIO_Init( CRANE_CONTROL_PORT, &GPIO_InitStructure );
-          GPIO_ResetBits(CRANE_CONTROL_PORT, CRANE_ENABLE_PIN);
-
-          GPIO_InitStructure.GPIO_Pin =  CRANE_DIR_PIN;
-          GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
-          GPIO_Init( CRANE_CONTROL_PORT, &GPIO_InitStructure );
-          GPIO_SetBits(CRANE_CONTROL_PORT, CRANE_DIR_PIN);
-
-
-          //LIMIT INPUTS
-          GPIO_InitStructure.GPIO_Pin =  CRANE_UPPER_LIMIT_PIN;
-          GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
-          GPIO_Init( CRANE_LIMIT_PORT, &GPIO_InitStructure );
-
-          GPIO_InitStructure.GPIO_Pin =  CRANE_LOWER_LIMIT_PIN;
-          GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
-          GPIO_Init( CRANE_LIMIT_PORT, &GPIO_InitStructure );
-
-          // SET UP TIMER 3  FOR PWM
-          //GPIO_PinRemapConfig( GPIO_FullRemap_TIM3, ENABLE );// Map TIM3_CH3 and CH4 to Step Pins
-          //Period 10000, Prescaler 50, pulse = 26 gives 111Hz with 16us
-          //Pulse width.
-          TIM_TimeBaseStructure.TIM_Period = 20000; // this means nothing.. original val loaded into ARR... its changed later
-          TIM_TimeBaseStructure.TIM_Prescaler = 50; //clock prescaler
-          TIM_TimeBaseStructure.TIM_ClockDivision = TIM_CKD_DIV4; // does fuck all except for using input pin for counter
-          TIM_TimeBaseStructure.TIM_CounterMode = TIM_CounterMode_Up;
-          TIM_TimeBaseInit( TIM1, &TIM_TimeBaseStructure );
-          TIM_ARRPreloadConfig( TIM1, ENABLE );
-
-          TIM_OCInitTypeDef TIM_OCInitStruct;
-          TIM_OCStructInit( &TIM_OCInitStruct );
-          TIM_OCInitStruct.TIM_OutputState = TIM_OutputState_Enable;
-          TIM_OCInitStruct.TIM_OCMode = TIM_OCMode_PWM1;
-          TIM_OCInitStruct.TIM_OCPolarity = TIM_OCPolarity_Low; // Added this line to see if it goes active low.
-          // Initial duty cycle equals 25 which gives pulse of 5us
-          TIM_OCInitStruct.TIM_Pulse = 25;
-          TIM_OC3Init( TIM1, &TIM_OCInitStruct );
-          TIM_OC4Init( TIM1, &TIM_OCInitStruct );
-          //TIM_Cmd( TIMER_USED, ENABLE );
-          printf("Crane Initialised\r\n");
-
-          TIM_SetAutoreload(TIM1, 15000);
-
-          vSemaphoreCreateBinary(xAppletRunningSemaphore);
-
-          //xCraneQueueHandle = xQueueCreate(10, sizeof(struct Step *));
-
-          // Create a queue capable of containing 10 unsigned long values.
-          //xCraneQueue1 = xQueueCreate( 10, sizeof( unsigned long ) );
-
-          // Create a queue capable of containing 10 pointers to AMessage structures.
-          // These should be passed by pointer as they contain a lot of data.
-          xCraneQueue2 = xQueueCreate( 1, sizeof( struct Step * ) );
-
-          xTaskCreate( vTaskCrane,
-              ( signed portCHAR * ) "Crane",
-              configMINIMAL_STACK_SIZE +500,
-              NULL,
-              tskIDLE_PRIORITY,
-              &xCraneTaskHandle );
-
-}
-
-// *************************************************************
 #endif
 
 
 
 volatile int8_t crane_state = STOPPED;
 
-#define MAX_SPEED_ARR 11800 //The maximum speed. (the lower, the faster)
-#define MIN_SPEED_ARR 35000 //Motor stopped ARR value
-#define SPEED_RANGE (MIN_SPEED_ARR - MAX_SPEED_ARR)
-
 void vCraneFunc(struct Step * step)
 {
-  TIM_Cmd( TIMER_USED, ENABLE );
-  uint16_t uInitialSpeed = TIMER_USED->ARR, uSetSpeed;
-  static uint16_t uCurrentSpeed = MIN_SPEED_ARR;
- // printf("-----------------------\r\n");
- // printf("**vCraneFunc called\r\n");
-  uint8_t limit = 0xFF;
-  if (step->uSpeed == 0 && step->uTime == 0 && step->ucDirection == UP )
-  //  printf("limit stop step called\r\n");
-
-  if (step->ucDirection == UP)
-    GPIO_WriteBit(CRANE_CONTROL_PORT, CRANE_DIR_PIN, 1);
-  else
-    GPIO_WriteBit(CRANE_CONTROL_PORT, CRANE_DIR_PIN, 0);
-
-  GPIO_WriteBit(CRANE_CONTROL_PORT, CRANE_ENABLE_PIN, ON);
-
-  uSetSpeed = (MIN_SPEED_ARR - (step->uSpeed * (SPEED_RANGE/100))); //convert speed % to ARR value
-  uCurrentSpeed = TIMER_USED->ARR;
-
-  if (uSetSpeed > uInitialSpeed) //are we increasing from here or decreasing?
+  portENTER_CRITICAL(); // so that we dont get switched out whilst accessing these pins.
+  if (step->ucEnable == DRIVING)
     {
-    //  printf("Decreasing\r\n");
-      //Decrease Speed
-      //up counting decreases speed... then stop when steps get too large
-      for (uCurrentSpeed = uInitialSpeed; uCurrentSpeed <= uSetSpeed ; uCurrentSpeed+=100)
+      if (step->ucDirection == UP)
         {
-          limit = GPIO_ReadInputDataBit(CRANE_LIMIT_PORT, CRANE_UPPER_LIMIT_PIN) &
-              GPIO_ReadInputDataBit(CRANE_LIMIT_PORT, CRANE_LOWER_LIMIT_PIN);
-
-          if (limit == 0 || uCurrentSpeed >= MIN_SPEED_ARR || step->uTime == 0)
-            {
-              TIM_Cmd(TIMER_USED, DISABLE);
-              TIM_SetAutoreload(TIMER_USED, MIN_SPEED_ARR);
-              crane_state = STOPPED;
-      //        printf("timer3 disabled\r\n");
-              GPIO_WriteBit(CRANE_CONTROL_PORT, CRANE_ENABLE_PIN, OFF);
-              break;
-            }
-          TIM_SetAutoreload(TIMER_USED, uCurrentSpeed);
-          vTaskDelay(step->uTime); //controls the acceleration time
+          // need to turn relay 2 off which sets up for REV direction
+          vPCF_ResetBits(CRANE_PIN2, CRANE_PORT); //pull low
+          vPCF_SetBits(CRANE_PIN1, CRANE_PORT); //pull low
         }
-
+      else
+        {
+          // need to turn relay 1 off which sets up for REV direction
+          vPCF_ResetBits(CRANE_PIN1, CRANE_PORT); //pull low
+          vPCF_SetBits(CRANE_PIN2, CRANE_PORT); //pull low
+        }
     }
   else
     {
-      //printf("Increasing\r\n");
-      //increase speed
-      for (uCurrentSpeed = uInitialSpeed; uCurrentSpeed > uSetSpeed; uCurrentSpeed-=100)
-        {
-
-          limit = GPIO_ReadInputDataBit(CRANE_LIMIT_PORT, CRANE_UPPER_LIMIT_PIN) &
-              GPIO_ReadInputDataBit(CRANE_LIMIT_PORT, CRANE_LOWER_LIMIT_PIN);
-          vTaskDelay(step->uTime);
-          TIM_SetAutoreload(TIMER_USED, uCurrentSpeed);
-          //printf("Counter = %d\r\n", TIMER_USED->CNT);
-          if (limit == 0)
-            {
-              TIM_SetAutoreload(TIMER_USED, MIN_SPEED_ARR);
-
-              TIM_Cmd(TIMER_USED, DISABLE);
-              crane_state = STOPPED; // Not correct code... used for testing at the moment
-              //GPIO_WriteBit(CRANE_CONTROL_PORT, CRANE_ENABLE_PIN, OFF);
-              break;
-            }
-
-        }
+      vPCF_ResetBits(CRANE_PIN1, CRANE_PORT); //pull low
+      vPCF_ResetBits(CRANE_PIN2, CRANE_PORT); //pull low
+      crane_state = STOPPED;
     }
-  uint8_t l_limit = GPIO_ReadInputDataBit(CRANE_LIMIT_PORT, CRANE_LOWER_LIMIT_PIN);
-  limit = GPIO_ReadInputDataBit(CRANE_LIMIT_PORT, CRANE_UPPER_LIMIT_PIN);
-  //printf("initial speed was = %u\r\n", uInitialSpeed);
-  //printf("current speed is = %u\r\n", uCurrentSpeed);
-  //printf("set speed is  = %u\r\n", uSetSpeed);
-  //printf("current state of the upper limit is %u\r\n", limit );
-  //printf("current state of the lower limit is %u\r\n", l_limit );
-  if (uCurrentSpeed < MIN_SPEED_ARR)
-    crane_state = DRIVING;
-  else crane_state =  STOPPED;
-
-  //printf("**vCraneFunc Returning\r\n");
-  //printf("---------------------------\r\n\n");
+  portEXIT_CRITICAL();
 }
 
 
@@ -386,7 +132,7 @@ void vTaskCrane(void * pvParameters)
       xStatus = xQueueReceive(xCraneQueue2, &(xMessage), 500); // Check the queue every 0.5 second for a new command
       if (xStatus == pdTRUE)
         {
-    //      printf("received step: %d\r\n", xMessage->uTime);
+          // AT THE MOMENT, THE BUTTONS DONT STOP THE CRANE WHEN DRIVING... need to fix
           vCraneFunc(xMessage);
           //need to check for the limit at the top/bottom
           //... but also need to code some logic in case the limit is reached whilst accelerating etc.
@@ -402,8 +148,8 @@ void vTaskCrane(void * pvParameters)
 
                   if (limit == 0)
                     {
-      //                printf("Stopping on limit\r\n");
-                      vCraneFunc(&LimitStop); //stop the crane on an instant.
+                      //                printf("Stopping on limit\r\n");
+                      vCraneFunc(&Stop); //stop the crane on an instant.
 
                       break;
 
@@ -415,8 +161,8 @@ void vTaskCrane(void * pvParameters)
 
                   if (limit == 0)
                     {
-        //              printf("Stopping on limit\r\n");
-                      vCraneFunc(&LimitStop); //stop the crane on an instant.
+                      //              printf("Stopping on limit\r\n");
+                      vCraneFunc(&Stop); //stop the crane on an instant.
 
                       break;
                     }
@@ -426,7 +172,7 @@ void vTaskCrane(void * pvParameters)
         }
       else
         {
-         // printf("Waiting!\r\n");
+          // printf("Waiting!\r\n");
           //queue empty
         }
 
@@ -560,7 +306,7 @@ int iCraneKey(int xx, int yy){
       //printf("up pressed\r\n");
       //pxMessage = &xSteps[0];
       //pxMessage = &MashStirSteps[0];
-      pxMessage = &UP_Step;
+      pxMessage = &Up;
       //while (pxMessage->ucDirection != 0)
       // {
       xQueueSendToBack( xCraneQueue2, ( void * ) &pxMessage, 0 );
@@ -571,14 +317,14 @@ int iCraneKey(int xx, int yy){
   else if (xx > DN_X1+1 && xx < DN_X2-1 && yy > DN_Y1+1 && yy < DN_Y2-1)
     {
       //printf("down pressed\r\n");
-      pxMessage = &DN_Step;
+      pxMessage = &Down;
       xQueueSendToBack( xCraneQueue2, ( void * ) &pxMessage, 0 );
 
     }
   else if (xx > ST_X1+1 && xx < ST_X2-1 && yy > ST_Y1+1 && yy < ST_Y2-1)
     {
       //printf("stop pressed\r\n");
-      pxMessage = &STOP_Step;
+      pxMessage = &Stop;
 
      // scrappy... needs state to be stopped to break into while loop in vTaskCrane
       crane_state = STOPPED;

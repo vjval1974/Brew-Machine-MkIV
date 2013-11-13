@@ -9,15 +9,14 @@
 #define STIR_H_
 
 //---STIR CONTROL PORTS/PINS
-#define STIR_CONTROL_PORT GPIOA
-#define STIR_ENABLE_PIN GPIO_Pin_12
-#define STIR_DIR_PIN GPIO_Pin_1
 
-//---STIR STEPPER DRIVE PORT/PIN
-#define STIR_DRIVE_PORT GPIOC
-#define STIR_STEP_PIN GPIO_Pin_9
 
-int iStirKey(int xx, int yy);
-void vStirApplet(int init);
+#define STIR_PORT PORTU
+#define STIR_PIN PCF_PIN0
+
 void vStirInit(void);
+void vStirApplet(int init);
+int iStirKey(int xx, int yy);
+
+
 #endif /* STIR_H_ */

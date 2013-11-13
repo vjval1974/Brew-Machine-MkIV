@@ -19,6 +19,7 @@
 /* Library includes. */
 #include "stm32f10x.h"
 //#include "timer.h"
+#include "task.h"
 //-------------------------------------------------------------------------
 /* The set frequency of the interrupt.  Deviations from this are measured as
    the jitter. */

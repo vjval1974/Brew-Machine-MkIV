@@ -1,7 +1,7 @@
 /*
- * stir.c
+ * chiller_pump.c
  *
- *  Created on: Aug 24, 2013
+ *  Created on: Aug 5, 2013
  *      Author: brad
  */
 
@@ -18,53 +18,53 @@
 #include "leds.h"
 #include "semphr.h"
 #include "I2C-IO.h"
-#include "stir.h"
+#include "chiller_pump.h"
 
-void vStirAppletDisplay( void *pvParameters);
-void vStirApplet(int init);
-xTaskHandle xSTIRTaskHandle = NULL, xSTIRAppletDisplayHandle = NULL;
+void vChillerPumpAppletDisplay( void *pvParameters);
+void vChillerPumpApplet(int init);
+xTaskHandle xCHILLERPumpTaskHandle = NULL, xCHILLERPumpAppletDisplayHandle = NULL;
 // semaphore that stops the returning from the applet to the menu system until the applet goes into the blocked state.
 xSemaphoreHandle xAppletRunningSemaphore;
 
 
-#define DRIVING 1
+#define PUMPING 1
 #define STOPPED 0
 
-volatile uint8_t uStirState = STOPPED;
+volatile uint8_t uChillerPumpState = STOPPED;
 
-void vStirInit(void){
+void vChillerPumpInit(void){
 
-  vPCF_ResetBits(STIR_PIN, STIR_PORT); //pull low
+  vPCF_ResetBits(CHILLER_PUMP_PIN, CHILLER_PUMP_PORT); //pull low
   vSemaphoreCreateBinary(xAppletRunningSemaphore);
 
 
 }
 
-static void vStir( uint8_t state )
+static void vChillerPump( uint8_t state )
 {
   if (state)
-    vPCF_SetBits(STIR_PIN, STIR_PORT);
+    vPCF_SetBits(CHILLER_PUMP_PIN, CHILLER_PUMP_PORT);
   else
-    vPCF_ResetBits(STIR_PIN, STIR_PORT);
-  uStirState = state;
+    vPCF_ResetBits(CHILLER_PUMP_PIN, CHILLER_PUMP_PORT);
+  uChillerPumpState = state;
 
 }
 
 
 
-#define START_STIR_X1 155
-#define START_STIR_Y1 30
-#define START_STIR_X2 300
-#define START_STIR_Y2 100
-#define START_STIR_W (START_STIR_X2-START_STIR_X1)
-#define START_STIR_H (START_STIR_Y2-START_STIR_Y1)
+#define START_CHILLER_PUMP_X1 155
+#define START_CHILLER_PUMP_Y1 30
+#define START_CHILLER_PUMP_X2 300
+#define START_CHILLER_PUMP_Y2 100
+#define START_CHILLER_PUMP_W (START_CHILLER_PUMP_X2-START_CHILLER_PUMP_X1)
+#define START_CHILLER_PUMP_H (START_CHILLER_PUMP_Y2-START_CHILLER_PUMP_Y1)
 
-#define STOP_STIR_X1 155
-#define STOP_STIR_Y1 105
-#define STOP_STIR_X2 300
-#define STOP_STIR_Y2 175
-#define STOP_STIR_W (STOP_STIR_X2-STOP_STIR_X1)
-#define STOP_STIR_H (STOP_STIR_Y2-STOP_STIR_Y1)
+#define STOP_CHILLER_PUMP_X1 155
+#define STOP_CHILLER_PUMP_Y1 105
+#define STOP_CHILLER_PUMP_X2 300
+#define STOP_CHILLER_PUMP_Y2 175
+#define STOP_CHILLER_PUMP_W (STOP_CHILLER_PUMP_X2-STOP_CHILLER_PUMP_X1)
+#define STOP_CHILLER_PUMP_H (STOP_CHILLER_PUMP_Y2-STOP_CHILLER_PUMP_Y1)
 
 #define BK_X1 200
 #define BK_Y1 190
@@ -73,49 +73,49 @@ static void vStir( uint8_t state )
 #define BK_W (BK_X2-BK_X1)
 #define BK_H (BK_Y2-BK_Y1)
 
-void vStirApplet(int init){
+void vChillerPumpApplet(int init){
   if (init)
         {
-                lcd_DrawRect(STOP_STIR_X1, STOP_STIR_Y1, STOP_STIR_X2, STOP_STIR_Y2, Cyan);
-                lcd_fill(STOP_STIR_X1+1, STOP_STIR_Y1+1, STOP_STIR_W, STOP_STIR_H, Red);
-                lcd_DrawRect(START_STIR_X1, START_STIR_Y1, START_STIR_X2, START_STIR_Y2, Cyan);
-                lcd_fill(START_STIR_X1+1, START_STIR_Y1+1, START_STIR_W, START_STIR_H, Green);
+                lcd_DrawRect(STOP_CHILLER_PUMP_X1, STOP_CHILLER_PUMP_Y1, STOP_CHILLER_PUMP_X2, STOP_CHILLER_PUMP_Y2, Cyan);
+                lcd_fill(STOP_CHILLER_PUMP_X1+1, STOP_CHILLER_PUMP_Y1+1, STOP_CHILLER_PUMP_W, STOP_CHILLER_PUMP_H, Red);
+                lcd_DrawRect(START_CHILLER_PUMP_X1, START_CHILLER_PUMP_Y1, START_CHILLER_PUMP_X2, START_CHILLER_PUMP_Y2, Cyan);
+                lcd_fill(START_CHILLER_PUMP_X1+1, START_CHILLER_PUMP_Y1+1, START_CHILLER_PUMP_W, START_CHILLER_PUMP_H, Green);
                 lcd_DrawRect(BK_X1, BK_Y1, BK_X2, BK_Y2, Cyan);
                 lcd_fill(BK_X1+1, BK_Y1+1, BK_W, BK_H, Magenta);
-                lcd_printf(10,1,18,  "MANUAL STIR APPLET");
-                lcd_printf(22,4,13, "START STIR");
-                lcd_printf(22,8,12, "STOP STIR");
+                lcd_printf(10,1,18,  "MANUAL CHILLER_PUMP APPLET");
+                lcd_printf(22,4,13, "START CHILLER_PUMP");
+                lcd_printf(22,8,12, "STOP CHILLER_PUMP");
                 lcd_printf(30, 13, 4, "Back");
                 //vTaskDelay(2000);
                 //adc_init();
                 //adc_init();
                 //create a dynamic display task
-                xTaskCreate( vStirAppletDisplay,
+                xTaskCreate( vChillerPumpAppletDisplay,
                     ( signed portCHAR * ) "chiller_disp",
                     configMINIMAL_STACK_SIZE + 500,
                     NULL,
                     tskIDLE_PRIORITY ,
-                    &xSTIRAppletDisplayHandle );
+                    &xCHILLERPumpAppletDisplayHandle );
         }
 
 }
 
 
-void vStirAppletDisplay( void *pvParameters){
+void vChillerPumpAppletDisplay( void *pvParameters){
         static char tog = 0; //toggles each loop
         for(;;)
         {
 
             xSemaphoreTake(xAppletRunningSemaphore, portMAX_DELAY); //take the semaphore so that the key handler wont
                                                                                //return to the menu system until its returned
-                switch (uStirState)
+                switch (uChillerPumpState)
                 {
-                case DRIVING:
+                case PUMPING:
                 {
                         if(tog)
                         {
                               lcd_fill(1,220, 180,29, Black);
-                                lcd_printf(1,13,15,"STIR DRIVING");
+                                lcd_printf(1,13,15,"CHILLER_PUMP DRIVING");
                         }
                         else{
                                 lcd_fill(1,210, 180,17, Black);
@@ -127,7 +127,7 @@ void vStirAppletDisplay( void *pvParameters){
                         if(tog)
                         {
                                 lcd_fill(1,210, 180,29, Black);
-                                lcd_printf(1,13,11,"STIR STOPPED");
+                                lcd_printf(1,13,11,"CHILLER_PUMP STOPPED");
                         }
                         else
                           {
@@ -150,34 +150,34 @@ void vStirAppletDisplay( void *pvParameters){
         }
 }
 
-int iStirKey(int xx, int yy)
+int iChillerPumpKey(int xx, int yy)
 {
 
   uint16_t window = 0;
   static uint8_t w = 5,h = 5;
   static uint16_t last_window = 0;
 
-  if (xx > STOP_STIR_X1+1 && xx < STOP_STIR_X2-1 && yy > STOP_STIR_Y1+1 && yy < STOP_STIR_Y2-1)
+  if (xx > STOP_CHILLER_PUMP_X1+1 && xx < STOP_CHILLER_PUMP_X2-1 && yy > STOP_CHILLER_PUMP_Y1+1 && yy < STOP_CHILLER_PUMP_Y2-1)
     {
-      vStir(STOPPED);
-      uStirState = STOPPED;
+      vChillerPump(STOPPED);
+      uChillerPumpState = STOPPED;
 
     }
-  else if (xx > START_STIR_X1+1 && xx < START_STIR_X2-1 && yy > START_STIR_Y1+1 && yy < START_STIR_Y2-1)
+  else if (xx > START_CHILLER_PUMP_X1+1 && xx < START_CHILLER_PUMP_X2-1 && yy > START_CHILLER_PUMP_Y1+1 && yy < START_CHILLER_PUMP_Y2-1)
     {
-      vStir(DRIVING);
-      uStirState = DRIVING;
+      vChillerPump(PUMPING);
+      uChillerPumpState = PUMPING;
     }
   else if (xx > BK_X1 && yy > BK_Y1 && xx < BK_X2 && yy < BK_Y2)
     {
       //try to take the semaphore from the display applet. wait here if we cant take it.
       xSemaphoreTake(xAppletRunningSemaphore, portMAX_DELAY);
       //delete the display applet task if its been created.
-      if (xSTIRAppletDisplayHandle != NULL)
+      if (xCHILLERPumpAppletDisplayHandle != NULL)
         {
-          vTaskDelete(xSTIRAppletDisplayHandle);
+          vTaskDelete(xCHILLERPumpAppletDisplayHandle);
           vTaskDelay(100);
-          xSTIRAppletDisplayHandle = NULL;
+          xCHILLERPumpAppletDisplayHandle = NULL;
         }
 
       //return the semaphore for taking by another task.

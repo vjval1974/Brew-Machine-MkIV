@@ -22,6 +22,7 @@
 #include "stm32f10x.h"
 #include "queue.h"
 #include "speaker.h"
+#include "task.h"
 #define BEEP_QUEUE_SIZE 1
 //-------------------------------------------------------------------------
 xQueueHandle xBeepQueue;

@@ -89,6 +89,7 @@ CFLAGS=-g$(DEBUG)\
 # Source files
 #stm3210e_lcd.c 
 SOURCE=	main.c 	drivers/lcd.c \
+		printf-stdarg.c \
 		stf_syscalls_minimal.c \
 		drivers/touch.c \
 		drivers/serial.c \
@@ -111,7 +112,9 @@ SOURCE=	main.c 	drivers/lcd.c \
 		Flow1.c \
 		diag_pwm.c \
 		I2C-IO.c \
-		chiller_pump.c
+		chiller_pump.c \
+		console.c \
+		brew.c
 		
 
 # ST Library source files.
@@ -136,6 +139,7 @@ ST_LIB_SOURCE= \
 FREERTOS_SOURCE= $(RTOS_SOURCE_DIR)/list.c \
 		$(RTOS_SOURCE_DIR)/queue.c \
 		$(RTOS_SOURCE_DIR)/tasks.c \
+		$(RTOS_SOURCE_DIR)/timers.c \
 		$(RTOS_SOURCE_DIR)/portable/GCC/ARM_CM3/port.c \
 		$(RTOS_SOURCE_DIR)/portable/MemMang/heap_2.c
 

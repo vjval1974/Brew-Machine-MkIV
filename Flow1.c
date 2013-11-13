@@ -27,10 +27,10 @@ xQueueHandle xLitresToMashQueue, xLitresToBoilQueue;
 
 //globals
 volatile unsigned long ulBoilFlowPulses = 0, ulMashFlowPulses;
-const float fBoilLitresPerPulseL = (0.0033/2)*1.5;
-const float fMashLitresPerPulseL = (0.0033/2)*1.5;
-const float fBoilLitresPerPulseH = (0.0042/2)*1.5;
-const float fMashLitresPerPulseH = (0.0042/2)*1.5;
+const float fBoilLitresPerPulseL = (0.0033/2)*2.187;
+const float fMashLitresPerPulseL = (0.0033/2)*2.187;
+const float fBoilLitresPerPulseH = (0.0042/2)*2.187;
+const float fMashLitresPerPulseH = (0.0042/2)*2.187;
 const unsigned long ulLowerThresh = 26/2;
 float fLitresDeliveredToBoil = 0, fLitresDeliveredToMash = 0;
 volatile uint8_t uBoilFlowState = NOT_FLOWING, uMashFlowState = NOT_FLOWING;

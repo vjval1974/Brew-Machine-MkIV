@@ -66,7 +66,7 @@
 #define configCPU_CLOCK_HZ		( ( unsigned portLONG ) 72000000 )
 #define configTICK_RATE_HZ		( ( portTickType ) 1000 )
 #define configMAX_PRIORITIES			( ( unsigned portBASE_TYPE ) 5 )
-#define configMINIMAL_STACK_SIZE		( ( unsigned portSHORT ) 512 )
+#define configMINIMAL_STACK_SIZE		( ( unsigned portSHORT ) 256 )
 // total heap size was 48*1024
 #define configTOTAL_HEAP_SIZE			( ( size_t ) ( 48 * 1024 ) )
 #define configMAX_TASK_NAME_LEN			( 16 )
@@ -76,9 +76,16 @@
 #define configUSE_MUTEXES			1
 #define configCHECK_FOR_STACK_OVERFLOW	        2
 #define configUSE_RECURSIVE_MUTEXES		1
-
+//#define configUSE_TIMERS                        1
 #define configUSE_CO_ROUTINES			0
 #define configMAX_CO_ROUTINE_PRIORITIES ( 2 )
+#define configUSE_TRACE_FACILITY                1
+
+//#define configASSERT(x)  if( ( x ) == 0 ) vAssertCalled( __FILE__, __LINE__ )
+
+//#define configTIMER_QUEUE_LENGTH                10
+//#define configTIMER_TASK_STACK_DEPTH            200
+//#define configTIMER_TASK_PRIORITY               3
 
 /* Set the following definitions to 1 to include the API function, or zero
 to exclude the API function. */

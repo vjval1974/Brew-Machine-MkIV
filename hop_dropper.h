@@ -23,5 +23,6 @@
 void vHopDropperApplet(int init);
 int iHopDropperKey(int xx, int yy);
 void vHopsInit(void);
+void vTaskHops(void * pvParameters);
 
 #endif /* HOP_DROPPER_H_ */

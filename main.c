@@ -43,6 +43,8 @@
 #include "diag_pwm.h"
 #include "I2C-IO.h"
 #include "chiller_pump.h"
+#include "console.h"
+#include "brew.h"
 
 /*-----------------------------------------------------------*/
 
@@ -62,7 +64,7 @@ static void prvSetupHardware( void );
 
 xTaskHandle xLCDTaskHandle, 
     xTouchTaskHandle, 
-
+    xPrintTaskHandle,
     xBeepTaskHandle, 
     xTimerSetupHandle,
     xDS1820TaskHandle,
@@ -70,7 +72,10 @@ xTaskHandle xLCDTaskHandle,
     xLitresToBoilHandle,
     xI2C_TestHandle,
     xI2C_SendHandle,
-    xLitresToMashHandle ;
+    xLitresToMashHandle,
+    xHopsTaskHandle,
+    xBrewTaskHandle;
+
 
 
 // Needed by file core_cm3.h
@@ -113,32 +118,48 @@ int example_applet_touch_handler(int xx, int yy)
 void vCheckTask(void *pvParameters)
 {
 
-  unsigned int touch, adc, ds1820, timer, litres, check, low_level = 90, heap;
+  unsigned int touch, hops, ds1820, timer, litres, check, low_level = 90, heap, print;
   for (;;){
 
       touch = uxTaskGetStackHighWaterMark(xTouchTaskHandle);
-
+      static char cBuf[80];
       ds1820 =  uxTaskGetStackHighWaterMark(xDS1820TaskHandle);
       timer = uxTaskGetStackHighWaterMark(xTimerSetupHandle);
       litres = uxTaskGetStackHighWaterMark(xLitresToBoilHandle);
+      print = uxTaskGetStackHighWaterMark(xPrintTaskHandle);
+      hops = uxTaskGetStackHighWaterMark(xHopsTaskHandle);
       check = uxTaskGetStackHighWaterMark(NULL);
       heap = xPortGetFreeHeapSize();
 
       if (touch < low_level ||
-          adc < low_level ||
-          ds1820 < low_level ||
-          timer < low_level)
+          timer < low_level ||
+          litres < low_level||
+          print < low_level ||
+          hops < low_level ||
+          check < low_level)
         {
           //vTaskSuspendAll();
-          printf("check task: idle ticks = %lu\r\n", ulIdleCycleCount);
-          printf("touchwm = %d\r\n", touch);
-          printf("DS1820wm = %d\r\n", ds1820);
-          printf("TimerSetupwm = %d\r\n", timer);
-          printf("litreswm = %d\r\n", litres);
-          printf("check = %d\r\n", check);
-          printf("Free Heap Size = %d\r\n", heap);
-
-          //xTaskResumeAll();
+          vConsolePrint("=============================\r\n");
+          sprintf(cBuf,"check task: idle ticks = %d\r\n", ulIdleCycleCount);
+          vConsolePrint(cBuf);
+          sprintf(cBuf, "touchwm = %d\r\n", touch);
+          vConsolePrint(cBuf);
+          sprintf(cBuf, "DS1820wm = %d\r\n", ds1820);
+          vConsolePrint(cBuf);
+          sprintf(cBuf, "TimerSetupwm = %d\r\n", timer);
+          vConsolePrint(cBuf);
+          sprintf(cBuf, "litreswm = %d\r\n", litres);
+          vConsolePrint(cBuf);
+          sprintf(cBuf, "hopswm = %d\r\n", hops);
+          vConsolePrint(cBuf);
+          sprintf(cBuf, "check = %d\r\n", check);
+          vConsolePrint(cBuf);
+          sprintf(cBuf, "Free Heap Size = %d\r\n", heap);
+          vConsolePrint(cBuf);
+          sprintf(cBuf, "print = %d\r\n", print);
+          vConsolePrint(cBuf);
+          vConsolePrint("=============================\r\n");
+//xTaskResumeAll();
           vTaskDelay(500);
 
         }
@@ -180,6 +201,7 @@ struct menu manual_menu[] =
 struct menu manual_menu2[] =
     {
         {"Chiller Pump",        NULL,                           vChillerPumpApplet,           NULL,                   iChillerPumpKey},
+        {"Stir",                NULL,                           vStirApplet,                    NULL,                   iStirKey},
         {"Back",                NULL,                           NULL,                           NULL,                   NULL},
         {NULL,                  NULL,                           NULL,                           NULL,                   NULL}
     };
@@ -189,8 +211,8 @@ struct menu main_menu[] =
         {"Manual Control",      manual_menu,    		NULL, 				NULL, 			NULL},
         {"Manual Control2",     manual_menu2,                   NULL,                           NULL,                   NULL},
         {"Boil",                NULL,                           vBoilApplet,                    NULL,                   iBoilKey},
-        {"Stir",                NULL,                           vStirApplet,                    NULL,                   iStirKey},
         {"Diagnostics",         diag_menu,                      NULL,                           NULL,                   NULL},
+        {"BREW",                NULL,                           vBrewApplet,                    NULL,                   iBrewKey},
         {NULL,                  NULL, 				NULL,                           NULL, 			NULL}
     };
 
@@ -200,6 +222,15 @@ struct menu main_menu[] =
 int main( void )
 {
     prvSetupHardware();// set up peripherals etc 
+    xPrintQueue = xQueueCreate(5, sizeof(char *));
+    if (xPrintQueue == NULL)
+      {
+        printf("Failed to make print queue\r\n");
+        for (;;);
+      }
+
+
+
     USARTInit(USART_PARAMS1);
 
     lcd_init();          
@@ -210,40 +241,50 @@ int main( void )
 
     menu_set_root(main_menu);
 
-
     vMillInit();
+
     vHLTPumpInit();
 
     vMashPumpInit();
+
     vValvesInit();
+
     vDiagTempsInit();
 
     vHopsInit();
 
     vBoilInit();
 
-    //vStirInit();
+    vStirInit();
+
     vCraneInit();
-    //vStirInit();
+
     hlt_init();
 
     vFlow1Init();
+
     vDiagPWMInit();
+
     vChillerPumpInit();
 
-
+    xTaskCreate( vConsolePrintTask,
+        ( signed portCHAR * ) "PrintTask",
+        configMINIMAL_STACK_SIZE,
+        NULL,
+        tskIDLE_PRIORITY + 2,
+        &xPrintTaskHandle );
 
     xTaskCreate( vTouchTask, 
-                 ( signed portCHAR * ) "touch", 
-                 configMINIMAL_STACK_SIZE +400,
-                 NULL, 
-                 tskIDLE_PRIORITY+1,
-                 &xTouchTaskHandle );
+        ( signed portCHAR * ) "touch",
+        configMINIMAL_STACK_SIZE +400,
+        NULL,
+        tskIDLE_PRIORITY+1,
+        &xTouchTaskHandle );
 
-    // Create you application tasks if needed here
+    // Create your application tasks if needed here
     xTaskCreate( vTaskDS1820Convert,
         ( signed portCHAR * ) "DS1820",
-        configMINIMAL_STACK_SIZE + 200,
+        configMINIMAL_STACK_SIZE + 100,
         NULL,
         tskIDLE_PRIORITY,
         &xDS1820TaskHandle );
@@ -262,25 +303,41 @@ int main( void )
             tskIDLE_PRIORITY ,
             &xLitresToMashHandle );
 
+    xTaskCreate( vTaskHops,
+           ( signed portCHAR * ) "hops",
+           configMINIMAL_STACK_SIZE,
+           NULL,
+           tskIDLE_PRIORITY + 1,
+           &xHopsTaskHandle );
+
+
+
     xTaskCreate( vCheckTask,
         ( signed portCHAR * ) "check",
         configMINIMAL_STACK_SIZE +200,
         NULL,
-        tskIDLE_PRIORITY,
+        tskIDLE_PRIORITY + 1,
         &xCheckTaskHandle );
 
 
-  //    xTaskCreate( vI2C_TestTask,
-  //        ( signed portCHAR * ) "i2c_test",
-  //        configMINIMAL_STACK_SIZE +400,
-  //        NULL,
-  //        tskIDLE_PRIORITY,
-  //        &xI2C_TestHandle );
+    /*xTaskCreate( vTaskBrew,
+            ( signed portCHAR * ) "BREW",
+            configMINIMAL_STACK_SIZE +200,
+            (void *)54,
+            tskIDLE_PRIORITY + 1,
+            &xBrewTaskHandle );
+*/
+//      xTaskCreate( vI2C_TestTask,
+//          ( signed portCHAR * ) "i2c_test",
+//          configMINIMAL_STACK_SIZE +400,
+//          NULL,
+//          tskIDLE_PRIORITY,
+//          &xI2C_TestHandle );
 
 
     xTaskCreate(  vI2C_SendTask,
               ( signed portCHAR * ) "i2c_send",
-              configMINIMAL_STACK_SIZE +400,
+              configMINIMAL_STACK_SIZE +500,
               NULL,
               tskIDLE_PRIORITY,
               & xI2C_SendHandle );

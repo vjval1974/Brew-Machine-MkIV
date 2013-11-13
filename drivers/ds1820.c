@@ -14,6 +14,7 @@
 #include "ds1820.h"
 #include "queue.h"
 #include "lcd.h"
+#include "console.h"
 
 
 // ROM COMMANDS
@@ -82,6 +83,7 @@ char * b[6]; // holds the 64 bit addresses of the temp sensors
 ////////////////////////////////////////////////////////////////////////////
 void vTaskDS1820Convert( void *pvParameters ){
     char buf[30];
+    static char print_buf[80];
     int ii = 0;
 
 
@@ -90,6 +92,7 @@ void vTaskDS1820Convert( void *pvParameters ){
     if (ds1820_reset() ==PRESENCE_ERROR)
     {
         ds1820_error(PRESENCE_ERROR);
+        vConsolePrint("Presence Error, Deleting DS1820 Task\r\n");
         vTaskDelete(NULL); // if this task fails... delete it
     }
   
@@ -112,12 +115,13 @@ void vTaskDS1820Convert( void *pvParameters ){
     vTaskSuspendAll();
     if (rom[0] == 0x10)
       {
-        printf("%02x-%02x-%02x-%02x-%02x-%02x-%02x-%02x\r\n",rom[0],
+        sprintf(print_buf, "%02x-%02x-%02x-%02x-%02x-%02x-%02x-%02x\r\n",rom[0],
             rom[1], rom[2], rom[3], rom[4], rom[5], rom[6], rom[7]);
+        vConsolePrint(print_buf);
       }
     else
       {
-        printf("NO SENSOR\r\n");
+        vConsolePrint("NO SENSOR\r\n");
       }
     xTaskResumeAll();
 
@@ -158,22 +162,26 @@ float ds1820_get_temp(unsigned char sensor){
 
 
 void ds1820_error(uint8_t code){
-
+  static char print_buf[80];
   switch(code)
   {
   case PRESENCE_ERROR:
     {
-      printf("DS1820 No sensor present on Bus. Bus OK.\r\n");
+      sprintf(print_buf, "DS1820 No sensor present on Bus. Bus OK.\r\n");
+      vConsolePrint(print_buf);
       break;
     }
   case BUS_ERROR:
     {
-      printf("DS1820 Bus Fault\r\n");
+      sprintf(print_buf, "DS1820 Bus Fault\r\n");
+      vConsolePrint(print_buf);
       break;
     }
   default:
     {
-      printf("DS1820 Undefined error\r\n");
+
+      sprintf(print_buf, "DS1820 Undefined error\r\n");
+      vConsolePrint(print_buf);
       break;
     }
   }
@@ -477,7 +485,7 @@ static uint8_t ds1820_search(){
     }
     portEXIT_CRITICAL();
     ds1820_reset();
-    sprintf(console_text, "Sensor search complete\r\n\0");
+
     return 0;
    
 }

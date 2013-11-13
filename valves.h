@@ -12,6 +12,7 @@
 #define MASH_VALVE 1
 #define BOIL_VALVE 2
 #define INLET_VALVE 3
+#define CHILLER_VALVE 4
 
 #define TOGGLE 255
 #define OPEN 0
@@ -22,12 +23,13 @@
 #define MASH_VALVE_PORT GPIOB
 #define INLET_VALVE_PORT GPIOB
 #define BOIL_VALVE_PORT GPIOE
+#define CHILLER_VALVE_PORT GPIOC
 
 #define HLT_VALVE_PIN GPIO_Pin_0
 #define MASH_VALVE_PIN GPIO_Pin_1
 #define INLET_VALVE_PIN GPIO_Pin_5
 #define BOIL_VALVE_PIN GPIO_Pin_0
-
+#define CHILLER_VALVE_PIN GPIO_Pin_9
 
 
 void vValvesInit(void);

@@ -244,8 +244,6 @@ u16  Touch_GetPhyY(void)
 
 void vTouchTask( void *pvParameters ) 
 {
-	printf("Touch start\r\n");
-
 	Touch_Initializtion();
 	unsigned int x = 0, y = 0, beep = TOUCH_BEEP; // current x,y value
 

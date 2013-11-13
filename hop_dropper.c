@@ -15,17 +15,24 @@
 #include "semphr.h"
 #include "hop_dropper.h"
 #include "I2C-IO.h"
+#include "queue.h"
+#include "console.h"
 
 #define ON 1
 #define OFF 0
 
-volatile uint8_t hop_dropper_state = OFF;
+// Hop Dropper States
+#define STOPPED 0
+#define DRIVING_NO_GAP 1
+#define DRIVING_GAP 2
 
+//volatile uint8_t hop_dropper_state = OFF;
+volatile uint8_t uState = STOPPED;
 // semaphore that stops the returning from the applet to the menu system until the applet goes into the blocked state.
 xSemaphoreHandle xHopAppletRunningSemaphore;
 
 xTaskHandle xHopsNextTaskHandle = NULL, xHopDropperAppletDisplayHandle = NULL;
-
+xQueueHandle xHopsQueue;
 
 void vHopsInit(void)
 {
@@ -39,7 +46,7 @@ void vHopsInit(void)
    GPIO_InitStructure.GPIO_Pin =  HOP_DROPPER_LIMIT_PIN;
    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
    GPIO_Init( HOP_DROPPER_LIMIT_PORT, &GPIO_InitStructure );
-  vSemaphoreCreateBinary(xHopAppletRunningSemaphore);
+   vSemaphoreCreateBinary(xHopAppletRunningSemaphore);
 
 }
 
@@ -47,18 +54,90 @@ void vHopsDrive(unsigned char state){
   if (state == ON)
     {
       vPCF_SetBits(HOP_DROPPER_DRIVE_PIN, HOP_DROPPER_DRIVE_PORT); //pull low
-      hop_dropper_state = ON;
+      //hop_dropper_state = ON;
     }
   else
     {
       vPCF_ResetBits(HOP_DROPPER_DRIVE_PIN, HOP_DROPPER_DRIVE_PORT); //pull low
-      hop_dropper_state = OFF;
+      //hop_dropper_state = OFF;
     }
 }
 
 
+#define OFF 0
+#define ON 1
 
 
+static uint8_t uDebounce(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin, uint8_t uRequiredState){
+  uint8_t uPinState1, uPinState2;
+  uPinState1 = GPIO_ReadInputDataBit(GPIOx, GPIO_Pin);
+  vTaskDelay(5);
+  uPinState2 = GPIO_ReadInputDataBit(GPIOx, GPIO_Pin);
+  // if both values are the same, we are happy.
+  if ((uPinState1 == uPinState2) && (uPinState2 == uRequiredState))
+    {
+      return pdTRUE;
+    }
+
+  return pdFALSE;
+}
+
+
+void vTaskHops(void * pvParameters){
+  uint8_t uNext = 0;
+
+  uint8_t uPinState;
+
+  portTickType xLastWakeTime;
+  const portTickType xFrequency = 10;
+   // Initialise the xLastWakeTime variable with the current time.
+  xLastWakeTime = xTaskGetTickCount ();
+
+  xHopsQueue = xQueueCreate(1, sizeof(uint8_t));
+  if (xHopsQueue == NULL)
+    vConsolePrint("Can't Create Hops Queue\r\n");
+
+  for (;;)
+    {
+      if (xQueueReceive(xHopsQueue, &uNext, portMAX_DELAY) == pdPASS)
+        {
+          vConsolePrint("Received Message\r\n");
+          vHopsDrive(ON);
+          uState = DRIVING_NO_GAP;
+          while (uState != STOPPED)
+            {
+              switch (uState)
+              {
+              case DRIVING_NO_GAP:
+                {
+                  if (uDebounce(HOP_DROPPER_LIMIT_PORT, HOP_DROPPER_LIMIT_PIN, OFF))
+                    {
+                      uState = DRIVING_GAP;
+                      vConsolePrint("State = DRIVING_GAP\r\n");
+                    }
+
+                  break;
+
+                }
+              case DRIVING_GAP:
+                {
+                  if (uDebounce(HOP_DROPPER_LIMIT_PORT, HOP_DROPPER_LIMIT_PIN, ON))
+
+                    {
+                      vHopsDrive(OFF);
+                      vConsolePrint("State = STOPPED\r\n");
+                      uState = STOPPED;
+                    }
+
+                  break;
+                }
+              }//switch
+              vTaskDelayUntil( &xLastWakeTime, xFrequency );
+            }//While..
+        } //xQueueReceive
+    } //inf loop
+} // func
+/*
 void vTaskHopsNext(  void * pvParameters)
 {
   char gap = 0, in = 0;
@@ -75,14 +154,14 @@ void vTaskHopsNext(  void * pvParameters)
           // check again
           in = GPIO_ReadInputDataBit(HOP_DROPPER_LIMIT_PORT, HOP_DROPPER_LIMIT_PIN); //sit in loop waiting for the gap
           if (!in){
-              printf("found gap\r\n");
+              vConsolePrint("found gap\r\n");
               vTaskDelay(100);
               gap = 1;
           }
       }
       else
         {
-          printf("waiting for gap\r\n");
+          vConsolePrint("waiting for gap\r\n");
           gap = 0;
         }
 
@@ -102,7 +181,7 @@ void vTaskHopsNext(  void * pvParameters)
           in = GPIO_ReadInputDataBit(HOP_DROPPER_LIMIT_PORT, HOP_DROPPER_LIMIT_PIN); //sit in loop waiting for the gap
           if (in) //we have hit the next stop
             {
-              printf("second\r\n");
+              vConsolePrint("second\r\n");
               vTaskDelay(100);
               vHopsDrive(OFF); // stop the motor
               xHopsNextTaskHandle = NULL; // delete this task handle
@@ -116,57 +195,73 @@ void vTaskHopsNext(  void * pvParameters)
 }
 
 
-
+*/
 
 
 void vHopDropperAppletDisplay( void *pvParameters){
-        static char tog = 0; //toggles each loop
+  static char tog = 0; //toggles each loop
 
-        for(;;)
+  for(;;)
+    {
+
+      xSemaphoreTake(xHopAppletRunningSemaphore, portMAX_DELAY); //take the semaphore so that the key handler wont
+      //return to the menu system until its returned
+      switch (uState)
+      {
+      case DRIVING_NO_GAP:
         {
-
-            xSemaphoreTake(xHopAppletRunningSemaphore, portMAX_DELAY); //take the semaphore so that the key handler wont
-                                                                    //return to the menu system until its returned
-                switch (hop_dropper_state)
-                {
-                case ON:
-                {
-                        if(tog)
-                        {
-                              lcd_fill(1,220, 180,29, Black);
-                                lcd_printf(1,13,15,"DRIVING");
-                        }
-                        else{
-                                lcd_fill(1,210, 180,17, Black);
-                        }
-                        break;
-                }
-                case OFF:
-                {
-                        if(tog)
-                        {
-                                lcd_fill(1,210, 180,29, Black);
-                                lcd_printf(1,13,11,"OFF");
-                        }
-                        else
-                          {
-                                lcd_fill(1,210, 180,17, Black);
-                          }
-
-                        break;
-                }
-                default:
-                {
-                        break;
-                }
-                }
-
-                tog = tog ^ 1;
-                xSemaphoreGive(xHopAppletRunningSemaphore); //give back the semaphore as its safe to return now.
-                vTaskDelay(500);
-
-
+          if(tog)
+            {
+              lcd_fill(1,220, 180,29, Black);
+              lcd_printf(1,13,15,"DRIVING ON CUP");
+            }
+          else{
+              lcd_fill(1,210, 180,17, Black);
+          }
+          break;
         }
+      case DRIVING_GAP:
+        {
+          if(tog)
+            {
+              lcd_fill(1,210, 180,29, Black);
+              lcd_printf(1,13,11,"DRIVING IN GAP");
+            }
+          else
+            {
+              lcd_fill(1,210, 180,17, Black);
+            }
+
+          break;
+        }
+      case STOPPED:
+        {
+          if(tog)
+            {
+              lcd_fill(1,210, 180,29, Black);
+              lcd_printf(1,13,11,"STOPPED");
+            }
+          else
+            {
+              lcd_fill(1,210, 180,17, Black);
+            }
+
+          break;
+        }
+
+
+      default:
+        {
+          break;
+        }
+      }
+
+      tog = tog ^ 1;
+      xSemaphoreGive(xHopAppletRunningSemaphore); //give back the semaphore as its safe to return now.
+      vTaskDelay(200);
+
+
+    }
 }
 
 
@@ -217,21 +312,21 @@ int iHopDropperKey(int xx, int yy)
   static uint16_t last_window = 0;
   if (xx > HOPS_NEXT_X1+1 && xx < HOPS_NEXT_X2-1 && yy > HOPS_NEXT_Y1+1 && yy < HOPS_NEXT_Y2-1)
     {
-      //printf("Checking if task already running...\r\n");
+
       if (xHopsNextTaskHandle == NULL)
         {
-       //   printf("No previous HOPS task\r\n");
-       //   printf("Creating Task\r\n");
-          xTaskCreate( vTaskHopsNext,
-              ( signed portCHAR * ) "Hops_next",
-              configMINIMAL_STACK_SIZE +200,
-              NULL,
-              tskIDLE_PRIORITY+1,
-              &xHopsNextTaskHandle );
+          xQueueSendToBack(xHopsQueue, (void *)1,0);
+//
+//          xTaskCreate( vTaskHopsNext,
+//              ( signed portCHAR * ) "Hops_next",
+//              configMINIMAL_STACK_SIZE +200,
+//              NULL,
+//              tskIDLE_PRIORITY+1,
+//              &xHopsNextTaskHandle );
         }
       else
         {
-        //  printf("Hops task already running\r\n");
+
         }
     }
   else if (xx > BK_X1 && yy > BK_Y1 && xx < BK_X2 && yy < BK_Y2)

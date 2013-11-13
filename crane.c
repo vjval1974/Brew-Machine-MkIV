@@ -17,7 +17,9 @@
 //-------------------------------------------------------------------------
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include "crane.h"
+
 #include "stm32f10x.h"
 #include "FreeRTOS.h"
 #include "lcd.h"
@@ -27,56 +29,80 @@
 #include "semphr.h"
 #include "queue.h"
 #include "I2C-IO.h"
+#include "timers.h"
+#include "console.h"
 
-
+// Directions
 #define UP 1
-#define DN 255
-#define DRIVING 1
+#define DN 2
+#define STOP -1
+
+// Crane States
+#define TOP 1
+#define BOTTOM 2
+#define DRIVING_UP 3
+#define DRIVING_DOWN 4
 #define STOPPED -1
 
-
-#define TIMER_USED TIM3
-
-
+volatile int8_t cs = STOPPED;
+volatile int8_t iCraneState = STOPPED;
 
 xQueueHandle xCraneQueueHandle;
-
+xQueueHandle xCraneQueue;
 xSemaphoreHandle xAppletRunningSemaphore;
-
 xTaskHandle xCraneTaskHandle = NULL, xCraneAppletDisplayHandle = NULL;
+
 void vTaskCrane(void * pvParameters);
 
-struct Step
+struct CraneCommand
 {
-  unsigned char ucDirection; //1 = up, -1 = down
-  unsigned char ucEnable;
-  //int uSpeed; //final speed in percent
-  //int uTime; //acceleration delay (controls rate of acceleration)
-
-  //        char ucMessageID;
-  //        char ucData[ 20 ];
+  int8_t cDirection; //1 = up, 2 = down , -1 = stopped
+  unsigned char ucEnable; // off on
 };
 
-struct Step Stop = {UP, STOPPED};
-
-struct Step Up = {UP, DRIVING};
-struct Step Down = {DN, DRIVING};
-
+struct CraneCommand Stop = {STOP, 1};
+struct CraneCommand Up = {UP, 1};
+struct CraneCommand Down = {DN, 1};
 
 
-xQueueHandle xCraneQueue1, xCraneQueue2;
-#if 1
+// Helper Function to debounce the input from the dry contacts on the relays
+uint8_t debounce(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin)
+{
+  uint8_t read1, read2;
+  read1 = GPIO_ReadInputDataBit(GPIOx, GPIO_Pin);
+  vTaskDelay(5);
+  read2 = GPIO_ReadInputDataBit(GPIOx, GPIO_Pin);
+  if (read1 == read2)
+    return read1;
+  else return 0;
+
+}
+
+void * pvCraneTime = (void *)1;
+void vCraneTimerCallback(xTimerHandle xHandle);
+uint16_t uCraneTime;
+xTimerHandle xCraneTimerHandle;
+
 void vCraneInit(void)
 {
+  GPIO_InitTypeDef GPIO_InitStructure;
 
+  // Set up the input pin configuration for PE4
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+  GPIO_InitStructure.GPIO_Pin =  CRANE_UPPER_LIMIT_PIN;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPD;
+  GPIO_Init( CRANE_LIMIT_PORT, &GPIO_InitStructure );
+
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+  GPIO_InitStructure.GPIO_Pin =  CRANE_LOWER_LIMIT_PIN;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPD;
+  GPIO_Init( CRANE_LIMIT_PORT, &GPIO_InitStructure );
 
   vPCF_ResetBits(CRANE_PIN1, CRANE_PORT); //pull low
   vPCF_ResetBits(CRANE_PIN2, CRANE_PORT); //pull low
-    printf("Crane Initialised\r\n");
-
 
   vSemaphoreCreateBinary(xAppletRunningSemaphore);
-  xCraneQueue2 = xQueueCreate( 1, sizeof( struct Step * ) );
+  xCraneQueue = xQueueCreate( 1, sizeof( struct CraneCommand * ) );
 
   xTaskCreate( vTaskCrane,
       ( signed portCHAR * ) "Crane",
@@ -85,100 +111,199 @@ void vCraneInit(void)
       tskIDLE_PRIORITY,
       &xCraneTaskHandle );
 
+//  xCraneTimerHandle = xTimerCreate( "CraneTimer",
+//      2000/portTICK_RATE_MS, //2 secs
+//      pdFALSE, //one shot
+//      pvCraneTime,
+//      vCraneTimerCallback
+//
+//  );
+
+
+
+  printf("Crane Initialised\r\n");
+
 }
-#endif
 
 
-
-volatile int8_t crane_state = STOPPED;
-
-void vCraneFunc(struct Step * step)
+void vCraneFunc(struct CraneCommand * Command)
 {
   portENTER_CRITICAL(); // so that we dont get switched out whilst accessing these pins.
-  if (step->ucEnable == DRIVING)
+
+  switch (Command->cDirection)
+  {
+  case UP:
     {
-      if (step->ucDirection == UP)
-        {
-          // need to turn relay 2 off which sets up for REV direction
-          vPCF_ResetBits(CRANE_PIN2, CRANE_PORT); //pull low
-          vPCF_SetBits(CRANE_PIN1, CRANE_PORT); //pull low
-        }
-      else
-        {
-          // need to turn relay 1 off which sets up for REV direction
-          vPCF_ResetBits(CRANE_PIN1, CRANE_PORT); //pull low
-          vPCF_SetBits(CRANE_PIN2, CRANE_PORT); //pull low
-        }
+      // need to turn relay 2 off which sets up for REV direction
+      vPCF_ResetBits(CRANE_PIN2, CRANE_PORT); //pull low
+      vPCF_SetBits(CRANE_PIN1, CRANE_PORT); //pull low
+      break;
     }
-  else
+  case DN:
+    {
+      // need to turn relay 1 off which sets up for REV direction
+      vPCF_ResetBits(CRANE_PIN1, CRANE_PORT); //pull low
+      vPCF_SetBits(CRANE_PIN2, CRANE_PORT); //pull low
+      break;
+    }
+
+  default:
     {
       vPCF_ResetBits(CRANE_PIN1, CRANE_PORT); //pull low
       vPCF_ResetBits(CRANE_PIN2, CRANE_PORT); //pull low
-      crane_state = STOPPED;
+      break;
     }
+  }
   portEXIT_CRITICAL();
-}
 
+}
 
 void vTaskCrane(void * pvParameters)
 {
-  struct Step * xMessage;
-  uint8_t limit = 0xFF; //neither on or off.
+  struct CraneCommand * xMessage;
+  uint8_t limit = 0xFF, limit1 = 0xFF; //neither on or off.
+  struct CraneCommand * xLastMessage = (struct CraneCommand *)malloc(sizeof(struct CraneCommand));
+  if (xLastMessage == NULL)
+    {
+      vConsolePrint("failure to create struct\r\n");
+      vTaskDelete(NULL);
+    }
+  xLastMessage->ucEnable = 1;
+  xLastMessage->cDirection = STOP;
   portBASE_TYPE xStatus;
   for (;;)
     {
+      xStatus = xQueueReceive(xCraneQueue, &(xMessage), 50); // Check the queue every 0.05 second for a new command
 
-
-      xStatus = xQueueReceive(xCraneQueue2, &(xMessage), 500); // Check the queue every 0.5 second for a new command
-      if (xStatus == pdTRUE)
+      // NEED to check that xMessage isn't returned NULL when no message in queue
+      if (xStatus != pdTRUE)
         {
-          // AT THE MOMENT, THE BUTTONS DONT STOP THE CRANE WHEN DRIVING... need to fix
-          vCraneFunc(xMessage);
-          //need to check for the limit at the top/bottom
-          //... but also need to code some logic in case the limit is reached whilst accelerating etc.
-          ////
-
-          while (crane_state == DRIVING)
-            {
-              //printf("%d, ", xMessage->ucDirection);
-
-              if (xMessage->ucDirection == UP)
-                {
-                  limit = GPIO_ReadInputDataBit(CRANE_LIMIT_PORT, CRANE_UPPER_LIMIT_PIN);
-
-                  if (limit == 0)
-                    {
-                      //                printf("Stopping on limit\r\n");
-                      vCraneFunc(&Stop); //stop the crane on an instant.
-
-                      break;
-
-                    }
-                }
-              else if (xMessage->ucDirection == DN)
-                {
-                  limit = GPIO_ReadInputDataBit(CRANE_LIMIT_PORT, CRANE_LOWER_LIMIT_PIN);
-
-                  if (limit == 0)
-                    {
-                      //              printf("Stopping on limit\r\n");
-                      vCraneFunc(&Stop); //stop the crane on an instant.
-
-                      break;
-                    }
-                }
-              taskYIELD();
-            }
-        }
-      else
-        {
-          // printf("Waiting!\r\n");
-          //queue empty
+          xMessage = xLastMessage;
         }
 
+      {
+        switch(iCraneState)
+        {
+        case TOP:
+          {
+            if (xMessage->cDirection == DN)
+              {
+                vCraneFunc(&Down);
+                iCraneState = DRIVING_DOWN;
+              }
+            break;
+          }
+        case BOTTOM:
+          {
+            if (xMessage->cDirection == UP)
+              {
+                vCraneFunc(&Up);
+                iCraneState = DRIVING_UP;
+              }
+            break;
+          }
+        case DRIVING_UP:
+          {
+            if (xMessage->cDirection == STOP)
+              {
+                vCraneFunc(&Stop);
+                vConsolePrint("STOP while DU \r\n");
+                iCraneState = STOPPED;
+              }
+            else if (xMessage->cDirection == DN)
+              {
+                limit = debounce(CRANE_LIMIT_PORT, CRANE_LOWER_LIMIT_PIN);
+                if (limit != 1)
+                  {
+                    vCraneFunc(xMessage);
+                    iCraneState = DRIVING_DOWN;
+                  }
+                else
+                  iCraneState = BOTTOM;
+              }
+            else
+              {
+                limit = debounce(CRANE_LIMIT_PORT, CRANE_UPPER_LIMIT_PIN);
+                if (limit == 1)
+                  {
+                    vCraneFunc(&Stop);
+                    vConsolePrint("STOP limit DU \r\n");
+                    iCraneState = TOP;
+                  }
+              }
+            break;
+          }
+        case DRIVING_DOWN:
+          {
+            if (xMessage->cDirection == STOP)
+              {
+                vCraneFunc(&Stop);
+                vConsolePrint("STOP while DDN \r\n");
+                iCraneState = STOPPED;
+              }
+            else if (xMessage->cDirection == UP)
+              {
+                limit = debounce(CRANE_LIMIT_PORT, CRANE_UPPER_LIMIT_PIN);
+                if (limit == 1)
+                  {
+                    iCraneState = TOP;
+                  }
+                else
+                  {
+                    vCraneFunc(xMessage);
+                    iCraneState = DRIVING_UP;
+                  }
 
-    }
-}
+              }
+            else
+              {
+                limit = debounce(CRANE_LIMIT_PORT, CRANE_LOWER_LIMIT_PIN);
+                if (limit == 1)
+                  {
+                    vCraneFunc(&Stop);
+                    vConsolePrint("STOP limit DDN \r\n");
+                    iCraneState = BOTTOM;
+                  }
+              }
+            break;
+          }
+        case STOPPED:
+          {
+            if (xMessage->cDirection == UP)
+              {
+                limit = debounce(CRANE_LIMIT_PORT, CRANE_UPPER_LIMIT_PIN);
+                if (limit != 1)
+                  {
+                    vCraneFunc(xMessage);
+                    iCraneState = DRIVING_UP;
+                  }
+                else iCraneState = TOP;
+              }
+            else if (xMessage->cDirection == DN)
+              {
+                limit = debounce(CRANE_LIMIT_PORT, CRANE_LOWER_LIMIT_PIN);
+                if (limit != 1)
+                  {
+                    vCraneFunc(xMessage);
+                    iCraneState = DRIVING_DOWN;
+                  }
+                else iCraneState = BOTTOM;
+              }
+            break;
+          }
+        default:
+          {
+            vCraneFunc(&Stop); //stop the crane on an instant.
+            iCraneState = STOPPED;
+            break;
+
+          }
+        }// Switch
+        xLastMessage->cDirection = xMessage->cDirection;
+        xLastMessage->ucEnable = xMessage->ucEnable;
+      }
+    }// Task Loop
+} //func
 
 
 
@@ -191,18 +316,58 @@ void vCraneAppletDisplay( void *pvParameters){
       //return to the menu system until its returned
 
       //display the state and user info (the state will flash on the screen)
-      switch (crane_state)
+      switch (iCraneState)
       {
-      case DRIVING:
+      case DRIVING_UP:
         {
           if(tog)
             {
               lcd_fill(1,220, 180,29, Black);
-              lcd_printf(1,13,15,"DRIVING");
+              lcd_printf(1,13,15,"DRIVING UP");
             }
           else{
               lcd_fill(1,210, 180,17, Black);
           }
+          break;
+        }
+      case DRIVING_DOWN:
+        {
+          if(tog)
+            {
+              lcd_fill(1,220, 180,29, Black);
+              lcd_printf(1,13,15,"DRIVING DOWN");
+            }
+          else{
+              lcd_fill(1,210, 180,17, Black);
+          }
+          break;
+        }
+      case TOP:
+        {
+          if(tog)
+            {
+              lcd_fill(1,210, 180,29, Black);
+              lcd_printf(1,13,11,"TOP");
+            }
+          else
+            {
+              lcd_fill(1,210, 180,17, Black);
+            }
+
+          break;
+        }
+      case BOTTOM:
+        {
+          if(tog)
+            {
+              lcd_fill(1,210, 180,29, Black);
+              lcd_printf(1,13,11,"BOTTOM");
+            }
+          else
+            {
+              lcd_fill(1,210, 180,17, Black);
+            }
+
           break;
         }
       case STOPPED:
@@ -210,7 +375,7 @@ void vCraneAppletDisplay( void *pvParameters){
           if(tog)
             {
               lcd_fill(1,210, 180,29, Black);
-              lcd_printf(1,13,11,"NOT DRIVING");
+              lcd_printf(1,13,11,"STOPPED");
             }
           else
             {
@@ -247,8 +412,6 @@ void vCraneAppletDisplay( void *pvParameters){
 #define DN_Y2 175
 #define DN_W (DN_X2-DN_X1)
 #define DN_H (DN_Y2-DN_Y1)
-
-
 
 #define ST_X1 155
 #define ST_Y1 30
@@ -298,40 +461,27 @@ int iCraneKey(int xx, int yy){
   uint16_t window = 0;
   static uint8_t w = 5,h = 5;
   static uint16_t last_window = 0;
-  struct Step *pxMessage;
+  struct CraneCommand *pxMessage;
 
 
   if (xx > UP_X1+1 && xx < UP_X2-1 && yy > UP_Y1+1 && yy < UP_Y2-1)
     {
-      //printf("up pressed\r\n");
-      //pxMessage = &xSteps[0];
-      //pxMessage = &MashStirSteps[0];
       pxMessage = &Up;
-      //while (pxMessage->ucDirection != 0)
-      // {
-      xQueueSendToBack( xCraneQueue2, ( void * ) &pxMessage, 0 );
-      //pxMessage++;
-      // }
-
+      xQueueSendToBack( xCraneQueue, ( void * ) &pxMessage, 0 );
     }
   else if (xx > DN_X1+1 && xx < DN_X2-1 && yy > DN_Y1+1 && yy < DN_Y2-1)
     {
-      //printf("down pressed\r\n");
       pxMessage = &Down;
-      xQueueSendToBack( xCraneQueue2, ( void * ) &pxMessage, 0 );
+      xQueueSendToBack( xCraneQueue, ( void * ) &pxMessage, 0 );
 
     }
   else if (xx > ST_X1+1 && xx < ST_X2-1 && yy > ST_Y1+1 && yy < ST_Y2-1)
     {
-      //printf("stop pressed\r\n");
       pxMessage = &Stop;
+      xQueueSendToBack( xCraneQueue, ( void * ) &pxMessage, portMAX_DELAY );
 
-     // scrappy... needs state to be stopped to break into while loop in vTaskCrane
-      crane_state = STOPPED;
 
-      xQueueSendToBack( xCraneQueue2, ( void * ) &pxMessage, portMAX_DELAY );
     }
-
   else if (xx > BK_X1 && yy > BK_Y1 && xx < BK_X2 && yy < BK_Y2)
     {
 
@@ -344,8 +494,6 @@ int iCraneKey(int xx, int yy){
           vTaskDelay(100);
           xCraneAppletDisplayHandle = NULL;
         }
-
-
       //return the semaphore for taking by another task.
       xSemaphoreGive(xAppletRunningSemaphore);
       return 1;

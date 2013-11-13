@@ -68,14 +68,14 @@ float fGetHLTLevel(void){
   litres = ((float)raw_adc_value - (float)HLT_ANALOGUE_MIN + ((float)(HLT_MIN_LITRES) * gradient))/gradient;
 
   //litres = (float)((float)raw_adc_value/(float)HLT_ANALOGUE_MAX) * (float)HLT_MAX_LITRES;
-  litres = 5.0;
+  litres = 16;
 
   if ((GPIO_ReadInputDataBit(HLT_LEVEL_CHECK_PORT, HLT_LEVEL_CHECK_PIN)^1) || (litres < 4.0))
       {
       return litres;
       }
-  return 0;
-
+  return 16;
+//////////////////////////////OVERRIDDEN/////////////////////////////////
 }
 
 // Problem with HLT task.. if setpoint is changed during heating, its not recognised.. I think
@@ -91,7 +91,7 @@ void vTaskHeatHLT( void * pvParameters)
   char hlt_ok = 0;
   //choose which value we use for the setpoint.
   if (setpoint == NULL)
-    setpoint = &diag_setpoint;
+    setpoint = (float *)&diag_setpoint;
 
 
  for(;;)

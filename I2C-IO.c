@@ -19,18 +19,22 @@
 #include "semphr.h"
 #include "queue.h"
 #include "I2C-IO.h"
+#include "console.h"
 
 #define I2C_IO_PORT GPIOB
 #define I2C_SDA_PIN GPIO_Pin_8 // these are back to front.. when changed it doesnt work for some reason.. too tired to work out
-#define I2C_CLK_PIN GPIO_Pin_9
+#define I2C_CLK_PIN GPIO_Pin_9 // No theyre not.. its only used in init... swap and try it!
+
+#define FAIL -1
+#define PASS 1
 
 xQueueHandle xI2C_SendQueue;
 
-static void vI2C_Send(char address, char data);
+static int iI2C_Send(char address, char data);
 
 
 void vI2C_Init(void){
-
+  static int first = 1;
   GPIO_InitTypeDef GPIO_InitStructure;
   I2C_InitTypeDef I2C_InitStructure;
 
@@ -66,72 +70,185 @@ void vI2C_Init(void){
     I2C_ITConfig(I2C1, I2C_IT_EVT, ENABLE);
 
     // Creates a queue for the send task.
-    xI2C_SendQueue = xQueueCreate(20, sizeof(uint16_t));
-
-    vI2C_Send(I2C_SLAVE_ADDRESS0, 0xFF);
-    printf("I2C address %x Initialised with value %x", I2C_SLAVE_ADDRESS0, 0xFF);
+    if (first == 1)
+      xI2C_SendQueue = xQueueCreate(20, sizeof(uint16_t));
+    first=0;
+//    iI2C_Send(I2C_SLAVE_ADDRESS0, 0xFF);
+   // printf("I2C address %x Initialised with value %x", I2C_SLAVE_ADDRESS0, 0xFF);
 
   return;
 
 }
 
-static void vI2C_Send(char address, char data)
+static int iI2C_Send(char address, char data)
 {
+  long unsigned int i = 0, j;
+  int retval = 0;
   portENTER_CRITICAL();
+  i = 0;
+   while (I2C_GetFlagStatus(I2C1,I2C_FLAG_BUSY))
+    {
+      i ++;
+      if (i == 7200)
+        {
+          portEXIT_CRITICAL();
+          return -1;
 
-  while (I2C_GetFlagStatus(I2C1,I2C_FLAG_BUSY));
+        }
+    }
+i = 0;
 
   I2C_GenerateSTART(I2C1, ENABLE);
 
-  while(!I2C_GetFlagStatus(I2C1, I2C_FLAG_SB));
+  while(!I2C_GetFlagStatus(I2C1, I2C_FLAG_SB))
+    {
+      i ++;
+      if (i == 7200)
+        {
+          portEXIT_CRITICAL();
+          return -1;
+
+        }
+    }
+  i = 0;
 
   I2C_Send7bitAddress(I2C1, address, I2C_Direction_Transmitter);
 
-  while(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED));
+  while(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED))
+    {
+      i ++;
+      if (i == 7200)
+        {
+          portEXIT_CRITICAL();
+          return -1;
 
+        }
+    }
+  i = 0;
   I2C_SendData(I2C1, data);
 
-  while(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_TRANSMITTED));
+  while(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_TRANSMITTED))
+    {
+      i ++;
+      if (i == 7200)
+        {
+          portEXIT_CRITICAL();
+          return -1;
+
+        }
+    }
+  i = 0;
 
   I2C_GenerateSTOP(I2C1, ENABLE);
 
-  while(I2C_GetFlagStatus(I2C1, I2C_FLAG_STOPF));
+  while(I2C_GetFlagStatus(I2C1, I2C_FLAG_STOPF))
+    {
+      i ++;
+      if (i == 7200)
+        {
+          portEXIT_CRITICAL();
+          return -1;
 
-  while (I2C_GetFlagStatus(I2C1,I2C_FLAG_BUSY));
+        }
+    }
+  i = 0;
+
+  while (I2C_GetFlagStatus(I2C1,I2C_FLAG_BUSY))
+    {
+      i ++;
+      if (i == 7200)
+        {
+          portEXIT_CRITICAL();
+          return -1;
+
+        }
+    }
+  i = 0;
 
   portEXIT_CRITICAL();
-
+  return 1;
 }
 
 
-static void vI2C_Receive(char address, char  * data)
+static int iI2C_Receive(char address, char  * data)
 {
   char received = 0;
+  long unsigned int i = 0;
   portENTER_CRITICAL();
 
   I2C_AcknowledgeConfig(I2C1, DISABLE); // We are receiving only 1 byte from the PCF8574
 
   I2C_GenerateSTART(I2C1, ENABLE);
+  i = 0; // to be safe
+  while(!I2C_GetFlagStatus(I2C1, I2C_FLAG_SB))
+    {
+      i ++;
+      if (i == 7200)
+        {
+          portEXIT_CRITICAL();
+          return -1;
 
-  while(!I2C_GetFlagStatus(I2C1, I2C_FLAG_SB));
+        }
+    }
+  i = 0;
 
   I2C_Send7bitAddress(I2C1, address, I2C_Direction_Receiver);
 
-  while(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED));
+  while(!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED))
+    {
+      i ++;
+      if (i == 7200)
+        {
+          portEXIT_CRITICAL();
+          return -1;
 
-  while (!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_RECEIVED));
+        }
+    }
+  i = 0;
 
+  while (!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_RECEIVED))
+    {
+      i ++;
+      if (i == 7200)
+        {
+          portEXIT_CRITICAL();
+          return -1;
+
+        }
+    }
+  i = 0;
   received = I2C_ReceiveData(I2C1);
 
   I2C_GenerateSTOP(I2C1, ENABLE);
 
-  while(I2C_GetFlagStatus(I2C1, I2C_FLAG_STOPF));
+  while(I2C_GetFlagStatus(I2C1, I2C_FLAG_STOPF))
+    {
+      i ++;
+      if (i == 7200)
+        {
+          portEXIT_CRITICAL();
+          return -1;
 
-  while (I2C_GetFlagStatus(I2C1,I2C_FLAG_BUSY));
+        }
+    }
+  i = 0;
+
+  while (I2C_GetFlagStatus(I2C1,I2C_FLAG_BUSY))
+    {
+      i ++;
+      if (i == 7200)
+        {
+          portEXIT_CRITICAL();
+          return -1;
+
+        }
+    }
+  i = 0;
 
   *data = received;
 
   portEXIT_CRITICAL();
+  return 1;
 }
 
 void vI2C_TestTask(void *pvParameters)
@@ -139,7 +256,9 @@ void vI2C_TestTask(void *pvParameters)
   uint16_t uTestMessage = 0x0000;
   uint8_t uAddress, uData, uRData = 3, uDirection = 0;
   uAddress = 0x70;
+  int em = 0;
   static char flag = 0;
+  vTaskDelay(5000);
   for (;;)
     {
       uData = 0x03;
@@ -148,14 +267,29 @@ void vI2C_TestTask(void *pvParameters)
       if (uDirection)
           uTestMessage |= 1<<4;
 
-      vI2C_Receive(uAddress, &uRData);
+
+      //printf("===================\r\n");
+      //fflush(stdout);
+//      em = iI2C_Receive(uAddress, &uRData);
+//      if ( em == -1){
+//          printf("failed %d", em);
+//          //xQueueSendToBack(xI2C_SendQueue, &uTestMessage, 100);
+//          printf("failed, sending again\r\n");
+//          fflush(stdout);
+//        }
+
+
+
       //printf("\r\n******I2C Test Task Start\r\n");
       //printf("received = %x\r\n", uRData);
       //printf("sending message:\r\n");
       //printf("message = %x\r\n", uTestMessage);
       //printf("address = %x\r\n", uAddress);
       //printf("data = %x\r\n", uData);
-      if (flag == 0){
+
+      vConsolePrint("I2C Test Task Start\r\n");
+      fflush(stdout);
+  if (flag == 0){
           vPCF_SetBits(0, I2C_SLAVE_ADDRESS0);
           flag= 1;
       }
@@ -164,8 +298,12 @@ void vI2C_TestTask(void *pvParameters)
           vPCF_ResetBits(0, I2C_SLAVE_ADDRESS0);
           flag = 0;
         }
-      vTaskDelay(1000);
-      //xQueueSendToBack(xI2C_SendQueue, &uTestMessage, portMAX_DELAY);
+
+  vConsolePrint("\r\n******I2C Test Task END\r\n");
+    //printf("=========================\r\n");
+    fflush(stdout);
+    vTaskDelay(10000);
+    //xQueueSendToBack(xI2C_SendQueue, &uTestMessage, portMAX_DELAY);
       //xQueueSendToBack(xI2C_SendQueue, &uTestMessage+1, portMAX_DELAY);
       //xQueueSendToBack(xI2C_SendQueue, &uTestMessage+2, portMAX_DELAY);
       //printf("Message Sent\r\n");
@@ -179,41 +317,78 @@ void vI2C_TestTask(void *pvParameters)
 void vI2C_SendTask(void *pvParameters)
 {
   portBASE_TYPE xStatus = pdFAIL;
+  int iRCVStatus = FAIL;
+  int iSNDStatus = PASS;
   uint16_t message;
+  static uint8_t cnt = 0;
   uint8_t uAddress = 0x00, uBitNum = 0x00, uCurrent = 0x00, uToSend = 0x00, uDirection = 0xFF;
+  static char pcPrintBuf[80];
+
 for (;;)
   {
     xStatus = xQueueReceive(xI2C_SendQueue, &message, portMAX_DELAY);
     if (xStatus == pdPASS)
       {
- //       I2C_SoftwareResetCmd(I2C1, ENABLE);
-        printf("Message Received:\r\n");
-        printf("Message =  %x\r\n", message);
-        portENTER_CRITICAL();
         uAddress = message>>8;
-        printf("Address - %x\r\n", uAddress);
-        vI2C_Receive(uAddress, &uCurrent);
         uBitNum = (uint8_t)message&(0x0F);
-        //printf("RAddress =  %x\r\n", uAddress);
         if (uBitNum > 7 || uBitNum <= 0)
           uBitNum = 0;
-
-        printf("uBitNum =  %d\r\n", uBitNum);
-        printf("uCurrent =  %d\r\n", uCurrent);
-        printf("Direction =  %d\r\n", ((uint8_t)message&0xF0)>>4);
         uDirection = ((uint8_t)message&0xF0)>>4;
-        if (uDirection  == 1)
-          uToSend = uCurrent&=~(1<<uBitNum);
-        else
-          uToSend = uCurrent |= 1<<uBitNum;
-       printf("utoSend =  %x\r\n", uToSend);
-        //vTaskDelay(100);
-        vI2C_Send(uAddress, uToSend);
-        portEXIT_CRITICAL();
-        //vTaskDelay(100);
-        //vTaskDelay(100);
+
+        // RECEIVE FROM
+        // vConsolePrint("Trying to RECEIVE I2C\r\n");
+        iRCVStatus = iI2C_Receive(uAddress, &uCurrent);
+        while((iRCVStatus == FAIL) && (cnt < 10))
+          {
+            vConsolePrint("Receiving failed, trying again\r\n");
+            vTaskDelay(100);
+            vI2C_Init();
+            vTaskDelay(100);
+            iRCVStatus = iI2C_Receive(uAddress, &uCurrent);
+            cnt++;
+          }
+          if (cnt >= 10)
+            {
+              vConsolePrint("Fatal I2C Error, deleting task\r\n");
+              vTaskDelete(NULL);
+              taskYIELD();
+            }
+
+          if (uDirection  == 1)
+            uToSend = uCurrent&=~(1<<uBitNum);
+          else
+            uToSend = uCurrent |= 1<<uBitNum;
+
+        cnt = 0;
+
+       sprintf(pcPrintBuf, "utoSend =  %x\r\n", uToSend);
+       sprintf(pcPrintBuf, "message =  %x\r\n", message);
+       vConsolePrint(pcPrintBuf);
+
+       iSNDStatus = iI2C_Send(uAddress, uToSend);
+       while((iSNDStatus == FAIL) && (cnt < 10))
+         {
+           vConsolePrint("Sending failed, trying again\r\n");
+           vTaskDelay(100);
+           vI2C_Init();
+           vTaskDelay(100);
+           iSNDStatus = iI2C_Send(uAddress, uToSend);
+           cnt++;
+
+         }
+       if (cnt >= 10)
+
+         {
+           vConsolePrint("Fatal I2C Error, deleting task\r\n");
+           vTaskDelete(NULL);
+           taskYIELD();
+         }
+       cnt = 0;
+
+
+        vTaskDelay(100);
       }
-    else printf("fail\r\n");
+    else vConsolePrint("fail\r\n");
 
       taskYIELD();
   }
@@ -225,8 +400,8 @@ void vPCF_ResetBits(uint8_t bitnum, uint8_t add){
 
   uMessage = (uint16_t)(add << 8) & 0xFF00;
   uMessage = uMessage | (uint16_t)(bitnum & 0x000F);
-  printf("address from pcf = %x\r\n", add);
-  //uMessage |= 1<<4;
+  //printf("addr from pcf = %x\r\n", add);
+
   //printf("Bit number = %d\r\n", bitnum);
   //vTaskDelay(10);
   xQueueSendToBack(xI2C_SendQueue, &uMessage, portMAX_DELAY);
@@ -238,7 +413,7 @@ void vPCF_SetBits(uint8_t bitnum, uint8_t add){
 
   uMessage = (uint16_t)(add << 8) & 0xFF00;
   uMessage = uMessage | (uint16_t)(bitnum & 0x000F);
-  printf("address from pcf = %x\r\n", add);
+  //printf("addr from pcf = %x\r\n", add);
   uMessage |= 1<<4;
   //printf("Bit number = %d\r\n", bitnum);
   //vTaskDelay(10);

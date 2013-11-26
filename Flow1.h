@@ -17,4 +17,5 @@ int iFlow1Key(int xx, int yy);
 void vFlow1Applet(int init);
 float fGetBoilFlowLitres(void);
 float fGetMashFlowLitres(void);
+void vResetFlow1(void);
 #endif /* FLOW1_H_ */

@@ -8,12 +8,14 @@
 #ifndef BREW_H_
 #define BREW_H_
 
+#include <queue.h>
+
 // Canvas area for brew
 // --------------------
 #define CANVAS_X1 0
 #define CANVAS_X2 254
 #define CANVAS_Y1 30
-#define CANVAS_Y2 190
+#define CANVAS_Y2 158
 #define CANVAS_W (CANVAS_X2-CANVAS_X1)
 #define CANVAS_H (CANVAS_Y2-CANVAS_Y1)
 
@@ -112,11 +114,18 @@
 #define BUTTON_4 4
 #define BUTTON_5 5
 #define BUTTON_6 6
-#define QUIT_SUB     7
+#define QUIT_BUTTON 7
 #define NO_BUTTON 255
 
 
 void vTaskBrew(void * pvParameters);
 void vBrewApplet(int init);
 int iBrewKey(int xx, int yy);
+
+#define BREW_STEP_COMPLETE 40
+#define BREW_STEP_FAILED 41
+#define BREW_STEP_TIMEOUT  45
+
+
+extern xQueueHandle xBrewTaskReceiveQueue;
 #endif /* BREW_H_ */

@@ -19,34 +19,48 @@
 #include "semphr.h"
 #include "I2C-IO.h"
 #include "chiller_pump.h"
+#include "console.h"
 
 void vChillerPumpAppletDisplay( void *pvParameters);
 void vChillerPumpApplet(int init);
 xTaskHandle xCHILLERPumpTaskHandle = NULL, xCHILLERPumpAppletDisplayHandle = NULL;
 // semaphore that stops the returning from the applet to the menu system until the applet goes into the blocked state.
-xSemaphoreHandle xAppletRunningSemaphore;
+xSemaphoreHandle xChillerAppletRunningSemaphore;
 
 
-#define PUMPING 1
-#define STOPPED 0
 
-volatile uint8_t uChillerPumpState = STOPPED;
+
+volatile int uChillerPumpState = STOPPED;
 
 void vChillerPumpInit(void){
 
-  vPCF_ResetBits(CHILLER_PUMP_PIN, CHILLER_PUMP_PORT); //pull low
-  vSemaphoreCreateBinary(xAppletRunningSemaphore);
+  GPIO_InitTypeDef GPIO_InitStructure;
+   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+   GPIO_InitStructure.GPIO_Pin =  CHILLER_PUMP_PIN;
+   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;// Output - Push Pull
+   GPIO_Init( CHILLER_PUMP_PORT, &GPIO_InitStructure );
+   GPIO_ResetBits(CHILLER_PUMP_PORT, CHILLER_PUMP_PIN); //pull low
+   vSemaphoreCreateBinary(xChillerAppletRunningSemaphore);
+//  vPCF_ResetBits(CHILLER_PUMP_PIN, CHILLER_PUMP_PORT); //pull low
+  vSemaphoreCreateBinary(xChillerAppletRunningSemaphore);
 
 
 }
 
-static void vChillerPump( uint8_t state )
+void vChillerPump( uint8_t state )
 {
-  if (state)
-    vPCF_SetBits(CHILLER_PUMP_PIN, CHILLER_PUMP_PORT);
+  if (state == PUMPING)
+    GPIO_SetBits(CHILLER_PUMP_PORT, CHILLER_PUMP_PIN);
   else
-    vPCF_ResetBits(CHILLER_PUMP_PIN, CHILLER_PUMP_PORT);
-  uChillerPumpState = state;
+    GPIO_ResetBits(CHILLER_PUMP_PORT, CHILLER_PUMP_PIN); //pull low
+
+   uChillerPumpState = state;
+
+//  if (state)
+//    vPCF_SetBits(CHILLER_PUMP_PIN, CHILLER_PUMP_PORT);
+//  else
+//    vPCF_ResetBits(CHILLER_PUMP_PIN, CHILLER_PUMP_PORT);
+//  uChillerPumpState = state;
 
 }
 
@@ -97,6 +111,8 @@ void vChillerPumpApplet(int init){
                     tskIDLE_PRIORITY ,
                     &xCHILLERPumpAppletDisplayHandle );
         }
+  else
+    vConsolePrint("Leaving Chiller Pump Applet\r\n");
 
 }
 
@@ -106,7 +122,7 @@ void vChillerPumpAppletDisplay( void *pvParameters){
         for(;;)
         {
 
-            xSemaphoreTake(xAppletRunningSemaphore, portMAX_DELAY); //take the semaphore so that the key handler wont
+            xSemaphoreTake(xChillerAppletRunningSemaphore, portMAX_DELAY); //take the semaphore so that the key handler wont
                                                                                //return to the menu system until its returned
                 switch (uChillerPumpState)
                 {
@@ -143,7 +159,7 @@ void vChillerPumpAppletDisplay( void *pvParameters){
                 }
 
                 tog = tog ^ 1;
-                xSemaphoreGive(xAppletRunningSemaphore); //give back the semaphore as its safe to return now.
+                xSemaphoreGive(xChillerAppletRunningSemaphore); //give back the semaphore as its safe to return now.
                 vTaskDelay(500);
 
 
@@ -171,7 +187,7 @@ int iChillerPumpKey(int xx, int yy)
   else if (xx > BK_X1 && yy > BK_Y1 && xx < BK_X2 && yy < BK_Y2)
     {
       //try to take the semaphore from the display applet. wait here if we cant take it.
-      xSemaphoreTake(xAppletRunningSemaphore, portMAX_DELAY);
+      xSemaphoreTake(xChillerAppletRunningSemaphore, portMAX_DELAY);
       //delete the display applet task if its been created.
       if (xCHILLERPumpAppletDisplayHandle != NULL)
         {
@@ -181,7 +197,7 @@ int iChillerPumpKey(int xx, int yy)
         }
 
       //return the semaphore for taking by another task.
-      xSemaphoreGive(xAppletRunningSemaphore);
+      xSemaphoreGive(xChillerAppletRunningSemaphore);
       return 1;
 
     }

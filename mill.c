@@ -27,10 +27,8 @@ xTaskHandle xMillTaskHandle = NULL, xMillAppletDisplayHandle = NULL;
 xSemaphoreHandle xAppletRunningSemaphore;
 
 
-#define MILL_DRIVING 1
-#define MILL_STOPPED 0
 
-volatile uint8_t uMillState = MILL_STOPPED;
+volatile int iMillState = MILL_STOPPED;
 
 void vMillInit(void){
 
@@ -45,10 +43,11 @@ void vMillInit(void){
 
 }
 
-static void vMill( uint8_t state )
+void vMill( int state )
 {
-  GPIO_WriteBit(MILL_PORT, MILL_PIN, state);
-  uMillState = state;
+  if (state == MILL_DRIVING)
+    GPIO_WriteBit(MILL_PORT, MILL_PIN, state);
+  iMillState = state;
 
 }
 
@@ -110,7 +109,7 @@ void vMillAppletDisplay( void *pvParameters){
 
             xSemaphoreTake(xAppletRunningSemaphore, portMAX_DELAY); //take the semaphore so that the key handler wont
                                                                                //return to the menu system until its returned
-                switch (uMillState)
+                switch (iMillState)
                 {
                 case MILL_DRIVING:
                 {
@@ -162,13 +161,13 @@ int iMillKey(int xx, int yy)
   if (xx > STOP_MILL_X1+1 && xx < STOP_MILL_X2-1 && yy > STOP_MILL_Y1+1 && yy < STOP_MILL_Y2-1)
     {
       vMill(MILL_STOPPED);
-      uMillState = MILL_STOPPED;
+      iMillState = MILL_STOPPED;
 
     }
   else if (xx > START_MILL_X1+1 && xx < START_MILL_X2-1 && yy > START_MILL_Y1+1 && yy < START_MILL_Y2-1)
     {
       vMill(MILL_DRIVING);
-      uMillState = MILL_DRIVING;
+      iMillState = MILL_DRIVING;
     }
   else if (xx > BK_X1 && yy > BK_Y1 && xx < BK_X2 && yy < BK_Y2)
     {

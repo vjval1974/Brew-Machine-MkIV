@@ -395,14 +395,14 @@ void vValvesAppletDisplay( void *pvParameters){
                   {
                     lcd_DrawRect(TOGGLE_CHILLER_VALVE_X1, TOGGLE_CHILLER_VALVE_Y1, TOGGLE_CHILLER_VALVE_X2, TOGGLE_CHILLER_VALVE_Y2, Blue);
                     lcd_fill(TOGGLE_CHILLER_VALVE_X1+1, TOGGLE_CHILLER_VALVE_Y1+1, TOGGLE_CHILLER_VALVE_W, TOGGLE_CHILLER_VALVE_H, Red);
-                    lcd_printf(0,8,13, "CHILLER OPENED");
+                    lcd_printf(12,8,13, "CHILLER OPENED");
                   }
 
                 else
                   {
                     lcd_DrawRect(TOGGLE_CHILLER_VALVE_X1, TOGGLE_CHILLER_VALVE_Y1, TOGGLE_CHILLER_VALVE_X2, TOGGLE_CHILLER_VALVE_Y2, Cyan);
                     lcd_fill(TOGGLE_CHILLER_VALVE_X1+1, TOGGLE_CHILLER_VALVE_Y1+1, TOGGLE_CHILLER_VALVE_W, TOGGLE_CHILLER_VALVE_H, Green);
-                    lcd_printf(0,8,13, "CHILLER CLOSED");
+                    lcd_printf(12,8,13, "CHILLER CLOSED");
                   }
 
                 hlt_last = uHLTValveState;
@@ -414,7 +414,7 @@ void vValvesAppletDisplay( void *pvParameters){
 
             if(tog)
               {
-                lcd_fill(1,190, 180,39, Black);
+                lcd_fill(1,180, 180,59, Black);
 
                 lcd_printf(1, 12, 25, "HLT = %d.%ddegC", (unsigned int)floor(fHLTTemp), (unsigned int)((fHLTTemp-floor(fHLTTemp))*pow(10, 3)));
                 lcd_printf(1, 13, 25, "MASH = %d.%ddegC", (unsigned int)floor(fMashTemp), (unsigned int)((fMashTemp-floor(fMashTemp))*pow(10, 3)));
@@ -422,7 +422,7 @@ void vValvesAppletDisplay( void *pvParameters){
 
               }
             else{
-                lcd_fill(1,210, 180,17, Black);
+                lcd_fill(1,180, 180,59, Black);
             }
 
             tog = tog ^ 1;

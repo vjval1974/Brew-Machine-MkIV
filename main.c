@@ -32,7 +32,6 @@
 #include "adc.h"
 #include "hlt.h"
 #include "mill.h"
-#include "hlt_pump.h"
 #include "mash_pump.h"
 #include "valves.h"
 #include "diag_temps.h"
@@ -45,6 +44,7 @@
 #include "chiller_pump.h"
 #include "console.h"
 #include "brew.h"
+#include "parameters.h"
 
 /*-----------------------------------------------------------*/
 
@@ -187,21 +187,21 @@ struct menu diag_menu[] =
 
 struct menu manual_menu[] =
     {
+        {"Mill",                NULL,                           vMillApplet,                    NULL,                   iMillKey},
         {"Crane",       	NULL,				vCraneApplet, 	        NULL, 			iCraneKey},
-        {"Valves",              NULL,                           vValvesApplet,                  NULL,                   iValvesKey},
+        {"Stir",                NULL,                           vStirApplet,                    NULL,                   iStirKey},
         {"HopDropper",          NULL,                           vHopDropperApplet,              NULL,                   iHopDropperKey},
         {"HLT",                 NULL,                           vHLTApplet,                     NULL,     HLTKey},
-        {"HLT Pump",            NULL,                           vHLTPumpApplet,                 NULL,                   iHLTPumpKey},
-        {"Mash Pump",           NULL,                           vMashPumpApplet,                NULL,                   iMashPumpKey},
-        {"Mill",                NULL,                           vMillApplet,                    NULL,                   iMillKey},
+        {"Boil",                NULL,                           vBoilApplet,                    NULL,                   iBoilKey},
         {"Back",   	        NULL, 				NULL, 				NULL, 			NULL},
         {NULL, 			NULL, 				NULL, 				NULL, 			NULL}
     };
 
-struct menu manual_menu2[] =
+struct menu pumps_valves[] =
     {
         {"Chiller Pump",        NULL,                           vChillerPumpApplet,           NULL,                   iChillerPumpKey},
-        {"Stir",                NULL,                           vStirApplet,                    NULL,                   iStirKey},
+        {"Mash Pump",           NULL,                           vMashPumpApplet,                NULL,                   iMashPumpKey},
+        {"Valves",              NULL,                           vValvesApplet,                  NULL,                   iValvesKey},
         {"Back",                NULL,                           NULL,                           NULL,                   NULL},
         {NULL,                  NULL,                           NULL,                           NULL,                   NULL}
     };
@@ -209,8 +209,7 @@ struct menu manual_menu2[] =
 struct menu main_menu[] =
     {
         {"Manual Control",      manual_menu,    		NULL, 				NULL, 			NULL},
-        {"Manual Control2",     manual_menu2,                   NULL,                           NULL,                   NULL},
-        {"Boil",                NULL,                           vBoilApplet,                    NULL,                   iBoilKey},
+        {"Pumps/Valves" ,     pumps_valves,                   NULL,                           NULL,                   NULL},
         {"Diagnostics",         diag_menu,                      NULL,                           NULL,                   NULL},
         {"BREW",                NULL,                           vBrewApplet,                    NULL,                   iBrewKey},
         {NULL,                  NULL, 				NULL,                           NULL, 			NULL}
@@ -222,6 +221,7 @@ struct menu main_menu[] =
 int main( void )
 {
     prvSetupHardware();// set up peripherals etc 
+
     xPrintQueue = xQueueCreate(5, sizeof(char *));
     if (xPrintQueue == NULL)
       {
@@ -229,9 +229,9 @@ int main( void )
         for (;;);
       }
 
-
-
     USARTInit(USART_PARAMS1);
+
+    vParametersInit();
 
     lcd_init();          
 
@@ -242,8 +242,6 @@ int main( void )
     menu_set_root(main_menu);
 
     vMillInit();
-
-    vHLTPumpInit();
 
     vMashPumpInit();
 
@@ -276,9 +274,9 @@ int main( void )
 
     xTaskCreate( vTouchTask, 
         ( signed portCHAR * ) "touch",
-        configMINIMAL_STACK_SIZE +400,
+        configMINIMAL_STACK_SIZE +600,
         NULL,
-        tskIDLE_PRIORITY+1,
+        tskIDLE_PRIORITY,
         &xTouchTaskHandle );
 
     // Create your application tasks if needed here
@@ -307,7 +305,7 @@ int main( void )
            ( signed portCHAR * ) "hops",
            configMINIMAL_STACK_SIZE,
            NULL,
-           tskIDLE_PRIORITY + 1,
+           tskIDLE_PRIORITY,
            &xHopsTaskHandle );
 
 
@@ -316,7 +314,7 @@ int main( void )
         ( signed portCHAR * ) "check",
         configMINIMAL_STACK_SIZE +200,
         NULL,
-        tskIDLE_PRIORITY + 1,
+        tskIDLE_PRIORITY,
         &xCheckTaskHandle );
 
 
@@ -339,9 +337,8 @@ int main( void )
               ( signed portCHAR * ) "i2c_send",
               configMINIMAL_STACK_SIZE +500,
               NULL,
-              tskIDLE_PRIORITY,
+              tskIDLE_PRIORITY+2,
               & xI2C_SendHandle );
-
 
 
 

@@ -17,6 +17,10 @@
 void vStirInit(void);
 void vStirApplet(int init);
 int iStirKey(int xx, int yy);
+void vStir( int state );
+
+#define DRIVING 1
+#define STOPPED -1
 
 
 #endif /* STIR_H_ */

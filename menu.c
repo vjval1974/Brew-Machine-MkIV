@@ -16,6 +16,7 @@
 #include "menu.h"
 #include "queue.h"
 #include "lcd.h"
+#include "console.h"
 #define HEIGHT 6
 
 #define KEY_UP    0x8
@@ -208,6 +209,12 @@ static void menu_back_after_applet()
 
 void menu_touch(int xx, int yy)
 {
+  //char c[15];
+  //vConsolePrint("Menu Touch Called\r\n");
+  //sprintf(c, "x %d y %d\r\n", xx, yy);
+   //vConsolePrint(c);
+
+
     if (g_menu_applet) {
     	if (g_menu_applet(xx, yy))
     		menu_back_after_applet();

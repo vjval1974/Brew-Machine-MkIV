@@ -217,6 +217,7 @@ void vTaskLitresToMash ( void * pvParameters )
             else
               uMashFlowState = NOT_FLOWING;
           }
+        vTaskDelay(50);
         taskYIELD();
 
 
@@ -376,6 +377,7 @@ void vFlow1AppletDisplay( void *pvParameters){
 
         }
 }
+
 
 int iFlow1Key(int xx, int yy)
 {

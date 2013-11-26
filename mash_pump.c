@@ -29,9 +29,9 @@ xSemaphoreHandle xAppletRunningSemaphore;
 
 
 #define PUMPING 1
-#define STOPPED 0
+#define STOPPED -1
 
-volatile uint8_t uMashPumpState = STOPPED;
+volatile int uMashPumpState = STOPPED;
 
 void vMashPumpInit(void){
 
@@ -46,9 +46,12 @@ void vMashPumpInit(void){
 
 }
 
-static void vMashPump( uint8_t state )
+void vMashPump( uint8_t state )
 {
-  GPIO_WriteBit(MASH_PUMP_PORT, MASH_PUMP_PIN, state);
+  if (state == PUMPING)
+       GPIO_SetBits(MASH_PUMP_PORT, MASH_PUMP_PIN);
+  else
+    GPIO_ResetBits(MASH_PUMP_PORT, MASH_PUMP_PIN);
   uMashPumpState = state;
 
 }

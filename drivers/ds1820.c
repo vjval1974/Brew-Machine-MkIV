@@ -7,6 +7,7 @@
 
 #include "stm32f10x.h"
 #include <stdio.h>
+#include <math.h>
 #include <string.h>
 #include <stdlib.h>
 #include "FreeRTOS.h"
@@ -33,21 +34,26 @@
 #define READ_PS          0xB4
 
 #define MAX_SENSORS      10
-
+#define NUM_SENSORS      7
 // ERROR DEFINES
 #define BUS_ERROR      0xFE
 #define PRESENCE_ERROR 0xFD
 #define NO_ERROR       0x00
 
 //Default Temp Sensor Addresses
-#define HLT_TEMP_SENSOR "\x10\x99\xd7\x39\x01\x08\x00\xd5"
+//#define HLT_TEMP_SENSOR "\x10\x99\xd7\x39\x01\x08\x00\xd5"
+#define HLT_TEMP_SENSOR  "\x28\x3C\xE7\xB5\x04\x00\x00\x8B"
 #define MASH_TEMP_SENSOR "\x10\x6c\xe2\x38\x01\x08\x00\x95"
-#define CABINET_TEMP_SENSOR "\x10\x83\xc5\x1e\x02\x08\x00\xAC"
-#define AMBIENT_TEMP_SENSOR "\x10\x83\xc5\x1e\x02\x08\x00\xAC"
+//#define CABINET_TEMP_SENSOR "\x10\x83\xc5\x1e\x02\x08\x00\xAC"
+#define CABINET_TEMP_SENSOR "\x28\xe1\xe6\xb5\x04\x00\x00\xc8"
+#define AMBIENT_TEMP_SENSOR "\x10\x9c\xa4\x1e\x02\x08\x00\x0f"
 #define HLT_SSR_TEMP_SENSOR "\x10\xA5\x91\x1E\x02\x08\x00\x22"
+
 #define BOIL_SSR_TEMP_SENSOR "\x10\5Dc\xB0\x1E\x02\x08\x00\xC4"
 
 #define SPARE_2_PIN_SENSOR "\x10\x81\x45\x18\x00\x08\x00\x04"
+#define WATERPROOF_SENSOR "\x28\xe1\xe6\xb5\x04\x00\x00\xc8"
+
 
 // BUS COMMANDS
 #define DQ_IN()  {DS1820_PORT->CRH&=0xFFFFF0FF;DS1820_PORT->CRH |= 0x00000400;}
@@ -75,8 +81,8 @@ static void ds1820_error(uint8_t code);
 
 
 uint8_t rom[8]; //temporary to store rom codes
-float temps[6]; // holds the converted temperatures from the devices
-char * b[6]; // holds the 64 bit addresses of the temp sensors
+float temps[NUM_SENSORS]; // holds the converted temperatures from the devices
+char * b[NUM_SENSORS]; // holds the 64 bit addresses of the temp sensors
 
 ////////////////////////////////////////////////////////////////////////////
 // Interfacing Function
@@ -103,6 +109,8 @@ void vTaskDS1820Convert( void *pvParameters ){
     b[AMBIENT] = (char *) malloc (sizeof(rom)+1);
     b[HLT_SSR] = (char *) malloc (sizeof(rom)+1);
     b[BOIL_SSR] = (char *) malloc (sizeof(rom)+1);
+    b[WATERPROOF] = (char *) malloc(sizeof(rom)+1);
+
     // Copy default values
     memcpy(b[HLT], HLT_TEMP_SENSOR, sizeof(HLT_TEMP_SENSOR)+1);
     memcpy(b[MASH], MASH_TEMP_SENSOR, sizeof(MASH_TEMP_SENSOR)+1);
@@ -110,10 +118,11 @@ void vTaskDS1820Convert( void *pvParameters ){
     memcpy(b[AMBIENT], AMBIENT_TEMP_SENSOR, sizeof(AMBIENT_TEMP_SENSOR)+1);  
     memcpy(b[HLT_SSR], HLT_SSR_TEMP_SENSOR, sizeof(HLT_SSR_TEMP_SENSOR)+1);
     memcpy(b[BOIL_SSR], BOIL_SSR_TEMP_SENSOR, sizeof(BOIL_SSR_TEMP_SENSOR)+1);
-
+    memcpy(b[WATERPROOF], WATERPROOF_SENSOR, sizeof(WATERPROOF_SENSOR)+1);
     ds1820_search();
-    vTaskSuspendAll();
-    if (rom[0] == 0x10)
+
+    //if (rom[0] == 0x10)
+      if (rom[0] != 0)
       {
         sprintf(print_buf, "%02x-%02x-%02x-%02x-%02x-%02x-%02x-%02x\r\n",rom[0],
             rom[1], rom[2], rom[3], rom[4], rom[5], rom[6], rom[7]);
@@ -123,18 +132,20 @@ void vTaskDS1820Convert( void *pvParameters ){
       {
         vConsolePrint("NO SENSOR\r\n");
       }
-    xTaskResumeAll();
+
 
     for (;;)
     {
 
         ds1820_convert();
         
-        vTaskDelay(200); // wait for conversion
+        vTaskDelay(750/portTICK_RATE_MS); // wait for conversion
 
         // save values in array for use by application
-        for (ii = 0 ; ii < 6; ii++)
+        for (ii = 0 ; ii < NUM_SENSORS; ii++)
             temps[ii] = ds1820_read_device(b[ii]);
+
+        taskYIELD();
 
         //printf("DS1820 Convert Water Mark = %u\r\n", uxTaskGetStackHighWaterMark(NULL));
       // Uncomment below to send temps to the console
@@ -146,7 +157,7 @@ void vTaskDS1820Convert( void *pvParameters ){
         printf("HLT SSR Temp = %.2fDeg-C\r\n", temps[HLT_SSR]);
         printf("BOIL SSR Temp = %.2fDeg-C\r\n", temps[BOIL_SSR]);
 */
-        vTaskDelay(200); // I put this in here to check that this process
+        //vTaskDelay(200); // I put this in here to check that this process
         // wasnt getting switched in if theres a problem with a sensor.
 
     }
@@ -329,6 +340,7 @@ static void delay_us(uint16_t count){
 ////////////////////////////////////////////////////////////////////////////
 
 static void ds1820_init(void) {
+  int i;
     // Initialise timer 2 for counting
     TIM_TimeBaseInitTypeDef  TIM_TimeBaseStructure;
     RCC_APB1PeriphClockCmd(RCC_APB1Periph_TIM2, ENABLE);
@@ -348,9 +360,13 @@ static void ds1820_init(void) {
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
     GPIO_Init(GPIOC, &GPIO_InitStructure);
     //printf("ioMode = %x\r\n", GPIOC->CRH);
-
-
+    for (i = 0; i < 8; i++){
+        rom[i] = 0;
+    }
 }
+
+
+
 ////////////////////////////////////////////////////////////////////////////
 
 static unsigned char ds1820_reset(void)
@@ -475,7 +491,7 @@ static void ds1820_convert(void){
 
 static uint8_t ds1820_search(){
     uint8_t ii;
-    char console_text[30];
+    //char console_text[30];
     
     ds1820_reset();
     ds1820_write_byte(READ_ROM); 
@@ -490,13 +506,22 @@ static uint8_t ds1820_search(){
    
 }
 ////////////////////////////////////////////////////////////////////////////
+#define POW_NEG_1 0.5
+#define POW_NEG_2 0.25
+#define POW_NEG_3 0.125
+#define POW_NEG_4 0.0625
 
+
+#define CONSOLE_FLOAT_S( dp ,cp, var ) sprintf(cp, "%03d.%03d\r\n", (unsigned int)floor(var), (unsigned int)((var-floor(var))*pow(10, dp)));
 static float ds1820_read_device(uint8_t * rom_code){
     float retval;
     uint16_t ds1820_temperature1 = 10000;
     int ii; 
     uint8_t code = 0;
     uint8_t sp1[9]; //temp to hold scratchpad memory
+    char c[25];
+    int tt = 0;
+    float rem = 0.0;
    
     //portENTER_CRITICAL();
     code = ds1820_reset();
@@ -516,15 +541,46 @@ static float ds1820_read_device(uint8_t * rom_code){
     }
     
     ds1820_reset();
+
     ds1820_temperature1 = sp1[1] & 0x0f;
     ds1820_temperature1 <<= 8;
     ds1820_temperature1 |= sp1[0];
-    unsigned char remain = sp1[6];
-    ds1820_temperature1 >>= 1;
-    ds1820_temperature1 = (ds1820_temperature1 * 100) -  25  + (100 * 16 - remain * 100) / (16);
-    retval = ((float)ds1820_temperature1/100);
+    // if the sensor is a 'B' type, we need a different conversion
+    if (rom_code[0] == '\x28')
+      {
+        ds1820_temperature1 >>= 4;
+
+      rem = 0.0;
+            if (sp1[0]&(0x01))
+              rem += POW_NEG_4;
+            if (sp1[0]&(0x02))
+              rem += POW_NEG_3;
+            if (sp1[0]&(0x04))
+              rem += POW_NEG_2;
+            if (sp1[0]&(0x08))
+              rem += POW_NEG_1;
+
+       retval = (float)ds1820_temperature1 + rem;
+      }
+    else
+      {
+        unsigned char remain = sp1[6];
+        ds1820_temperature1 >>= 1;
+        ds1820_temperature1 = (ds1820_temperature1 * 100) -  25  + (100 * 16 - remain * 100) / (16);
+        retval = ((float)ds1820_temperature1/100);
+      }
     portEXIT_CRITICAL();
+
+//    if (sp1[1] != '\xff')
+//      {
+//        sprintf(c, "BLAH %x, %x, %x, %x\r\n", sp1[0]&0x01, sp1[0]&0x02, sp1[0]&0x04, sp1[0]&0x08);
+//        vConsolePrint(c);
+//      }
+
+//    CONSOLE_FLOAT_S(3,c,retval);
+//    vConsolePrint(c);
     return retval;
+
 }
 ////////////////////////////////////////////////////////////////////////////
 

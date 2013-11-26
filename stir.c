@@ -27,10 +27,8 @@ xTaskHandle xSTIRTaskHandle = NULL, xSTIRAppletDisplayHandle = NULL;
 xSemaphoreHandle xAppletRunningSemaphore;
 
 
-#define DRIVING 1
-#define STOPPED 0
 
-volatile uint8_t uStirState = STOPPED;
+volatile int uStirState = STOPPED;
 
 void vStirInit(void){
 
@@ -40,9 +38,9 @@ void vStirInit(void){
 
 }
 
-static void vStir( uint8_t state )
+void vStir( int state )
 {
-  if (state)
+  if (state == DRIVING)
     vPCF_SetBits(STIR_PIN, STIR_PORT);
   else
     vPCF_ResetBits(STIR_PIN, STIR_PORT);

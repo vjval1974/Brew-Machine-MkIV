@@ -15,8 +15,14 @@
 
 #define HLT_LEVEL_CHECK_PIN GPIO_Pin_3
 #define HLT_LEVEL_CHECK_PORT GPIOE
+#define HLT_HIGH_LEVEL_PIN GPIO_Pin_4
+#define HLT_HIGH_LEVEL_PORT GPIOA
+
 #define HLT_FLOW_PORT GPIOE
 #define HLT_FLOW_PIN GPIO_Pin_4
+
+#define HEATING 1
+#define OFF 0
 
 #define HLT_MAX_LITRES 16 //full hlt
 #define HLT_MIN_LITRES 4 // hlt level at low level sensor

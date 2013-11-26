@@ -96,7 +96,6 @@ SOURCE=	main.c 	drivers/lcd.c \
 		drivers/adc.c \
 		drivers/leds.c \
 		hlt.c \
-		hlt_pump.c \
 		mash_pump.c \
 		mill.c \
 		boil.c \
@@ -114,7 +113,8 @@ SOURCE=	main.c 	drivers/lcd.c \
 		I2C-IO.c \
 		chiller_pump.c \
 		console.c \
-		brew.c
+		brew.c \
+		parameters.c
 		
 
 # ST Library source files.

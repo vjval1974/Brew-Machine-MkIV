@@ -25,6 +25,8 @@
 #define AMBIENT 3
 #define HLT_SSR 4
 #define BOIL_SSR 5
+#define WATERPROOF 6
+
 
 //Scheduled task for FreeRTOS
 void          vTaskDS1820Convert( void *pvParameters ); //task to

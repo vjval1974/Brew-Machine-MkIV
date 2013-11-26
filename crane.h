@@ -15,15 +15,7 @@
 
 #include "FreeRTOS.h"
 #include "task.h"
-
-//---CRANE CONTROL PORTS/PINS
-//#define CRANE_CONTROL_PORT GPIOB
-//#define CRANE_ENABLE_PIN GPIO_Pin_14
-//#define CRANE_DIR_PIN GPIO_Pin_12
-
-//---CRANE STEPPER DRIVE PORT/PIN
-#define CRANE_DRIVE_PORT GPIOC
-#define CRANE_STEP_PIN GPIO_Pin_8
+#include "queue.h"
 
 
 //---CRANE LIMITS PORT/PINS
@@ -31,7 +23,7 @@
 #define CRANE_LOWER_LIMIT_PIN GPIO_Pin_12
 #define CRANE_LIMIT_PORT GPIOB
 
-
+// Crane outputs
 #define CRANE_PORT PORTU
 #define CRANE_PIN1 PCF_PIN6
 #define CRANE_PIN2 PCF_PIN7
@@ -42,7 +34,22 @@ void vCraneRun(uint16_t speed);
 void vCraneApplet(int init);
 int iCraneKey(int x, int y);
 
+// Directions
+#define UP 1
+#define DN 2
+#define DN_INC 3
+#define STOP -1
+
+// Crane States
+#define TOP 1
+#define BOTTOM 2
+#define DRIVING_UP 3
+#define DRIVING_DOWN 4
+#define DRIVING_DOWN_INC 5
+#define STOPPED -1
+
 extern xTaskHandle xCraneTaskHandle, xCraneUpToLimitTaskHandle,	xCraneDnToLimitTaskHandle, xCraneAppletDisplayHandle;
+extern xQueueHandle xCraneQueue;
 
 #endif
 

@@ -350,6 +350,9 @@ for (;;)
           if (cnt >= 10)
             {
               vConsolePrint("Fatal I2C Error, deleting task\r\n");
+
+              vQueueDelete(xI2C_SendQueue);
+              xI2C_SendQueue = NULL;
               vTaskDelete(NULL);
               taskYIELD();
             }
@@ -380,6 +383,9 @@ for (;;)
 
          {
            vConsolePrint("Fatal I2C Error, deleting task\r\n");
+
+           vQueueDelete(xI2C_SendQueue);
+           xI2C_SendQueue = NULL;
            vTaskDelete(NULL);
            taskYIELD();
          }
@@ -404,6 +410,11 @@ void vPCF_ResetBits(uint8_t bitnum, uint8_t add){
 
   //printf("Bit number = %d\r\n", bitnum);
   //vTaskDelay(10);
+  if (xI2C_SendQueue ==  NULL)
+    {
+      vConsolePrint("FAIL! I2C Task has been deleted\r\n");
+      return;
+    }
   xQueueSendToBack(xI2C_SendQueue, &uMessage, portMAX_DELAY);
 
 }
@@ -417,6 +428,12 @@ void vPCF_SetBits(uint8_t bitnum, uint8_t add){
   uMessage |= 1<<4;
   //printf("Bit number = %d\r\n", bitnum);
   //vTaskDelay(10);
+  if (xI2C_SendQueue ==  NULL)
+      {
+        vConsolePrint("FAIL! I2C Task has been deleted\r\n");
+        return;
+      }
+
   xQueueSendToBack(xI2C_SendQueue, &uMessage, portMAX_DELAY);
 
 }

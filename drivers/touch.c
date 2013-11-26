@@ -12,11 +12,12 @@
 #include "task.h"
 #include "speaker.h"
 #include "menu.h"
+#include "console.h"
 
 #define CH_X  0xd0//0x90
 #define CH_Y  0x90//0xd0
 
-extern xQueueHandle xTPQueue;
+//extern xQueueHandle xTPQueue;
 
 void SPI_CS(u8 a)
 {
@@ -246,7 +247,7 @@ void vTouchTask( void *pvParameters )
 {
 	Touch_Initializtion();
 	unsigned int x = 0, y = 0, beep = TOUCH_BEEP; // current x,y value
-
+	char c[15];
 	unsigned char valid = 0;
 	for( ;; )
 	{
@@ -256,10 +257,13 @@ void vTouchTask( void *pvParameters )
 		x = Touch_MeasurementX();
 		y = Touch_MeasurementY();
 
-		//printf("x %d y %d\r\n", x, y);
+
 
 		if (x >=0 && x < 320 && y >= 0 && y < 240)
 		{
+
+		   // sprintf(c, "x %d y %d\r\n", x, y);
+		   // vConsolePrint(c);
 			if (!valid)
 				menu_touch(x, y);
 			valid = 1;

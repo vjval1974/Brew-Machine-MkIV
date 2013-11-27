@@ -29,7 +29,6 @@
 #include "semphr.h"
 #include "queue.h"
 #include "I2C-IO.h"
-#include "timers.h"
 #include "console.h"
 #include "brew.h"
 
@@ -77,7 +76,7 @@ uint8_t debounce(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin)
 void * pvCraneTime = (void *)1;
 //void vCraneTimerCallback(xTimerHandle xHandle);
 uint16_t uCraneTime;
-xTimerHandle xCraneTimerHandle;
+
 
 void vCraneInit(void)
 {

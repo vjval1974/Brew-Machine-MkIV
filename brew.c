@@ -35,6 +35,7 @@
 #include "stir.h"
 #include "mill.h"
 #include "parameters.h"
+#include "message.h"
 
 // Applet States
 #define MAIN 0
@@ -159,13 +160,7 @@ struct TextMsg {
 
 };
 
-struct GenericMessage
-{
-  unsigned char ucFromTask;
-  unsigned char ucToTask;
-  unsigned int uiStepNumber;
-  void * pvMessageContent;
-};
+
 
 struct Content {
   unsigned char a;
@@ -302,7 +297,8 @@ char buf[40];
 void vTaskBrewHLT(void * pvParameters)
 {
   portTickType xLastWakeTime;
-  struct HLTMsg * uMsg;
+  struct GenericMessage * gMsg;
+  struct HLTMsg * hMsg;
   static uint8_t uRcvdState = HLT_STATE_IDLE;
   const char * pcRcvdMsgText;
   static float fDrainLitres = 0;
@@ -320,15 +316,17 @@ void vTaskBrewHLT(void * pvParameters)
 
   for(;;)
     {
-      if(xQueueReceive(xBrewTaskHLTQueue, &uMsg, 0) == pdPASS){
-          uRcvdState = uMsg->uState;
-          pcRcvdMsgText = uMsg->pcMsgText;
+      if(xQueueReceive(xBrewTaskHLTQueue, &gMsg, 0) == pdPASS){
+          hMsg = (struct HLTMsg *)gMsg->pvMessageContent;
+          uRcvdState = hMsg->uState;
+          pcRcvdMsgText = hMsg->pcMsgText;
           uFirst = 1;
-          if (uMsg->pcMsgText != NULL)
+
+          if (hMsg->pcMsgText != NULL)
             {
-              sprintf(buf, "message Received with state = %u\r\n", uMsg->uState);
+              sprintf(buf, "message Received with state = %d, %d\r\n", gMsg->ucFromTask, gMsg->ucToTask);
               vConsolePrint(buf);
-              vConsolePrint(uMsg->pcMsgText);
+              vConsolePrint(hMsg->pcMsgText);
               vConsolePrint("\r\n");
             }
 
@@ -354,7 +352,7 @@ void vTaskBrewHLT(void * pvParameters)
         {
           if (uFirst)
             {
-              fTempSetpoint = uMsg->uData1;
+              fTempSetpoint = hMsg->uData1;
               vConsolePrint("HLT Entered HEAT AND FILL State\r\n");
               //LCD_FLOAT(10,3,1,fTempSetpoint);
               //lcd_printf(1,3,10, "Setpoint:");
@@ -410,7 +408,7 @@ void vTaskBrewHLT(void * pvParameters)
           if (uFirst)
             {
               vResetFlow1();
-              fLitresToDrain = uMsg->uData1;
+              fLitresToDrain = hMsg->uData1;
               vConsolePrint("HLT Entered DRAIN State\r\n");
               // Need to set up message to the Applet.
               LCD_FLOAT(10,3,1,fTempSetpoint);
@@ -499,37 +497,36 @@ void vBrewTestSetupFunction(int piParameters[5])
 #define NO_MASH_OUT 3
 #define SPARE 4
 
-// This static declaration is used to hold the info for the hlt struct.
-static struct HLTMsg HLTMessage = { "MESSAGE HOLDING TEXT", HLT_STATE_IDLE, 0.0, 0.0};
 //===================================================================================================================================================
 void vBrewHLTSetupFunction(int piParameters[5]){
-  static struct HLTMsg  * Message = &HLTMessage;
+  struct HLTMsg  * Content = (struct HLTMsg *)malloc(sizeof(struct HLTMsg));
+  struct GenericMessage * Message = (struct GenericMessage *)malloc(sizeof(struct GenericMessage));
   switch( piParameters[0] )
   {
   case HLT_STATE_FILL_HEAT:
     {
-      Message->uState = HLT_STATE_FILL_HEAT;
+      Content->uState = HLT_STATE_FILL_HEAT;
       switch( piParameters[1] )
       {
       case STRIKE:
         {
-          Message->pcMsgText = "Strike";
-          Message->uData1 = BrewParameters.fStrikeTemp;
-          xQueueSendToBack(xBrewTaskHLTQueue, &Message, portMAX_DELAY);
+          Content->pcMsgText = "Strike";
+          Content->uData1 = BrewParameters.fStrikeTemp;
+          //xQueueSendToBack(xBrewTaskHLTQueue, &Content, portMAX_DELAY);
           break;
         }
       case MASH_OUT:
         {
-          Message->pcMsgText = "Mash Out";
-          Message->uData1 = BrewParameters.fMashOutTemp;
-          xQueueSendToBack(xBrewTaskHLTQueue, &Message, portMAX_DELAY);
+          Content->pcMsgText = "Mash Out";
+          Content->uData1 = BrewParameters.fMashOutTemp;
+          //xQueueSendToBack(xBrewTaskHLTQueue, &Content, portMAX_DELAY);
           break;
         }
       case SPARGE:
         {
-          Message->pcMsgText = "Sparge";
-          Message->uData1 = BrewParameters.fSpargeTemp;
-          xQueueSendToBack(xBrewTaskHLTQueue, &Message, portMAX_DELAY);
+          Content->pcMsgText = "Sparge";
+          Content->uData1 = BrewParameters.fSpargeTemp;
+          //xQueueSendToBack(xBrewTaskHLTQueue, &Content, portMAX_DELAY);
 
           break;
         }
@@ -549,28 +546,28 @@ void vBrewHLTSetupFunction(int piParameters[5]){
     }
   case HLT_STATE_DRAIN:
     {
-      Message->uState = HLT_STATE_DRAIN;
+      Content->uState = HLT_STATE_DRAIN;
       switch( piParameters[1] )
       {
       case STRIKE:
         {
-          Message->pcMsgText = "Drain For Strike";
-          Message->uData1 = BrewParameters.fStrikeLitres;
-          xQueueSendToBack(xBrewTaskHLTQueue, &Message, portMAX_DELAY);
+          Content->pcMsgText = "Drain For Strike";
+          Content->uData1 = BrewParameters.fStrikeLitres;
+          //xQueueSendToBack(xBrewTaskHLTQueue, &Content, portMAX_DELAY);
           break;
         }
       case MASH_OUT:
         {
-          Message->pcMsgText = "Drain For Mash Out";
-          Message->uData1 = BrewParameters.fMashOutLitres;
-          xQueueSendToBack(xBrewTaskHLTQueue, &Message, portMAX_DELAY);
+          Content->pcMsgText = "Drain For Mash Out";
+          Content->uData1 = BrewParameters.fMashOutLitres;
+          //xQueueSendToBack(xBrewTaskHLTQueue, &Content, portMAX_DELAY);
           break;
         }
       case SPARGE:
         {
-          Message->pcMsgText = "Drain For Sparge";
-          Message->uData1 = BrewParameters.fSpargeLitres;
-          xQueueSendToBack(xBrewTaskHLTQueue, &Message, portMAX_DELAY);
+          Content->pcMsgText = "Drain For Sparge";
+          Content->uData1 = BrewParameters.fSpargeLitres;
+          //xQueueSendToBack(xBrewTaskHLTQueue, &Content, portMAX_DELAY);
           break;
         }
       case NO_MASH_OUT:
@@ -589,6 +586,12 @@ void vBrewHLTSetupFunction(int piParameters[5]){
 
     }
   }
+  Message->ucFromTask = TASK_BREW;
+  Message->ucToTask = TASK_HLT;
+  Message->uiStepNumber = BrewState.ucStep;
+  Message->pvMessageContent = Content;
+  xQueueSendToBack(xBrewTaskHLTQueue, &Message, portMAX_DELAY);
+
   xQueueSendToBack(xBrewTaskReceiveQueue, &STEP_COMPLETE, 0);
 }
 
@@ -743,7 +746,7 @@ void vBrewApplet(int init){
              }
       if (xBrewTaskHLTQueue == NULL)
             {
-              xBrewTaskHLTQueue = xQueueCreate(5,sizeof(struct HLTMsg *));
+              xBrewTaskHLTQueue = xQueueCreate(5,sizeof(struct GenericMessage *));
               if (xBrewTaskHLTQueue == NULL)
                 vConsolePrint("FATAL Error creating  Brew HLT Task Queue\r\n");
               else vConsolePrint("Created Brew HLT Task Queues\r\n");

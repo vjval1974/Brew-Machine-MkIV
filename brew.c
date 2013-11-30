@@ -45,6 +45,7 @@
 #define QUIT 4
 #define OTHER 5
 
+
 // Running States
 #define IDLE 0
 #define RUNNING 1
@@ -93,7 +94,6 @@ const int STEP_COMPLETE = 40;
 const int STEP_FAILED = 41;
 const int STEP_TIMEOUT = 45;
 
-
 void vBrewAppletDisplay( void *pvParameters);
 void vBrewGraphAppletDisplay(void * pvParameters);
 void vBrewStatsAppletDisplay(void * pvParameters);
@@ -101,7 +101,6 @@ void vBrewResAppletDisplay(void * pvParameters);
 void vBrewApplet(int init);
 void vBrewRunStep(void);
 void vBrewNextStep(void);
-
 
 xTaskHandle xBrewTaskHandle = NULL,
             xBrewAppletDisplayHandle = NULL,
@@ -367,7 +366,7 @@ void vTaskBrewHLT(void * pvParameters)
 
           // make sure the HLT valve is closed
           vValveActuate(HLT_VALVE, CLOSED);
-          hlt_level =  fGetHLTLevel();
+
 
           if (!GPIO_ReadInputDataBit(HLT_HIGH_LEVEL_PORT, HLT_HIGH_LEVEL_PIN)) // looking for zero volts
             {

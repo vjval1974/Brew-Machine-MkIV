@@ -55,33 +55,8 @@ hlt_init()
 
 }
 
-float
-fGetHLTLevel(void)
-{
-  short raw_adc_value;
-
-  float litres = 0;
-  float gradient = (HLT_ANALOGUE_MAX - HLT_ANALOGUE_MIN)
-      / (HLT_MAX_LITRES - HLT_MIN_LITRES);
-
-  raw_adc_value = read_adc(HLT_LEVEL_ADC_CHAN);
-
-  litres = ((float) raw_adc_value - (float) HLT_ANALOGUE_MIN
-      + ((float) (HLT_MIN_LITRES) * gradient)) / gradient;
-
-  //litres = (float)((float)raw_adc_value/(float)HLT_ANALOGUE_MAX) * (float)HLT_MAX_LITRES;
-  litres = 16;
-
-  if ((GPIO_ReadInputDataBit(HLT_LEVEL_CHECK_PORT, HLT_LEVEL_CHECK_PIN ) ^ 1)
-      || (litres < 4.0))
-    {
-      return litres;
-    }
-  return 16;
-//////////////////////////////OVERRIDDEN/////////////////////////////////
-}
-
-// Problem with HLT task.. if setpoint is changed during heating, its not recognised.. I think
+//raw_adc_value = read_adc(HLT_LEVEL_ADC_CHAN);
+//GPIO_ReadInputDataBit(HLT_LEVEL_CHECK_PORT, HLT_LEVEL_CHECK_PIN);
 
 void
 vTaskHeatHLT(void * pvParameters)
@@ -96,10 +71,10 @@ vTaskHeatHLT(void * pvParameters)
 
   for (;;)
     {
-      hlt_level = fGetHLTLevel();
+      hlt_level = !GPIO_ReadInputDataBit(HLT_LEVEL_CHECK_PORT, HLT_LEVEL_CHECK_PIN);
       // ensure we have water above the elements
 
-      if (hlt_level > 4.0)
+      if (hlt_level)
         {
           //check the temperature
           actual = ds1820_get_temp(HLT);
@@ -201,12 +176,14 @@ vHLTApplet(int init)
     }
 
 }
-
-void
-vHLTAppletDisplay(void *pvParameters)
+#define LOW 0
+#define MID 1
+#define HIGH 2
+const char * HLT_LEVELS[] =  {"HLT-Low", "HLT-Medium", "HLT-High"};
+void vHLTAppletDisplay(void *pvParameters)
 {
   static char tog = 0; //toggles each loop
-  float hlt_level;
+  unsigned char  ucHLTLevel;
   float diag_setpoint1; // = diag_setpoint;
   float current_temp;
   uint8_t ds10;
@@ -218,20 +195,30 @@ vHLTAppletDisplay(void *pvParameters)
       //take the semaphore so that the key handler wont
       //return to the menu system until its returned
       current_temp = ds1820_get_temp(HLT);
-      hlt_level = fGetHLTLevel();
+
+      if (!GPIO_ReadInputDataBit(HLT_LEVEL_CHECK_PORT, HLT_LEVEL_CHECK_PIN))
+        {
+          ucHLTLevel = MID;
+          if (!GPIO_ReadInputDataBit(HLT_HIGH_LEVEL_PORT, HLT_HIGH_LEVEL_PIN))
+            {
+              ucHLTLevel = HIGH;
+            }
+
+        }
+      else {
+          ucHLTLevel = LOW;
+      }
       diag_setpoint1 = diag_setpoint;
       lcd_fill(1, 178, 170, 40, Black);
 
       //Tell user whether there is enough water to heat
-      if (hlt_level > 4.0)
-        lcd_printf(1, 11, 20, "level OK");
-      else
-        lcd_printf(1, 11, 20, "level LOW");
+      if (ucHLTLevel == LOW)
+        lcd_printf(1, 11, 20, HLT_LEVELS[LOW]);
+      else if (ucHLTLevel == MID)
+        lcd_printf(1, 11, 20, HLT_LEVELS[MID]);
+      else lcd_printf(1, 11, 20, HLT_LEVELS[HIGH]);
 
-      //display the level if its over 4 litres
-      lcd_printf(1, 12, 30, "level =  %d.%dl", (unsigned int) floor(hlt_level),
-          (unsigned int) (hlt_level - floor(hlt_level) * pow(10, 3)));
-      //lcd_printf(1,12,30,"level = %d litres", (int)hlt_level);
+
       //display the state and user info (the state will flash on the screen)
       switch (hlt_state)
         {

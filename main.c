@@ -45,6 +45,7 @@
 #include "console.h"
 #include "brew.h"
 #include "parameters.h"
+#include "boil_valve.h"
 
 /*-----------------------------------------------------------*/
 
@@ -74,7 +75,8 @@ xTaskHandle xLCDTaskHandle,
     xI2C_SendHandle,
     xLitresToMashHandle,
     xHopsTaskHandle,
-    xBrewTaskHandle;
+    xBrewTaskHandle,
+    xBoilValveTaskHandle;
 
 
 
@@ -199,9 +201,10 @@ struct menu manual_menu[] =
 
 struct menu pumps_valves[] =
     {
-        {"Chiller Pump",        NULL,                           vChillerPumpApplet,           NULL,                   iChillerPumpKey},
+        {"Chiller Pump",        NULL,                           vChillerPumpApplet,             NULL,                   iChillerPumpKey},
         {"Mash Pump",           NULL,                           vMashPumpApplet,                NULL,                   iMashPumpKey},
         {"Valves",              NULL,                           vValvesApplet,                  NULL,                   iValvesKey},
+        {"Boil Valve",          NULL,                           vBoilValveApplet,               NULL,                   iBoilValveKey},
         {"Back",                NULL,                           NULL,                           NULL,                   NULL},
         {NULL,                  NULL,                           NULL,                           NULL,                   NULL}
     };
@@ -265,6 +268,8 @@ int main( void )
 
     vChillerPumpInit();
 
+    vBoilValveInit();
+
     xTaskCreate( vConsolePrintTask,
         ( signed portCHAR * ) "PrintTask",
         configMINIMAL_STACK_SIZE,
@@ -308,8 +313,6 @@ int main( void )
            tskIDLE_PRIORITY,
            &xHopsTaskHandle );
 
-
-
     xTaskCreate( vCheckTask,
         ( signed portCHAR * ) "check",
         configMINIMAL_STACK_SIZE +200,
@@ -317,6 +320,19 @@ int main( void )
         tskIDLE_PRIORITY,
         &xCheckTaskHandle );
 
+    xTaskCreate( vTaskCrane,
+        ( signed portCHAR * ) "Crane",
+        configMINIMAL_STACK_SIZE + 200 ,
+        NULL,
+        tskIDLE_PRIORITY,
+        &xCraneTaskHandle );
+
+    xTaskCreate( vTaskBoilValve,
+        ( signed portCHAR * ) "boilvalve",
+        configMINIMAL_STACK_SIZE +200,
+        NULL,
+        tskIDLE_PRIORITY,
+        &xBoilValveTaskHandle );
 
     /*xTaskCreate( vTaskBrew,
             ( signed portCHAR * ) "BREW",

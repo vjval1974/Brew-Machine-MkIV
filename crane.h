@@ -31,6 +31,7 @@
 
 void vCraneInit(void);
 void vCraneRun(uint16_t speed);
+void vTaskCrane(void * pvParameters);
 void vCraneApplet(int init);
 int iCraneKey(int x, int y);
 
@@ -48,7 +49,7 @@ int iCraneKey(int x, int y);
 #define DRIVING_DOWN_INC 5
 #define STOPPED -1
 
-extern xTaskHandle xCraneTaskHandle, xCraneUpToLimitTaskHandle,	xCraneDnToLimitTaskHandle, xCraneAppletDisplayHandle;
+extern xTaskHandle xCraneTaskHandle, xCraneAppletDisplayHandle;
 extern xQueueHandle xCraneQueue;
 
 #endif

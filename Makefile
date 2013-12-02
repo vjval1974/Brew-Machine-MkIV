@@ -114,7 +114,9 @@ SOURCE=	main.c 	drivers/lcd.c \
 		chiller_pump.c \
 		console.c \
 		brew.c \
-		parameters.c
+		parameters.c \
+		boil_valve.c \
+		io_util.c
 		
 
 # ST Library source files.

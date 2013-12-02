@@ -17,21 +17,26 @@
 #include <math.h>
 #include "task.h"
 #include "semphr.h"
+#include "message.h"
+#include "valves.h"
+#include "brew.h"
+#include "console.h"
+#include "Flow1.h"
 
 volatile char hlt_state = OFF;
 
 // semaphore that stops the returning from the applet to the menu system until the applet goes into the blocked state.
 xSemaphoreHandle xHLTAppletRunningSemaphore;
-
 xTaskHandle xHeatHLTTaskHandle = NULL, xHLTAppletDisplayHandle = NULL;
+xQueueHandle xBrewTaskHLTQueue;
 
 volatile float diag_setpoint = 74.5; // when calling the heat_hlt task, we use this value instead of the passed parameter.
+#define LCD_FLOAT( x, y, dp , var ) lcd_printf(x, y, 4, "%0d.%0d", (unsigned int)floor(var), (unsigned int)((var-floor(var))*pow(10, dp)));
 
-void
-vHLTAppletDisplay(void *pvParameters);
 
-void
-hlt_init()
+void vHLTAppletDisplay(void *pvParameters);
+
+void hlt_init()
 {
   GPIO_InitTypeDef GPIO_InitStructure;
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
@@ -52,8 +57,185 @@ hlt_init()
   adc_init(); //initialise the ADC1 so we can use a channel from it for the hlt level
 
   vSemaphoreCreateBinary(xHLTAppletRunningSemaphore);
+  if (xBrewTaskHLTQueue == NULL)
+    {
+      xBrewTaskHLTQueue = xQueueCreate(5,sizeof(struct GenericMessage *));
+      if (xBrewTaskHLTQueue == NULL)
+        vConsolePrint("FATAL Error creating  Brew HLT Task Queue\r\n");
+      else vConsolePrint("Created Brew HLT Task Queues\r\n");
+    }
+
+
 
 }
+
+//=================================================================================================================================================================
+void vTaskBrewHLT(void * pvParameters)
+{
+  portTickType xLastWakeTime;
+  struct GenericMessage * gMsg;
+  struct HLTMsg * hMsg;
+  static uint8_t uRcvdState = HLT_STATE_IDLE;
+  const char * pcRcvdMsgText;
+  static float fDrainLitres = 0;
+  char buf[50];
+  xLastWakeTime = xTaskGetTickCount();
+  static uint8_t uFirst = 0;
+  float  fTempSetpoint = 0.0;
+  float fLitresToDrain = 0.0;
+  float actual = 0.0;
+  float hlt_level = 0.0;
+  char hlt_ok = 0;
+  struct TextMsg  * NewMessage;
+  NewMessage = (struct TextMsg *)malloc(sizeof(struct TextMsg));
+  struct GenericMessage * xMessage;
+  xMessage = (struct GenericMessage *)malloc(sizeof(struct GenericMessage));
+  char pcMessageText[40];
+  static unsigned char ucStep = 0;
+
+  const int STEP_COMPLETE = 40;
+  const int STEP_FAILED = 41;
+  const int STEP_TIMEOUT = 45;
+
+
+
+  for(;;)
+    {
+      if(xQueueReceive(xBrewTaskHLTQueue, &gMsg, 0) == pdPASS){
+          hMsg = (struct HLTMsg *)gMsg->pvMessageContent;
+          uRcvdState = hMsg->uState;
+          pcRcvdMsgText = hMsg->pcMsgText;
+          ucStep = gMsg->uiStepNumber;
+          uFirst = 1;
+
+          if (hMsg->pcMsgText != NULL)
+            {
+              sprintf(buf, "HLT Message: From: %s, to: %s\r\n", pcTASKS[TASK_BASE - gMsg->ucFromTask], pcTASKS[TASK_BASE - gMsg->ucToTask]);
+              vConsolePrint(buf);
+              vConsolePrint(hMsg->pcMsgText);
+              vConsolePrint("\r\n");
+            }
+
+      }
+      else uFirst = 0;
+
+      switch(uRcvdState)
+      {
+      case HLT_STATE_IDLE:
+        {
+          if (uFirst){
+              vConsolePrint("HLT Entered IDLE State\r\n");
+              vValveActuate(INLET_VALVE, CLOSE);
+              vValveActuate(HLT_VALVE, CLOSE);
+              GPIO_WriteBit(HLT_SSR_PORT, HLT_SSR_PIN, 0);
+
+          }
+
+          break;
+        }
+
+      case HLT_STATE_FILL_HEAT:
+        {
+          if (uFirst)
+            {
+              fTempSetpoint = hMsg->uData1;
+              vConsolePrint("HLT Entered HEAT AND FILL State\r\n");
+              //LCD_FLOAT(10,3,1,fTempSetpoint);
+              //lcd_printf(1,3,10, "Setpoint:");
+              vValveActuate(INLET_VALVE, OPEN);
+              //ucHLTFlag = 0;
+              BrewState.ucHLTState = HLT_STATE_FILL_HEAT;
+              sprintf(pcMessageText, "Heating to %02d.%02d Deg", (unsigned int)floor(fTempSetpoint), (unsigned int)((fTempSetpoint-floor(fTempSetpoint))*pow(10, 2)));
+              NewMessage->pcMsgText = pcMessageText;
+              NewMessage->ucLine = 4;
+              xQueueSendToBack(xBrewAppletTextQueue, &NewMessage, 0);
+            }
+
+          // make sure the HLT valve is closed
+          vValveActuate(HLT_VALVE, CLOSE);
+
+
+          if (!GPIO_ReadInputDataBit(HLT_HIGH_LEVEL_PORT, HLT_HIGH_LEVEL_PIN)) // looking for zero volts
+            {
+              vTaskDelay(200);
+              vValveActuate(INLET_VALVE, CLOSE);
+              vConsolePrint("HLT is FULL \r\n");
+            }
+
+          // ensure we have water above the elements
+          if (!GPIO_ReadInputDataBit(HLT_LEVEL_CHECK_PORT, HLT_LEVEL_CHECK_PIN)) // looking for zero volts
+            {
+              //check the temperature
+              actual = ds1820_get_temp(HLT);
+
+              // output depending on temp
+              if (actual < fTempSetpoint)
+                {
+                  GPIO_WriteBit(HLT_SSR_PORT, HLT_SSR_PIN, 1);
+
+                }
+              else if (actual > fTempSetpoint + 0.5)
+                {
+                  GPIO_WriteBit(HLT_SSR_PORT, HLT_SSR_PIN, 0);
+                  BrewState.ucHLTState = HLT_STATE_AT_TEMP;
+                  xMessage->ucFromTask = HLT_TASK;
+                  xMessage->ucToTask = BREW_TASK;
+                  xMessage->uiStepNumber = ucStep;
+                  xMessage->pvMessageContent = (void *)&STEP_COMPLETE;
+                  xQueueSendToBack(xBrewTaskReceiveQueue, &xMessage, 0);
+                }
+            }
+          else //DONT HEAT... WE WILL BURN OUT THE ELEMENT
+            {
+              GPIO_WriteBit(HLT_SSR_PORT, HLT_SSR_PIN, 0); //make sure its off
+              vConsolePrint("WARNING, Water not above element in HLT\r\n");
+            }
+
+
+          break;
+        }
+      case HLT_STATE_DRAIN:
+        {
+          if (uFirst)
+            {
+              vResetFlow1();
+              fLitresToDrain = hMsg->uData1;
+              vConsolePrint("HLT Entered DRAIN State\r\n");
+              // Need to set up message to the Applet.
+              LCD_FLOAT(10,3,1,fTempSetpoint);
+              lcd_printf(1,3,10, "Setpoint:");
+              vValveActuate(HLT_VALVE, OPEN);
+              BrewState.ucHLTState = HLT_STATE_DRAIN;
+            }
+
+          if (fGetBoilFlowLitres() >= fLitresToDrain)
+            {
+              vValveActuate(HLT_VALVE, CLOSE);
+              xMessage->ucFromTask = HLT_TASK;
+              xMessage->ucToTask = BREW_TASK;
+              xMessage->uiStepNumber = ucStep;
+              xMessage->pvMessageContent = (void *)&STEP_COMPLETE;
+              xQueueSendToBack(xBrewTaskReceiveQueue, &xMessage, 0);
+              vConsolePrint("HLT is DRAINED\r\n");
+              uRcvdState = HLT_STATE_IDLE;
+
+            }
+
+          //sprintf(buf, "Draining!\r\n");
+          //vConsolePrint(buf);
+          break;
+        }
+      }
+
+      vTaskDelayUntil(&xLastWakeTime, 200 / portTICK_RATE_MS );
+
+    }
+
+}
+//=================================================================================================================================================================
+
+
+
 
 //raw_adc_value = read_adc(HLT_LEVEL_ADC_CHAN);
 //GPIO_ReadInputDataBit(HLT_LEVEL_CHECK_PORT, HLT_LEVEL_CHECK_PIN);
@@ -130,12 +312,12 @@ vTaskHeatHLT(void * pvParameters)
 #define STOP_HEATING_W (STOP_HEATING_X2-STOP_HEATING_X1)
 #define STOP_HEATING_H (STOP_HEATING_Y2-STOP_HEATING_Y1)
 
-#define BK_X1 200
-#define BK_Y1 190
-#define BK_X2 315
-#define BK_Y2 235
-#define BK_W (BK_X2-BK_X1)
-#define BK_H (BK_Y2-BK_Y1)
+#define BAK_X1 200
+#define BAK_Y1 190
+#define BAK_X2 315
+#define BAK_Y2 235
+#define BAK_W (BAK_X2-BAK_X1)
+#define BAK_H (BAK_Y2-BAK_Y1)
 void
 vHLTApplet(int init)
 {
@@ -157,8 +339,8 @@ vHLTApplet(int init)
           START_HEATING_Y2, Cyan);
       lcd_fill(START_HEATING_X1 + 1, START_HEATING_Y1 + 1, START_HEATING_W,
           START_HEATING_H, Green);
-      lcd_DrawRect(BK_X1, BK_Y1, BK_X2, BK_Y2, Cyan);
-      lcd_fill(BK_X1 + 1, BK_Y1 + 1, BK_W, BK_H, Magenta);
+      lcd_DrawRect(BAK_X1, BAK_Y1, BAK_X2, BAK_Y2, Cyan);
+      lcd_fill(BAK_X1 + 1, BAK_Y1 + 1, BAK_W, BAK_H, Magenta);
       lcd_printf(10, 1, 18, "MANUAL HLT APPLET");
       lcd_printf(3, 4, 11, "SP UP");
       lcd_printf(1, 8, 13, "SP DOWN");
@@ -335,7 +517,7 @@ HLTKey(int xx, int yy)
           //printf("Heating task already running\r\n");
         }
     }
-  else if (xx > BK_X1 && yy > BK_Y1 && xx < BK_X2 && yy < BK_Y2)
+  else if (xx > BAK_X1 && yy > BAK_Y1 && xx < BAK_X2 && yy < BAK_Y2)
     {
       //try to take the semaphore from the display applet. wait here if we cant take it.
       xSemaphoreTake(xHLTAppletRunningSemaphore, portMAX_DELAY);

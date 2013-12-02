@@ -18,7 +18,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "crane.h"
+
 
 #include "stm32f10x.h"
 #include "FreeRTOS.h"
@@ -30,52 +30,23 @@
 #include "queue.h"
 #include "I2C-IO.h"
 #include "console.h"
+#include "crane.h"
 #include "brew.h"
-
+#include "io_util.h"
+#include "message.h"
 
 volatile int8_t cs = STOPPED;
-volatile int8_t iCraneState = STOPPED;
+ int8_t iCraneState = STOPPED;
 
-static const int STEP_COMPLETE = BREW_STEP_COMPLETE;
-static const int STEP_FAILED = BREW_STEP_FAILED;
-static const int STEP_TIMEOUT = BREW_STEP_TIMEOUT;
+//static const int STEP_COMPLETE = BREW_STEP_COMPLETE;
+//static const int STEP_FAILED = BREW_STEP_FAILED;
+//static const int STEP_TIMEOUT = BREW_STEP_TIMEOUT;
 
-
-
-//xQueueHandle xCraneQueueHandle;
-xQueueHandle xCraneQueue;
+xQueueHandle xCraneQueue = NULL;
 xSemaphoreHandle xAppletRunningSemaphore;
 xTaskHandle xCraneTaskHandle = NULL, xCraneAppletDisplayHandle = NULL;
 
 void vTaskCrane(void * pvParameters);
-
-struct CraneCommand
-{
-  int8_t cDirection; //1 = up, 2 = down , -1 = stopped
-  unsigned char ucEnable; // off on
-};
-
-struct CraneCommand Stop = {STOP, 1};
-struct CraneCommand Up = {UP, 1};
-struct CraneCommand Down = {DN, 1};
-
-
-// Helper Function to debounce the input from the dry contacts on the relays
-uint8_t debounce(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin)
-{
-  uint8_t read1, read2;
-  read1 = GPIO_ReadInputDataBit(GPIOx, GPIO_Pin);
-  vTaskDelay(5);
-  read2 = GPIO_ReadInputDataBit(GPIOx, GPIO_Pin);
-  if (read1 == read2)
-    return read1;
-  else return 0;
-
-}
-
-void * pvCraneTime = (void *)1;
-//void vCraneTimerCallback(xTimerHandle xHandle);
-uint16_t uCraneTime;
 
 
 void vCraneInit(void)
@@ -97,16 +68,16 @@ void vCraneInit(void)
   vPCF_ResetBits(CRANE_PIN2, CRANE_PORT); //pull low
 
   vSemaphoreCreateBinary(xAppletRunningSemaphore);
-  xCraneQueue = xQueueCreate( 1, sizeof( int ) );
 
-  xTaskCreate( vTaskCrane,
-      ( signed portCHAR * ) "Crane",
-      configMINIMAL_STACK_SIZE +500,
-      NULL,
-      tskIDLE_PRIORITY,
-      &xCraneTaskHandle );
+  xCraneQueue = xQueueCreate( 5, sizeof( struct GenericMessage * ) );
 
-  printf("Crane Initialised\r\n");
+  if (xCraneQueue == NULL)
+    {
+      vConsolePrint("Crane Queue couldn't be created\r\n");
+    }
+
+
+  vConsolePrint("Crane Initialised\r\n");
 
 }
 
@@ -145,70 +116,104 @@ void vCraneFunc(int Command)
 
 void vTaskCrane(void * pvParameters)
 {
-  int xMessage;
-  static int xLastMessage;
-  uint8_t limit = 0xFF, limit1 = 0xFF; //neither on or off.
 
-  xLastMessage = STOP;
-  portBASE_TYPE xStatus;
+  static struct GenericMessage * xMessage, *xLastMessage, * xToSend;
+
+
+  xLastMessage = (struct GenericMessage *)malloc(sizeof(struct GenericMessage));
+  xMessage = (struct GenericMessage *)malloc(sizeof(struct GenericMessage));
+  xToSend = (struct GenericMessage *)malloc(sizeof(struct GenericMessage));
+  static int iComplete = 0;
+  static int iStep = 0;
+  xToSend->ucFromTask = CRANE_TASK;
+  xToSend->ucToTask = BREW_TASK;
+  xToSend->pvMessageContent = (void *)&iComplete;
+
+  uint8_t limit = 0xFF, limit1 = 0xFF; //neither on or off.
+  static int iC = STOP;
+  static int iCommandState = 0;
+  char buf[40];
+  xLastMessage->pvMessageContent = &iC;
+
   for (;;)
     {
-      //vConsolePrint("crane task called\r\n");
-      xStatus = xQueueReceive(xCraneQueue, &xMessage, 50); // Check the queue every 0.05 second for a new command
 
-      // NEED to check that xMessage isn't returned NULL when no message in queue
-      if (xStatus != pdTRUE)
+      if(xQueueReceive(xCraneQueue, &xMessage, 15) != pdPASS)
         {
-          xMessage = xLastMessage;
+          xMessage->pvMessageContent = xLastMessage->pvMessageContent;
         }
-      else
+      else // received successfully
         {
+          iStep = xMessage->uiStepNumber;
           vConsolePrint("Crane Task has received a message\r\n");
+          sprintf(buf, "xMessage = %d, Step:%d\r\n", *(int*)xMessage->pvMessageContent, xMessage->uiStepNumber);
+          vConsolePrint(buf);
+          xLastMessage->pvMessageContent = xMessage->pvMessageContent;
+          iC = *((int*)xMessage->pvMessageContent); //casts to int * and then dereferences.
+          iComplete = 0;
+          xToSend->uiStepNumber = xMessage->uiStepNumber;
+          iCommandState = 0;
         }
-
 
       switch(iCraneState)
       {
       case TOP:
         {
-          if (xMessage == DN)
+          if (iC == DN)
             {
               vCraneFunc(DN);
               iCraneState = DRIVING_DOWN;
             }
-          else if (xMessage == DN_INC)
+          else if (iC == DN_INC)
             {
               iCraneState = DRIVING_DOWN_INC;
+            }
+          else if (iC == UP)
+            {
+              iCommandState = 1;
+              iComplete = STEP_COMPLETE;
             }
           break;
         }
       case BOTTOM:
         {
-          if (xMessage == UP)
+          if (iC == UP)
             {
               vCraneFunc(UP);
               iCraneState = DRIVING_UP;
+            }
+          else if (iC == DN)
+            {
+              iCommandState = 1;
+              iComplete = STEP_COMPLETE;
             }
           break;
         }
       case DRIVING_UP:
         {
-          if (xMessage == STOP)
+          if (iC == STOP)
             {
               vCraneFunc(STOP);
               vConsolePrint("STOP while DU \r\n");
               iCraneState = STOPPED;
+              iCommandState = 1;
+              iComplete = STEP_COMPLETE;
             }
-          else if (xMessage == DN)
+          else if (iC == DN)
             {
               limit = debounce(CRANE_LIMIT_PORT, CRANE_LOWER_LIMIT_PIN);
               if (limit != 1)
                 {
-                  vCraneFunc(xMessage);
+                  vCraneFunc(DN);
                   iCraneState = DRIVING_DOWN;
                 }
               else
-                iCraneState = BOTTOM;
+                {
+                  iCraneState = BOTTOM;
+                  iCommandState = 1;
+                  iComplete = STEP_COMPLETE;
+                }
+
             }
           else
             {
@@ -218,28 +223,37 @@ void vTaskCrane(void * pvParameters)
                   vCraneFunc(STOP);
                   vConsolePrint("STOP limit DU \r\n");
                   iCraneState = TOP;
+                  iComplete = STEP_COMPLETE;
+                  iCommandState = 1;
+
+                 //if (xMessage->ucFromTask == BREW_TASK)
+                 //   xQueueSendToBack(xBrewTaskReceiveQueue, &xToSend, 0);
                 }
             }
           break;
         }
       case DRIVING_DOWN:
         {
-          if (xMessage == STOP)
+          if (iC == STOP)
             {
               vCraneFunc(STOP);
               vConsolePrint("STOP while DDN \r\n");
               iCraneState = STOPPED;
+              iComplete = STEP_COMPLETE;
+              iCommandState = 1;
             }
-          else if (xMessage == UP)
+          else if (iC == UP)
             {
               limit = debounce(CRANE_LIMIT_PORT, CRANE_UPPER_LIMIT_PIN);
               if (limit == 1)
                 {
                   iCraneState = TOP;
+                  iComplete = STEP_COMPLETE;
+                  iCommandState = 1;
                 }
               else
                 {
-                  vCraneFunc(xMessage);
+                  vCraneFunc(UP);
                   iCraneState = DRIVING_UP;
                 }
 
@@ -253,6 +267,10 @@ void vTaskCrane(void * pvParameters)
                   vCraneFunc(STOP);
                   vConsolePrint("STOP limit DDN \r\n");
                   iCraneState = BOTTOM;
+                  iCommandState = 1;
+                  iComplete = STEP_COMPLETE;
+               //   if (xMessage->ucFromTask == BREW_TASK)
+               //    xQueueSendToBack(xBrewTaskReceiveQueue, &xToSend, 0);
                 }
             }
 
@@ -280,33 +298,49 @@ void vTaskCrane(void * pvParameters)
               vConsolePrint("STOP limit DDN \r\n");
               vCraneFunc(STOP);
               iCraneState = BOTTOM;
-              xQueueSendToBack(xBrewTaskReceiveQueue, &STEP_COMPLETE, 0);
+              iComplete = STEP_COMPLETE;
+              iCommandState = 1;
+
+             // if (xMessage->ucFromTask == BREW_TASK)
+             //   xQueueSendToBack(xBrewTaskReceiveQueue, &xToSend, 0);
+
             }
           break;
         }
       case STOPPED:
         {
-          if (xMessage == UP)
+          if (iC == UP)
             {
               limit = debounce(CRANE_LIMIT_PORT, CRANE_UPPER_LIMIT_PIN);
               if (limit != 1)
                 {
-                  vCraneFunc(xMessage);
+                  vCraneFunc(UP);
                   iCraneState = DRIVING_UP;
                 }
-              else iCraneState = TOP;
+
+              else
+                {
+                  iCommandState = 1;
+                  iComplete = STEP_COMPLETE;
+                  iCraneState = TOP;
+                }
             }
-          else if (xMessage == DN)
+          else if (iC == DN)
             {
               limit = debounce(CRANE_LIMIT_PORT, CRANE_LOWER_LIMIT_PIN);
               if (limit != 1)
                 {
-                  vCraneFunc(xMessage);
+                  vCraneFunc(DN);
                   iCraneState = DRIVING_DOWN;
                 }
-              else iCraneState = BOTTOM;
+              else
+                {
+                  iCommandState =1;
+                  iComplete = STEP_COMPLETE;
+                  iCraneState = BOTTOM;
+                }
             }
-          else if (xMessage == DN_INC)
+          else if (iC == DN_INC)
             {
               limit = debounce(CRANE_LIMIT_PORT, CRANE_LOWER_LIMIT_PIN);
               if (limit != 1)
@@ -314,7 +348,11 @@ void vTaskCrane(void * pvParameters)
 
                   iCraneState = DRIVING_DOWN_INC;
                 }
-              else iCraneState = BOTTOM;
+              else {
+                  iCommandState  = 1;
+                  iComplete = STEP_COMPLETE;
+                  iCraneState = BOTTOM;
+              }
             }
 
           break;
@@ -327,9 +365,14 @@ void vTaskCrane(void * pvParameters)
 
         }
       }// Switch
-      xLastMessage = xMessage;
+      if (iCommandState == 1 && xMessage->ucFromTask == BREW_TASK)
+        {
+          xQueueSendToBack(xBrewTaskReceiveQueue, &xToSend, 0);
+          iCommandState  = 0;
+          iCraneState = STOPPED;
+        }
 
-
+      //vTaskDelay(500);
     }// Task Loop
 }//func
 
@@ -489,24 +532,26 @@ int iCraneKey(int xx, int yy){
   uint16_t window = 0;
   static uint8_t w = 5,h = 5;
   static uint16_t last_window = 0;
-  int pxMessage;
-
+  static struct GenericMessage * pxMessage;
+  pxMessage = (struct GenericMessage *)malloc(sizeof(struct GenericMessage));
+  int iUp= UP, iDn = DN, iStop = STOP;
+  pxMessage->pvMessageContent = &iStop;
 
   if (xx > UP_X1+1 && xx < UP_X2-1 && yy > UP_Y1+1 && yy < UP_Y2-1)
     {
-      pxMessage = UP;
-      xQueueSendToBack( xCraneQueue, ( void * ) &pxMessage, 0 );
+      pxMessage->pvMessageContent = &iUp;
+      xQueueSendToBack( xCraneQueue, &pxMessage, 0 );
     }
   else if (xx > DN_X1+1 && xx < DN_X2-1 && yy > DN_Y1+1 && yy < DN_Y2-1)
     {
-      pxMessage = DN;
-      xQueueSendToBack( xCraneQueue, ( void * ) &pxMessage, 0 );
+      pxMessage->pvMessageContent = &iDn;
+      xQueueSendToBack( xCraneQueue, &pxMessage, 0 );
 
     }
   else if (xx > ST_X1+1 && xx < ST_X2-1 && yy > ST_Y1+1 && yy < ST_Y2-1)
     {
-      pxMessage = STOP;
-      xQueueSendToBack( xCraneQueue, ( void * ) &pxMessage, portMAX_DELAY );
+      pxMessage->pvMessageContent = &iStop;
+      xQueueSendToBack( xCraneQueue, &pxMessage, portMAX_DELAY );
 
 
     }

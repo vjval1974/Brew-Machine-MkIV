@@ -19,14 +19,15 @@
 #include "semphr.h"
 #include "Flow1.h"
 #include "drivers/ds1820.h"
+#include "I2C-IO.h"
+#include "console.h"
+#include "io_util.h"
 void vValvesAppletDisplay( void *pvParameters);
 
 void vValvesApplet(int init);
 xTaskHandle xValvesTaskHandle = NULL, xValvesAppletDisplayHandle = NULL;
 // semaphore that stops the returning from the applet to the menu system until the applet goes into the blocked state.
 xSemaphoreHandle xValvesAppletRunningSemaphore;
-
-
 
 void vValvesInit(void){
 
@@ -57,14 +58,7 @@ void vValvesInit(void){
   GPIO_ResetBits(CHILLER_VALVE_PORT, CHILLER_VALVE_PIN); //pull low
 
 
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-  GPIO_InitStructure.GPIO_Pin =  BOIL_VALVE_PIN;
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;// Output - Push Pull
-  GPIO_Init( BOIL_VALVE_PORT, &GPIO_InitStructure );
-  GPIO_ResetBits(BOIL_VALVE_PORT, BOIL_VALVE_PIN); //pull low
-
   vSemaphoreCreateBinary(xValvesAppletRunningSemaphore);
-
 
 }
 
@@ -100,10 +94,10 @@ void vValveActuate( unsigned char valve, unsigned char state )
     {
       if (state == TOGGLE)
         {
-          current = GPIO_ReadInputDataBit(BOIL_VALVE_PORT, BOIL_VALVE_PIN);
-          GPIO_WriteBit(BOIL_VALVE_PORT, BOIL_VALVE_PIN, current ^ 1);
+ //         current = GPIO_ReadInputDataBit(BOIL_VALVE_PORT, BOIL_VALVE_PIN);
+ //         GPIO_WriteBit(BOIL_VALVE_PORT, BOIL_VALVE_PIN, current ^ 1);
         }
-      else GPIO_WriteBit(BOIL_VALVE_PORT, BOIL_VALVE_PIN, state);
+ //     else GPIO_WriteBit(BOIL_VALVE_PORT, BOIL_VALVE_PIN, state);
 
       break;
     }
@@ -190,7 +184,7 @@ void vValvesApplet(int init){
   uint8_t uChillerValveState = CLOSED;
   uHLTValveState = GPIO_ReadInputDataBit(HLT_VALVE_PORT, HLT_VALVE_PIN);
   uMashValveState = GPIO_ReadInputDataBit(MASH_VALVE_PORT, MASH_VALVE_PIN);
-  uBoilValveState = GPIO_ReadInputDataBit(BOIL_VALVE_PORT, BOIL_VALVE_PIN);
+ // uBoilValveState = GPIO_ReadInputDataBit(BOIL_VALVE_PORT, BOIL_VALVE_PIN);
   uInletValveState = GPIO_ReadInputDataBit(INLET_VALVE_PORT, INLET_VALVE_PIN);
   uChillerValveState = GPIO_ReadInputDataBit(CHILLER_VALVE_PORT, CHILLER_VALVE_PIN);
 
@@ -326,7 +320,7 @@ void vValvesAppletDisplay( void *pvParameters){
 
             uHLTValveState = GPIO_ReadInputDataBit(HLT_VALVE_PORT, HLT_VALVE_PIN);
             uMashValveState = GPIO_ReadInputDataBit(MASH_VALVE_PORT, MASH_VALVE_PIN);
-            uBoilValveState = GPIO_ReadInputDataBit(BOIL_VALVE_PORT, BOIL_VALVE_PIN);
+ //           uBoilValveState = GPIO_ReadInputDataBit(BOIL_VALVE_PORT, BOIL_VALVE_PIN);
             uInletValveState = GPIO_ReadInputDataBit(INLET_VALVE_PORT, INLET_VALVE_PIN);
             uChillerValveState = GPIO_ReadInputDataBit(CHILLER_VALVE_PORT, CHILLER_VALVE_PIN);
             if (uHLTValveState != hlt_last ||
@@ -484,4 +478,5 @@ int iValvesKey(int xx, int yy)
   return 0;
 
 }
+
 

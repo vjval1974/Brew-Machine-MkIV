@@ -116,8 +116,26 @@
 #define BUTTON_6 6
 #define QUIT_BUTTON 7
 #define NO_BUTTON 255
+struct State
+{
+      unsigned char ucStep;
+      portTickType xLastWakeTime;
+      uint16_t uSecondsElapsed;
+      uint16_t uMinutesElapsed;
+      uint16_t uHoursElapsed;
+      uint16_t uSecondCounter;
+      unsigned char ucRunningState;
+      unsigned char ucTarget;
+      unsigned char ucHopAddition;
+      unsigned char ucTargetHLTVolume;
+      unsigned char ucTargetHLTTemp;
+      unsigned char ucTargetWaterVolume;
+      unsigned char ucHLTState;
+};
 
-
+extern struct State BrewState;
+extern const char * pcTASKS[6];
+extern const char * pcCraneStates[6];
 void vTaskBrew(void * pvParameters);
 void vBrewApplet(int init);
 int iBrewKey(int xx, int yy);
@@ -125,7 +143,14 @@ int iBrewKey(int xx, int yy);
 #define BREW_STEP_COMPLETE 40
 #define BREW_STEP_FAILED 41
 #define BREW_STEP_TIMEOUT  45
+#define BREW_STEP_WAIT 46
+
+extern const int STEP_COMPLETE;
+extern const int STEP_FAILED;
+extern const int STEP_TIMEOUT;
+extern const int STEP_WAIT;
 
 
-extern xQueueHandle xBrewTaskReceiveQueue;
+extern xQueueHandle xBrewTaskReceiveQueue,  xBrewAppletTextQueue;
+
 #endif /* BREW_H_ */

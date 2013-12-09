@@ -36,7 +36,7 @@
 #include "message.h"
 
 volatile int8_t cs = STOPPED;
- int8_t iCraneState = STOPPED;
+int8_t iCraneState = STOPPED;
 
 //static const int STEP_COMPLETE = BREW_STEP_COMPLETE;
 //static const int STEP_FAILED = BREW_STEP_FAILED;
@@ -138,7 +138,7 @@ void vTaskCrane(void * pvParameters)
   for (;;)
     {
 
-      if(xQueueReceive(xCraneQueue, &xMessage, 15) != pdPASS)
+      if(xQueueReceive(xCraneQueue, &xMessage, 0) != pdPASS)
         {
           xMessage->pvMessageContent = xLastMessage->pvMessageContent;
         }
@@ -149,6 +149,7 @@ void vTaskCrane(void * pvParameters)
           sprintf(buf, "xMessage = %d, Step:%d\r\n", *(int*)xMessage->pvMessageContent, xMessage->uiStepNumber);
           vConsolePrint(buf);
           xLastMessage->pvMessageContent = xMessage->pvMessageContent;
+          xLastMessage->ucFromTask = xMessage->ucFromTask;
           iC = *((int*)xMessage->pvMessageContent); //casts to int * and then dereferences.
           iComplete = 0;
           xToSend->uiStepNumber = xMessage->uiStepNumber;
@@ -173,7 +174,9 @@ void vTaskCrane(void * pvParameters)
               iCommandState = 1;
               iComplete = STEP_COMPLETE;
             }
+          //iCommandState = 0;
           break;
+
         }
       case BOTTOM:
         {
@@ -226,8 +229,8 @@ void vTaskCrane(void * pvParameters)
                   iComplete = STEP_COMPLETE;
                   iCommandState = 1;
 
-                 //if (xMessage->ucFromTask == BREW_TASK)
-                 //   xQueueSendToBack(xBrewTaskReceiveQueue, &xToSend, 0);
+                  //if (xMessage->ucFromTask == BREW_TASK)
+                  //   xQueueSendToBack(xBrewTaskReceiveQueue, &xToSend, 0);
                 }
             }
           break;
@@ -269,8 +272,8 @@ void vTaskCrane(void * pvParameters)
                   iCraneState = BOTTOM;
                   iCommandState = 1;
                   iComplete = STEP_COMPLETE;
-               //   if (xMessage->ucFromTask == BREW_TASK)
-               //    xQueueSendToBack(xBrewTaskReceiveQueue, &xToSend, 0);
+                  //   if (xMessage->ucFromTask == BREW_TASK)
+                  //    xQueueSendToBack(xBrewTaskReceiveQueue, &xToSend, 0);
                 }
             }
 
@@ -301,8 +304,8 @@ void vTaskCrane(void * pvParameters)
               iComplete = STEP_COMPLETE;
               iCommandState = 1;
 
-             // if (xMessage->ucFromTask == BREW_TASK)
-             //   xQueueSendToBack(xBrewTaskReceiveQueue, &xToSend, 0);
+              // if (xMessage->ucFromTask == BREW_TASK)
+              //   xQueueSendToBack(xBrewTaskReceiveQueue, &xToSend, 0);
 
             }
           break;
@@ -348,12 +351,14 @@ void vTaskCrane(void * pvParameters)
 
                   iCraneState = DRIVING_DOWN_INC;
                 }
-              else {
+              else
+                {
                   iCommandState  = 1;
                   iComplete = STEP_COMPLETE;
                   iCraneState = BOTTOM;
-              }
+                }
             }
+          iC = 14;
 
           break;
         }
@@ -367,6 +372,7 @@ void vTaskCrane(void * pvParameters)
       }// Switch
       if (iCommandState == 1 && xMessage->ucFromTask == BREW_TASK)
         {
+          vConsolePrint("Crane Command Complete, Sending Message\r\n");
           xQueueSendToBack(xBrewTaskReceiveQueue, &xToSend, 0);
           iCommandState  = 0;
           iCraneState = STOPPED;

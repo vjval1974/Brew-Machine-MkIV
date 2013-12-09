@@ -7,7 +7,8 @@
 
 #include <stdint.h>
 #include <stdio.h>
-#include "boil.h"
+#include <stdlib.h>
+
 #include "stm32f10x.h"
 #include "FreeRTOS.h"
 #include "lcd.h"
@@ -16,6 +17,11 @@
 #include "leds.h"
 #include "semphr.h"
 #include "queue.h"
+#include "message.h"
+#include "brew.h"
+#include "boil.h"
+#include "console.h"
+
 #define BOIL_PORT GPIOD
 #define BOIL_PIN GPIO_Pin_12
 
@@ -26,12 +32,12 @@
 #define OFF 0
 
 
-xQueueHandle xBoilQueue;
+xQueueHandle xBoilQueue = NULL;
 
 
 #define TIM_ARR_TOP 10000
 
-uint8_t diag_duty= 50;
+uint8_t diag_duty = 50;
 volatile uint8_t boil_state = OFF;
 
 //void vBoil(uint8_t duty, uint8_t state);
@@ -96,7 +102,8 @@ void vBoilInit(void)
   boil_state = OFF;
 
   vSemaphoreCreateBinary(xAppletRunningSemaphore);
-  xBoilQueue = xQueueCreate(5, sizeof(uint8_t));
+
+  xBoilQueue = xQueueCreate(5, sizeof(struct GenericMessage *));
 
   if (xBoilQueue != NULL)
     {
@@ -116,32 +123,33 @@ void vBoilInit(void)
 uint8_t uGetBoilLevel(void)
 {
  // // **************OVERRIDDEN *************************
-  return 1;
+  //return 1;
 
   return (GPIO_ReadInputDataBit(BOIL_LEVEL_PORT, BOIL_LEVEL_PIN) == 0);
 
 }
 void vTaskBoil( void * pvParameters)
 {
+  struct GenericMessage * xMessage;
+  xMessage = (struct GenericMessage *)malloc(sizeof(struct GenericMessage));
   uint8_t duty = 0; // receive value from queue;
   uint8_t boil_level = 0;
   uint16_t compare = 0;
   portBASE_TYPE xStatus;
-
+  char buf[50];
   for(;;){
       boil_level =  uGetBoilLevel();
-      xStatus = xQueueReceive(xBoilQueue, &duty, 10);
+      xStatus = xQueueReceive(xBoilQueue, &xMessage, 10);
       if (xStatus == pdPASS)
         {
           //WE have received a value from the queue.. time to act.
+          duty = *(int *)xMessage->pvMessageContent;
           if (duty > 100)
             duty = 100;
 
           compare = ((TIM_ARR_TOP/100) * duty);
-
-
-
-
+          sprintf(buf, "Boil: Received duty cycle of %d\r\n", duty);
+          vConsolePrint(buf);
           // ensure we have water above the elements
 
           if (boil_level && duty > 0)
@@ -171,7 +179,7 @@ void vTaskBoil( void * pvParameters)
               TIM_Cmd( TIM4, DISABLE );
               GPIO_ResetBits(BOIL_PORT, BOIL_PIN);
               boil_state = OFF;
-             // printf("Boil level too low during boil... stopped boil\r\n");
+             vConsolePrint("Boil level too low during boil... stopped boil\r\n");
             }
           //printf("Nothing in boil queue!\r\n");
         }
@@ -211,12 +219,12 @@ void vTaskBoil( void * pvParameters)
 #define STOP_HEATING_W (STOP_HEATING_X2-STOP_HEATING_X1)
 #define STOP_HEATING_H (STOP_HEATING_Y2-STOP_HEATING_Y1)
 
-#define BK_X1 200
-#define BK_Y1 190
-#define BK_X2 315
-#define BK_Y2 235
-#define BK_W (BK_X2-BK_X1)
-#define BK_H (BK_Y2-BK_Y1)
+#define BAK_X1 200
+#define BAK_Y1 190
+#define BAK_X2 315
+#define BAK_Y2 235
+#define BAK_W (BAK_X2-BAK_X1)
+#define BAK_H (BAK_Y2-BAK_Y1)
 void vBoilApplet(int init){
   if (init)
         {
@@ -228,8 +236,8 @@ void vBoilApplet(int init){
                 lcd_fill(STOP_HEATING_X1+1, STOP_HEATING_Y1+1, STOP_HEATING_W, STOP_HEATING_H, Red);
                 lcd_DrawRect(START_HEATING_X1, START_HEATING_Y1, START_HEATING_X2, START_HEATING_Y2, Cyan);
                 lcd_fill(START_HEATING_X1+1, START_HEATING_Y1+1, START_HEATING_W, START_HEATING_H, Green);
-                lcd_DrawRect(BK_X1, BK_Y1, BK_X2, BK_Y2, Cyan);
-                lcd_fill(BK_X1+1, BK_Y1+1, BK_W, BK_H, Magenta);
+                lcd_DrawRect(BAK_X1, BAK_Y1, BAK_X2, BAK_Y2, Cyan);
+                lcd_fill(BAK_X1+1, BAK_Y1+1, BAK_W, BAK_H, Magenta);
                 lcd_printf(10,1,18,  "MANUAL Boil APPLET");
                 lcd_printf(3,4,11,  "Duty UP");
                 lcd_printf(1,8,13,  "Duty DOWN");
@@ -319,15 +327,19 @@ void vBoilAppletDisplay( void *pvParameters){
 
 int iBoilKey(int xx, int yy)
 {
+  struct GenericMessage * xMessage;
+  xMessage = (struct GenericMessage *)malloc(sizeof(struct GenericMessage));
+  xMessage->pvMessageContent = (void *)&diag_duty;
   uint8_t zero = 0;
   static uint8_t w = 5,h = 5;
   static uint16_t last_window = 0;
   if (xx > DUTY_UP_X1+1 && xx < DUTY_UP_X2-1 && yy > DUTY_UP_Y1+1 && yy < DUTY_UP_Y2-1)
     {
       diag_duty+=1;
+
       //printf("Duty Cycle is now %d\r\n", diag_duty);
       if (boil_state == BOILING)
-        xQueueSendToBack(xBoilQueue, &diag_duty, 0);
+        xQueueSendToBack(xBoilQueue, &xMessage, 0);
     }
   else if (xx > DUTY_DN_X1+1 && xx < DUTY_DN_X2-1 && yy > DUTY_DN_Y1+1 && yy < DUTY_DN_Y2-1)
 
@@ -337,18 +349,20 @@ int iBoilKey(int xx, int yy)
       else diag_duty-=1;
       //printf("Duty Cycle is now %d\r\n", diag_duty);
       if (boil_state == BOILING)
-        xQueueSendToBack(xBoilQueue, &diag_duty, 0);
+        xQueueSendToBack(xBoilQueue, &xMessage, 0);
     }
   else if (xx > STOP_HEATING_X1+1 && xx < STOP_HEATING_X2-1 && yy > STOP_HEATING_Y1+1 && yy < STOP_HEATING_Y2-1)
     {
-      xQueueSendToBack(xBoilQueue, &zero, 0);
+      xMessage->pvMessageContent = (void*)&zero;
+      xQueueSendToBack(xBoilQueue, &xMessage, 0);
     }
   else if (xx > START_HEATING_X1+1 && xx < START_HEATING_X2-1 && yy > START_HEATING_Y1+1 && yy < START_HEATING_Y2-1)
     {
-      xQueueSendToBack(xBoilQueue, &diag_duty, 0);
+      xMessage->pvMessageContent = (void*)&diag_duty;
+      xQueueSendToBack(xBoilQueue, &xMessage, 0);
 
     }
-  else if (xx > BK_X1 && yy > BK_Y1 && xx < BK_X2 && yy < BK_Y2)
+  else if (xx > BAK_X1 && yy > BAK_Y1 && xx < BAK_X2 && yy < BAK_Y2)
     {
       //try to take the semaphore from the display applet. wait here if we cant take it.
       xSemaphoreTake(xAppletRunningSemaphore, portMAX_DELAY);

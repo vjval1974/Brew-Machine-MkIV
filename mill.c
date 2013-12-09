@@ -46,7 +46,9 @@ void vMillInit(void){
 void vMill( int state )
 {
   if (state == MILL_DRIVING)
-    GPIO_WriteBit(MILL_PORT, MILL_PIN, state);
+    GPIO_WriteBit(MILL_PORT, MILL_PIN, 1);
+  else
+    GPIO_WriteBit(MILL_PORT, MILL_PIN, 0);
   iMillState = state;
 
 }

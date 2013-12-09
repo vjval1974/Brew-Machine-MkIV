@@ -38,6 +38,10 @@
 #include "message.h"
 #include "io_util.h"
 #include "boil_valve.h"
+#include "boil.h"
+#include "hop_dropper.h"
+
+#define MAX_BREW_STEPS iMaxBrewSteps()
 
 // Applet States
 #define MAIN 0
@@ -47,6 +51,10 @@
 #define QUIT 4
 #define OTHER 5
 
+// Brew Step Codes
+#define BREW_STEP_COMPLETE 40
+#define BREW_STEP_FAILED 41
+#define BREW_STEP_WAIT 46
 
 // Running States
 #define IDLE 0
@@ -56,10 +64,12 @@ struct State BrewState = {0,0,0,0,0,0,0,0,0,0,0,0,0};
 
 const char  * pcRunningState[2] = {"IDLE", "RUNNING"};
 const char  * pcHLTLevels[3] = {"LOW", "MID", "HIGH"};
+const char  * pcHLTStates[4] = {"IDLE", "FILL+HEAT", "DRAIN", "AT TEMP"};
 const char  * pcCraneStates[6] = {"Top", "Bottom", "Driving up", "Driving Down", "Down Inc", "Stopped"};
 const char  * pcTASKS[6] = {"Brew", "Boil", "HLT", "Crane", "BoilValve", "HopDropper"};
 
-#define MAX_BREW_STEPS 24
+
+
 
 #define CLEAR_APPLET_CANVAS lcd_fill(CANVAS_X1+1,CANVAS_Y1+1, CANVAS_W, CANVAS_H, Black);
 #define LCD_FLOAT( x, y, dp , var ) lcd_printf(x, y, 4, "%0d.%0d", (unsigned int)floor(var), (unsigned int)((var-floor(var))*pow(10, dp)));
@@ -79,30 +89,26 @@ const char  * pcTASKS[6] = {"Brew", "Boil", "HLT", "Crane", "BoilValve", "HopDro
     lcd_printf(9,13,5, "PAUSE"); \
     lcd_printf(17,13,5, "SKIP"); //Button6
 
-//xQueueHandle xBrewTaskHLTQueue;
-
-const char HLT_STATES[4][16] =
-    {"IDLE", "FILL+HEAT", "DRAIN", "AT TEMP"};
 
 const int STEP_COMPLETE = 40;
 const int STEP_FAILED = 41;
-const int STEP_TIMEOUT = 45;
 const int STEP_WAIT = 46;
 
 void vBrewAppletDisplay( void *pvParameters);
 void vBrewGraphAppletDisplay(void * pvParameters);
 void vBrewStatsAppletDisplay(void * pvParameters);
 void vBrewResAppletDisplay(void * pvParameters);
+void vBrewReset(void);
 void vBrewApplet(int init);
 void vBrewRunStep(void);
 void vBrewNextStep(void);
 
 xTaskHandle xBrewTaskHandle = NULL,
-            xBrewAppletDisplayHandle = NULL,
-            xBrewGraphAppletDisplayHandle = NULL,
-            xBrewStatsAppletDisplayHandle = NULL,
-            xBrewResAppletDisplayHandle = NULL,
-            xBrewHLTTaskHandle = NULL;
+    xBrewAppletDisplayHandle = NULL,
+    xBrewGraphAppletDisplayHandle = NULL,
+    xBrewStatsAppletDisplayHandle = NULL,
+    xBrewResAppletDisplayHandle = NULL,
+    xBrewHLTTaskHandle = NULL;
 
 // semaphore that stops the returning from the applet to the menu system until the applet goes into the blocked state.
 xSemaphoreHandle xBrewAppletRunningSemaphore;
@@ -113,18 +119,94 @@ static int iAppletState = MAIN;
 
 // Define Structure for brew steps
 static struct BrewStep
-    {
-        const char * pcStepName;
-        int (*func)(void * pvParameters);
-        void (*poll)(void * pvParameters);
-        int iFuncParams[5];
-        uint16_t uTimeout;
-        uint32_t uStartTime;
-        uint16_t uElapsedTime;
-        unsigned char ucComplete; // step complete flag
-        unsigned char ucWait; // Wait for previous steps to be complete?
-    } Brew[]; //Brew is an array of brew steps.
+{
+  const char * pcStepName;
+  int (*func)(void * pvParameters);
+  void (*poll)(void * pvParameters);
+  int iFuncParams[5];
+  uint16_t uTimeout;
+  uint32_t uStartTime;
+  uint16_t uElapsedTime;
+  unsigned char ucComplete; // step complete flag
+  unsigned char ucWait; // Wait for previous steps to be complete?
+} Brew[]; //Brew is an array of brew steps
 
+
+static int iBrewStepMonitor(int iWaiting)
+{
+  static char buf[50];
+  int ii=0, jj=0, kk=0;
+  int iPreviousStepsComplete;
+
+  //vConsolePrint("STEP MONITOR\r\n");
+  for (jj = 0;jj <= BrewState.ucStep;jj++)
+    {
+      //sprintf(buf,"checking step %d : state = %d\r\n",jj,Brew[jj].ucComplete);
+      //vConsolePrint(buf);
+      if (Brew[jj].ucComplete == 0)
+        {
+
+          kk++;
+          Brew[jj].uElapsedTime = (BrewState.uSecondCounter - Brew[jj].uStartTime);
+
+          if (jj != BrewState.ucStep)
+            {
+              sprintf(buf, "Waiting on Step %d:'%s' \r\n", jj, Brew[jj].pcStepName);
+              vConsolePrint(buf);
+            }
+
+          if (Brew[jj].uElapsedTime > Brew[jj].uTimeout)
+            {
+              sprintf(buf, "Step %d: %s - TIMEOUT\r\n", jj, Brew[jj].pcStepName);
+              vConsolePrint(buf);
+            }
+        }
+
+    }
+  iPreviousStepsComplete = kk;
+
+  if (iWaiting)
+    {
+      //  sprintf(buf, "Returning %d\r\n=====================\r\n", iPreviousStepsComplete);
+      //   vConsolePrint(buf);
+      return iPreviousStepsComplete;
+    }
+  else
+    // vConsolePrint("Returning 0\r\n");
+    return 0;
+
+}
+
+static int iMaxBrewSteps(void)
+{
+  static char buf[50];
+  int i = 0;
+  while (Brew[i].pcStepName != NULL)
+    {
+      i++;
+    }
+  sprintf(buf, "Sizeof Brew[] = %d\r\n", i);
+  vConsolePrint(buf);
+  return i;
+}
+void vBrewTotalReset(void){
+
+  int iMax = iMaxBrewSteps();
+  vBrewReset();
+  vTaskDelete(xBrewTaskHandle);
+  vQueueDelete(xBrewTaskReceiveQueue);
+  vQueueDelete(xBrewTaskStateQueue);
+  xBrewTaskHandle = NULL;
+  xBrewTaskReceiveQueue = NULL;
+  xBrewTaskStateQueue = NULL;
+  for (int i = 0; i < iMax; i++)
+    {
+      Brew[i].ucComplete = 0;
+      Brew[i].uElapsedTime = 0;
+      Brew[i].uStartTime = 0;
+    }
+
+}
 
 //----------------------------------------------------------------------------------------------------------------------------
 // Brew Task
@@ -134,27 +216,38 @@ void vTaskBrew(void * pvParameters)
   portTickType xBrewStart;
   static uint16_t uBrewSecondsElapsed = 0, uBrewMinutesElapsed = 0, uBrewHoursElapsed=0;
   xBrewStart = xTaskGetTickCount();
-  BrewState.xLastWakeTime = xTaskGetTickCount();
+
   char pcBrewElapsedTime[9], pcStepElapsedTime[16];
   uint32_t uStartingStep = (uint32_t)pvParameters;
   char buf1[40];
-  BrewState.ucStep = uStartingStep;
-  static uint8_t uMsg;
+  BrewState.ucStep = 0;
+  BrewState.uHoursElapsed = 0;
+  BrewState.uMinutesElapsed = 0;
+  BrewState.uSecondCounter = 0;
+  BrewState.ucHLTState = HLT_STATE_IDLE;
+  BrewState.ucHopAddition = 0;
+  BrewState.ucRunningState = IDLE;
+  BrewState.ucTarget = 0;
+  BrewState.ucTargetHLTTemp = 0;
+  BrewState.ucTargetHLTVolume = 0;
+  BrewState.ucTargetWaterVolume = 0;
+  BrewState.xLastWakeTime = xTaskGetTickCount();
+  static uint8_t uMsg = IDLE;
   struct GenericMessage * xMessage;
-  static int iContent;
-  static int iWaiting = 0;
+  static int iContent = 0;
+  static int iWaiting = 0, iStepsToComplete = 0;
 
   xMessage = (struct GenericMessage *)malloc(sizeof(struct GenericMessage));
 
-char buf[50];
+  char buf[50];
 
   for(;;)
     {
       if(xQueueReceive(xBrewTaskStateQueue, &uMsg, 0) == pdPASS)
         {
           BrewState.ucRunningState = uMsg;
-         // if (uMsg == RUNNING && BrewState.ucStep == 0)
-         //   vBrewRunStep();
+          // if (uMsg == RUNNING && BrewState.ucStep == 0)
+          //   vBrewRunStep();
         }
       switch(BrewState.ucRunningState)
       {
@@ -201,10 +294,6 @@ char buf[50];
 
                   break;
                 }
-              case BREW_STEP_TIMEOUT:
-                {
-                  break;
-                }
               case BREW_STEP_WAIT:
                 {
                   vConsolePrint("WAITING COMMAND RECEIVED\r\n");
@@ -213,36 +302,31 @@ char buf[50];
                 }
               }
             }
-          int jj = 0;
-          if (iWaiting)
-            {
-              for (int i = 0;i <= BrewState.ucStep;i++)
-                {
-                  sprintf(buf,"checking step %d : state = %d\r\n",i,Brew[i].ucComplete);
-                  vConsolePrint(buf);
-                  if (Brew[i].ucComplete == 0)
-                    {
-                      jj++;
-                    }
-                }
-              if (jj > 0)
-                iWaiting =1;
-              else
-                {
 
-                  iWaiting =0;
+          iStepsToComplete = iBrewStepMonitor(iWaiting); // updates elapsed times and monitors timeouts of steps.
+
+          if (iWaiting) // are we waiting on all previous steps to be completed?
+            {
+              if (iStepsToComplete)// are there any steps to be completed?
+                {
+                  iWaiting = 1;
+                }
+              else // if not, we move on...
+                {
+                  iWaiting = 0;
                   BrewState.ucStep++;
                   vBrewRunStep();
                 }
             }
+
+          // If there is a polling function, run it.
           if (Brew[BrewState.ucStep].poll)
             Brew[BrewState.ucStep].poll((void *)Brew[BrewState.ucStep].iFuncParams);
-          // monitor this steps elapsed time against its timeout and fail if it times out
 
-
-          Brew[BrewState.ucStep].uElapsedTime = (BrewState.uSecondCounter - Brew[BrewState.ucStep].uStartTime);
-          //sprintf(buf, "Elapsed = %d Seconds\r\n", Brew[BrewState.ucStep].uElapsedTime);
-          //vConsolePrint(buf);
+          size_t heap;
+          heap = xPortGetFreeHeapSize();
+          vConsolePrint("HEAP REMAINING: %d\r\n", heap);
+          // Update the counters
           BrewState.uSecondCounter++;
           BrewState.uSecondsElapsed++;
           if (BrewState.uSecondsElapsed == 60)
@@ -273,19 +357,29 @@ char buf[50];
 // BREW PAUSE
 //----------------------------------------------------------------------------------------------------------------------------
 void vBrewReset(void){
+  static struct GenericMessage * xMessage;
+  static int iCommand = 0;
+  xMessage = (struct GenericMessage *)malloc(sizeof(struct GenericMessage));
+  xMessage->ucFromTask = BREW_TASK;
+  xMessage->ucToTask = BOIL_TASK;
+  xMessage->pvMessageContent = (void *)&iCommand;
+  if (xBoilQueue != NULL)
+    xQueueSendToBack(xBoilQueue, &xMessage, 0);
   vChillerPump(STOP);
   vMashPump(STOP);
+  vMill(MILL_STOPPED); // need to change state name.
   vValveActuate(HLT_VALVE, CLOSE);
   vValveActuate(INLET_VALVE, CLOSE);
-
   vValveActuate(MASH_VALVE, CLOSE);
   vValveActuate(CHILLER_VALVE, CLOSE);
 }
 
 void vBrewNextStep(void){
-  static struct GenericMessage * xMessage;
+  static struct GenericMessage * xMessage = NULL;
   static int iCommand;
-  xMessage = (struct GenericMessage *)malloc(sizeof(struct GenericMessage));
+  static char cWaitMessageSent = 0;
+  if (xMessage ==  NULL)
+    xMessage = (struct GenericMessage *)malloc(sizeof(struct GenericMessage));
   xMessage->ucFromTask = BREW_TASK;
   xMessage->ucToTask = BREW_TASK;
   xMessage->pvMessageContent = (void *)&iCommand;
@@ -295,15 +389,21 @@ void vBrewNextStep(void){
   if (BrewState.ucStep < MAX_BREW_STEPS && Brew[BrewState.ucStep+1].ucWait == 1)
     {
       iCommand = STEP_WAIT;
-      xQueueSendToBack(xBrewTaskReceiveQueue, &xMessage, 0);
+      if (cWaitMessageSent == 0)
+        xQueueSendToBack(xBrewTaskReceiveQueue, &xMessage, 0);
+      cWaitMessageSent = 1;
       return;
     }
-  if (BrewState.ucStep < MAX_BREW_STEPS){
+  if (BrewState.ucStep < MAX_BREW_STEPS-1){
       BrewState.ucStep++;
+      cWaitMessageSent = 0;
       vBrewRunStep();
   }
   else
-    vConsolePrint("Brew Finished!\r\n");
+    {
+      vConsolePrint("Brew Finished!\r\n");
+      BrewState.ucRunningState = IDLE;
+    }
 }
 
 void vBrewRunStep(void){
@@ -439,6 +539,7 @@ void vBrewHLTSetupFunction(int piParameters[5]){
   vBrewNextStep();
 }
 
+
 void vBrewMillSetupFunction (int piParameters[5])
 {
 
@@ -486,7 +587,7 @@ void vBrewCraneSetupFunction(int piParameters[5])
   xMessage->ucToTask = CRANE_TASK;
   xMessage->uiStepNumber = BrewState.ucStep;
   xMessage->pvMessageContent = (void *)iCommand;
- // piParameters[0] sets the state to send to the crane task.
+  // piParameters[0] sets the state to send to the crane task.
   // check to see if we are driving down.. if so , stir
   if (piParameters[0] == DN_INC)
     vStir(DRIVING);
@@ -498,6 +599,34 @@ void vBrewCraneSetupFunction(int piParameters[5])
   vBrewNextStep();
 }
 
+void vBrewChillSetupFunction(int piParameters[5])
+{
+  static struct GenericMessage * xMessage;
+  int iCommand = OPEN;
+  xMessage = (struct GenericMessage *)malloc(sizeof(struct GenericMessage));
+  xMessage->ucFromTask = BREW_TASK;
+  xMessage->ucToTask = BOIL_VALVE_TASK;
+  xMessage->uiStepNumber = BrewState.ucStep;
+  xMessage->pvMessageContent = (void *)&iCommand;
+  vConsolePrint("Boil Valve Setup Function called\r\n");
+  xQueueSendToBack(xBoilValveQueue, &xMessage, 0);
+  vChillerPump(PUMPING);
+  vValveActuate(CHILLER_VALVE, OPEN);
+
+}
+
+void vBrewChillPollFunction(int piParameters[5])
+{
+  if (Brew[BrewState.ucStep].uElapsedTime >= piParameters[0]*60)
+    {
+      vChillerPump(STOPPED);
+      vValveActuate(CHILLER_VALVE, CLOSE);
+      Brew[BrewState.ucStep].ucComplete = 1;
+      vBrewNextStep();
+
+    }
+
+}
 //uint8_t uNextStep = MSG_STEP_COMPLETE;
 
 void vBrewMillPollFunction (int piParameters[5])
@@ -520,39 +649,41 @@ void vBrewWaitingPollFunction(int piParameters[5])
       Brew[BrewState.ucStep].ucComplete = 1;
       vBrewNextStep();
     }
-   // xQueueSendToBack(xBrewTaskReceiveQueue, &STEP_COMPLETE, 0);
-  else
-    vConsolePrint("Waiting: Poll Function\r\n");
+
+  // else
+  //   vConsolePrint("Waiting: Poll Function\r\n");
 
 }
 
 void vBrewMashPollFunction(int piParameters[5])
 {
- int iMashTime = piParameters[0] * 60;
- int iStirTime1 = piParameters[1] * 60;
- int iStirTime2 = piParameters[2] * 60;
- int iPumpTime1 = piParameters[3] * 60;
- int iPumpTime2 = piParameters[4] * 60;
- int iTimeRemaining = iMashTime - Brew[BrewState.ucStep].uElapsedTime;
+  int iMashTime = piParameters[0] * 60;
+  int iStirTime1 = piParameters[1] * 60;
+  int iStirTime2 = piParameters[2] * 60;
+  int iPumpTime1 = piParameters[3] * 60;
+  int iPumpTime2 = piParameters[4] * 60;
+  int iTimeRemaining = iMashTime - Brew[BrewState.ucStep].uElapsedTime;
 
- if (Brew[BrewState.ucStep].uElapsedTime < iPumpTime1 || iTimeRemaining < iPumpTime2)
-   {
-   vMashPump(PUMPING);
-   vConsolePrint("MashPoll: Pumping\r\n");
-   }
- else vMashPump(STOPPED);
+  if (Brew[BrewState.ucStep].uElapsedTime < iPumpTime1 || iTimeRemaining < iPumpTime2)
+    {
+      vMashPump(PUMPING);
+      vConsolePrint("MashPoll: Pumping\r\n");
+    }
+  else vMashPump(STOPPED);
 
- if (Brew[BrewState.ucStep].uElapsedTime < iStirTime1 || iTimeRemaining < iStirTime2)
-   {
-     vStir(DRIVING);
-     vConsolePrint("MashPoll: Stirring\r\n");
-   }
- else vStir(STOPPED);
- if (Brew[BrewState.ucStep].uElapsedTime >= iMashTime)
-   {
-     Brew[BrewState.ucStep].ucComplete = 1;
-     vBrewNextStep();
-   }
+  if (Brew[BrewState.ucStep].uElapsedTime < iStirTime1 || iTimeRemaining < iStirTime2)
+    {
+      vStir(DRIVING);
+      vConsolePrint("MashPoll: Stirring\r\n");
+    }
+  else vStir(STOPPED);
+  if (Brew[BrewState.ucStep].uElapsedTime >= iMashTime)
+    {
+      vMashPump(STOPPED);
+      vStir(STOPPED);
+      Brew[BrewState.ucStep].ucComplete = 1;
+      vBrewNextStep();
+    }
 
 
 }
@@ -561,17 +692,178 @@ void vBrewWaitForHLTPollFunction(void * pvParameters)
 {
   if (BrewState.ucHLTState == HLT_STATE_AT_TEMP)
     //xQueueSendToBack(xBrewTaskReceiveQueue, &STEP_COMPLETE, 0);
-  vConsolePrint("Waiting for HLT to get to temp\r\n");
+    vConsolePrint("Waiting for HLT to get to temp\r\n");
+
+}
+void vBrewPumpToBoilSetupFunction(int piParameters[5])
+{
+  int iIterations = piParameters[0], ii;
+  for (ii = 0; ii < iIterations; ii++)
+    // try to prime, if not already primed
+    {
+      vMashPump(PUMPING);
+      vTaskDelay(3000);
+      vMashPump(STOPPED);
+      vTaskDelay(3000);
+    }
 
 }
 
+void vBrewPumpToBoilPollFunction(int  piParameters[5])
+{
+  int iPumpToBoilTime = piParameters[1];
+  vMashPump(PUMPING);
+  vValveActuate(MASH_VALVE, OPEN);
+  if (Brew[BrewState.ucStep].uElapsedTime >= iPumpToBoilTime)
+    {
+      Brew[BrewState.ucStep].ucComplete = 1;
+      vMashPump(STOPPED);
+      vValveActuate(MASH_VALVE, CLOSE);
+      vBrewNextStep();
+    }
 
-void vBrewBoilPollFunction(void * pvParameters)
+}
+#define BOIL_0 0
+#define BOIL_1 1
+#define BOIL_2 2
+#define BOIL_3 3
+#define BOIL_4 4
+#define BOIL_5 5
+#define BOIL_6 6
+#define BOIL_7 7
+static int iBoilState = BOIL_0;
+static struct GenericMessage * xBoilMessage;
+void vBrewBoilSetupFunction(int piParameters[5])
+{
+  const int i100 = 100;
+  xBoilMessage = (struct GenericMessage *)malloc(sizeof(struct GenericMessage));
+
+  if (piParameters[2] == 1)
+    {
+      iBoilState = BOIL_0;
+      xBoilMessage->pvMessageContent = (void *)&piParameters[1];
+    }
+  else
+    {
+      xBoilMessage->pvMessageContent = (void *)&i100;
+      iBoilState = BOIL_7;
+    }
+
+
+  xBoilMessage->ucFromTask = BREW_TASK;
+  xBoilMessage->ucToTask = BOIL_TASK;
+  xBoilMessage->uiStepNumber = BrewState.ucStep;
+  vConsolePrint("Bring to Boil Setup Function called\r\n");
+  xQueueSendToBack(xBoilQueue, &xBoilMessage, 0);
+
+}
+
+void vBrewBoilPollFunction(int piParameters[5])
 {
 
+  int iBoilTime = BrewParameters.uiBoilTime*60;
+  int iBringToBoilTime = BrewParameters.uiBringToBoilTime*60;
+  int iBoilDuty = piParameters[1];
+  int iTimeRemaining = iBoilTime - Brew[BrewState.ucStep].uElapsedTime;
+  //  xBoilMessage->pvMessageContent = (void *)&iBoilDuty;
+  char buf[50];
+  sprintf(buf, "Time remaining  = %d, uiHop0 = %d\r\n", iTimeRemaining, BrewParameters.uiHopTimes[0]);
+  vConsolePrint(buf);
+  switch (iBoilState)
+  {
+  case BOIL_0:
+    {
+      if (iTimeRemaining <=   BrewParameters.uiHopTimes[0]*60)
+        {
+          xQueueSendToBack(xHopsQueue, (void *)1,0);
+          vConsolePrint("Hops Delivered 0");
+          iBoilState = BOIL_1;
+        }
+      break;
+    }
+  case BOIL_1:
+    {
+      if (iTimeRemaining <=   BrewParameters.uiHopTimes[1]*60)
+        {
+          xQueueSendToBack(xHopsQueue, (void *)1,0);
+          vConsolePrint("Hops Delivered 1");
+          iBoilState = BOIL_2;
+        }
+      break;
+    }
+  case BOIL_2:
+    {
+      if (iTimeRemaining <=   BrewParameters.uiHopTimes[2]*60)
+        {
+          xQueueSendToBack(xHopsQueue, (void *)1,0);
+          vConsolePrint("Hops Delivered 2");
+          iBoilState = BOIL_3;
+        }
+      break;
+    }
+  case BOIL_3:
+    {
+      if (iTimeRemaining <=   BrewParameters.uiHopTimes[3]*60)
+        {
+          xQueueSendToBack(xHopsQueue, (void *)1,0);
+          vConsolePrint("Hops Delivered 3");
+          iBoilState = BOIL_4;
+        }
+      break;
+    }
+  case BOIL_4:
+    {
+      if (iTimeRemaining <=   BrewParameters.uiHopTimes[4]*60)
+        {
+          xQueueSendToBack(xHopsQueue, (void *)1,0);
+          vConsolePrint("Hops Delivered 4");
+          iBoilState = BOIL_5;
+        }
+      break;
+    }
+  case BOIL_5:
+    {
+      if (iTimeRemaining <=   BrewParameters.uiHopTimes[5]*60)
+        {
+          xQueueSendToBack(xHopsQueue, (void *)1,0);
+          vConsolePrint("Hops Delivered 5");
+          iBoilState = BOIL_6;
+        }
+      break;
+    }
+  case BOIL_6:
+    {
+      if (Brew[BrewState.ucStep].uElapsedTime >= iBoilTime)
+        {
+          iBoilDuty = 0;
+          Brew[BrewState.ucStep].ucComplete = 1;
+          xQueueSendToBack(xBoilQueue, &xBoilMessage, 0);
+          vBrewNextStep();
+        }
+      break;
+    }
+  case BOIL_7:
+    {
+      if (Brew[BrewState.ucStep].uElapsedTime >= iBringToBoilTime)
+        {
+          iBoilDuty = 0;
+          Brew[BrewState.ucStep].ucComplete = 1;
+          xQueueSendToBack(xBoilQueue, &xBoilMessage, 0);
+          vBrewNextStep();
+        }
+      break;
+    }
 
+  default:
+    {
+      iBoilState = 100;
+      break;
+      // hang here;
+    }
+  }// switch
 
 }
+
 //----------------------------------------------------------------------------------------------------------------------------
 // BREW APPLET - Called from menu
 //----------------------------------------------------------------------------------------------------------------------------
@@ -615,46 +907,46 @@ void vBrewApplet(int init){
       vConsolePrint("Brew Applet Opened\r\n");
       vSemaphoreCreateBinary(xBrewAppletRunningSemaphore);
       if (xBrewTaskStateQueue == NULL && xBrewTaskReceiveQueue == NULL )
-             {
-               xBrewTaskStateQueue = xQueueCreate(1, sizeof(uint8_t));
-               xBrewTaskReceiveQueue = xQueueCreate(1, sizeof(struct GenericMessage *));
-               if (xBrewTaskStateQueue == NULL || xBrewTaskReceiveQueue == NULL )
-                 vConsolePrint("FATAL Error creating Brew Task Queues\r\n");
-               else vConsolePrint("Created Brew Task Queues\r\n");
-             }
-//      if (xBrewTaskHLTQueue == NULL)
-//            {
-//              xBrewTaskHLTQueue = xQueueCreate(5,sizeof(struct GenericMessage *));
-//              if (xBrewTaskHLTQueue == NULL)
-//                vConsolePrint("FATAL Error creating  Brew HLT Task Queue\r\n");
-//              else vConsolePrint("Created Brew HLT Task Queues\r\n");
-//            }
+        {
+          xBrewTaskStateQueue = xQueueCreate(1, sizeof(uint8_t));
+          xBrewTaskReceiveQueue = xQueueCreate(1, sizeof(struct GenericMessage *));
+          if (xBrewTaskStateQueue == NULL || xBrewTaskReceiveQueue == NULL )
+            vConsolePrint("FATAL Error creating Brew Task Queues\r\n");
+          else vConsolePrint("Created Brew Task Queues\r\n");
+        }
+      //      if (xBrewTaskHLTQueue == NULL)
+      //            {
+      //              xBrewTaskHLTQueue = xQueueCreate(5,sizeof(struct GenericMessage *));
+      //              if (xBrewTaskHLTQueue == NULL)
+      //                vConsolePrint("FATAL Error creating  Brew HLT Task Queue\r\n");
+      //              else vConsolePrint("Created Brew HLT Task Queues\r\n");
+      //            }
 
       if (xBrewAppletTextQueue == NULL)
-            {
-              xBrewAppletTextQueue = xQueueCreate(5,sizeof(struct TextMsg *));
-              if (xBrewAppletTextQueue == NULL)
-                vConsolePrint("FATAL Error creating Applet Text Queue\r\n");
-              else vConsolePrint("Created Applet Text Queue\r\n");
-            }
+        {
+          xBrewAppletTextQueue = xQueueCreate(5,sizeof(struct TextMsg *));
+          if (xBrewAppletTextQueue == NULL)
+            vConsolePrint("FATAL Error creating Applet Text Queue\r\n");
+          else vConsolePrint("Created Applet Text Queue\r\n");
+        }
 
       if (xBrewTaskHandle == NULL)
         xTaskCreate( vTaskBrew,
             ( signed portCHAR * ) "BrewRun",
             configMINIMAL_STACK_SIZE + 500,
             NULL,
-            tskIDLE_PRIORITY+1,
+            tskIDLE_PRIORITY+3,
             &xBrewTaskHandle );
       vConsolePrint("Brew Task Created\r\n");
 
       if (xBrewHLTTaskHandle == NULL)
-             xTaskCreate( vTaskBrewHLT,
-                 ( signed portCHAR * ) "BrewHLT",
-                 configMINIMAL_STACK_SIZE + 200,
-                 NULL,
-                 tskIDLE_PRIORITY,
-                 &xBrewHLTTaskHandle );
-           vConsolePrint("Brew HLT Task Created\r\n");
+        xTaskCreate( vTaskBrewHLT,
+            ( signed portCHAR * ) "BrewHLT",
+            configMINIMAL_STACK_SIZE + 200,
+            NULL,
+            tskIDLE_PRIORITY,
+            &xBrewHLTTaskHandle );
+      vConsolePrint("Brew HLT Task Created\r\n");
 
       xTaskCreate( vBrewAppletDisplay,
           ( signed portCHAR * ) "BrewDisp",
@@ -710,14 +1002,14 @@ void vBrewApplet(int init){
 // BREW GRAPH SUB-APPLET
 //----------------------------------------------------------------------------------------------------------------------------
 void vBrewGraphAppletDisplay(void * pvParameters){
-int i = 0;
+  int i = 0;
   CLEAR_APPLET_CANVAS;
-for (;;)
-  {
-    vConsolePrint("Graph Display Applet Running\r\n");
+  for (;;)
+    {
+      vConsolePrint("Graph Display Applet Running\r\n");
 
-    vTaskDelay(500);
-  }
+      vTaskDelay(500);
+    }
 
 }
 
@@ -727,12 +1019,12 @@ for (;;)
 //----------------------------------------------------------------------------------------------------------------------------
 void vBrewStatsAppletDisplay(void * pvParameters){
 
-   CLEAR_APPLET_CANVAS;
-   for (;;)
-     {
-       vConsolePrint("Stats Display Applet Running\r\n");
-       vTaskDelay(500);
-     }
+  CLEAR_APPLET_CANVAS;
+  for (;;)
+    {
+      vConsolePrint("Stats Display Applet Running\r\n");
+      vTaskDelay(500);
+    }
 
 }
 
@@ -744,22 +1036,22 @@ void vBrewResAppletDisplay(void * pvParameters){
   DRAW_RESUME_BUTTONS;
   DRAW_RESUME_BUTTON_TEXT;
 
-   for (;;)
-     {
-       if (ucLastStep != BrewState.ucStep)
-         {
-           CLEAR_APPLET_CANVAS;
-           if (BrewState.ucStep > 0)
-             lcd_printf(1,4,10, "  STEP %d: %s", BrewState.ucStep-1, Brew[BrewState.ucStep-1].pcStepName);
-           lcd_printf(1,5,10, "->STEP %d: %s", BrewState.ucStep, Brew[BrewState.ucStep].pcStepName);
-           if (BrewState.ucStep < MAX_BREW_STEPS)
-             lcd_printf(1,6,10, "  STEP %d: %s", BrewState.ucStep+1, Brew[BrewState.ucStep+1].pcStepName);
-           vConsolePrint("Resume Display Applet Running\r\n");
+  for (;;)
+    {
+      if (ucLastStep != BrewState.ucStep)
+        {
+          CLEAR_APPLET_CANVAS;
+          if (BrewState.ucStep > 0)
+            lcd_printf(1,4,10, "  STEP %d: %s", BrewState.ucStep-1, Brew[BrewState.ucStep-1].pcStepName);
+          lcd_printf(1,5,10, "->STEP %d: %s", BrewState.ucStep, Brew[BrewState.ucStep].pcStepName);
+          if (BrewState.ucStep < MAX_BREW_STEPS)
+            lcd_printf(1,6,10, "  STEP %d: %s", BrewState.ucStep+1, Brew[BrewState.ucStep+1].pcStepName);
+          vConsolePrint("Resume Display Applet Running\r\n");
 
-           ucLastStep = BrewState.ucStep;
-         }
-       vTaskDelay(200);
-     }
+          ucLastStep = BrewState.ucStep;
+        }
+      vTaskDelay(200);
+    }
 
 
 }
@@ -800,17 +1092,17 @@ void vBrewAppletDisplay( void *pvParameters){
       fCabinetTemp = ds1820_get_temp(CABINET);
 
       if (!GPIO_ReadInputDataBit(HLT_LEVEL_CHECK_PORT, HLT_LEVEL_CHECK_PIN))
-             {
-               ucHLTLevel = HLT_LEVEL_MID;
-               if (!GPIO_ReadInputDataBit(HLT_HIGH_LEVEL_PORT, HLT_HIGH_LEVEL_PIN))
-                 {
-                   ucHLTLevel = HLT_LEVEL_HIGH;
-                 }
+        {
+          ucHLTLevel = HLT_LEVEL_MID;
+          if (!GPIO_ReadInputDataBit(HLT_HIGH_LEVEL_PORT, HLT_HIGH_LEVEL_PIN))
+            {
+              ucHLTLevel = HLT_LEVEL_HIGH;
+            }
 
-             }
-           else {
-               ucHLTLevel = HLT_LEVEL_LOW;
-           }
+        }
+      else {
+          ucHLTLevel = HLT_LEVEL_LOW;
+      }
 
 
 
@@ -880,7 +1172,7 @@ void vBrewAppletDisplay( void *pvParameters){
         {
           CLEAR_APPLET_CANVAS;
           xSemaphoreGive(xBrewAppletRunningSemaphore); //give back the semaphore as its safe to return now.
-               vTaskDelay(250);
+          vTaskDelay(250);
 
         }
 
@@ -896,19 +1188,19 @@ static uint8_t uEvaluateTouch(int xx, int yy)
 {
 
   if (xx > BUTTON_1_X1+5 && xx < BUTTON_1_X2-5 && yy > BUTTON_1_Y1+5 && yy < BUTTON_1_Y2-5)
-      return BUTTON_1;
+    return BUTTON_1;
   if (xx > BUTTON_2_X1+5 && xx < BUTTON_2_X2-5 && yy > BUTTON_2_Y1+5 && yy < BUTTON_2_Y2-5)
-      return BUTTON_2;
+    return BUTTON_2;
   if (xx > BUTTON_3_X1+5 && xx < BUTTON_3_X2-5 && yy > BUTTON_3_Y1+5 && yy < BUTTON_3_Y2-5)
-      return BUTTON_3;
+    return BUTTON_3;
   if (xx > BUTTON_4_X1+5 && xx < BUTTON_4_X2-5 && yy > BUTTON_4_Y1+5 && yy < BUTTON_4_Y2-5)
-      return BUTTON_4;
+    return BUTTON_4;
   if (xx > BUTTON_5_X1+5 && xx < BUTTON_5_X2-5 && yy > BUTTON_5_Y1+5 && yy < BUTTON_5_Y2-5)
-      return BUTTON_5;
+    return BUTTON_5;
   if (xx > BUTTON_6_X1+5 && xx < BUTTON_6_X2-5 && yy > BUTTON_6_Y1+5 && yy < BUTTON_6_Y2-5)
-      return BUTTON_6;
+    return BUTTON_6;
   if (xx > BK_X1+5 && xx < BK_X2-5 && yy > BK_Y1+5 && yy < BK_Y2-5)
-      return QUIT_BUTTON;
+    return QUIT_BUTTON;
 
   return NO_BUTTON;
 
@@ -1074,6 +1366,10 @@ int iBrewKey(int xx, int yy)
         }
       case BUTTON_6: //RESUME Button at bottom
         {
+          for (int i = 0; i < BrewState.ucStep; i++)
+            {
+              Brew[i].ucComplete = 1;
+            }
           vBrewRunStep();
           xQueueSendToBack(xBrewTaskStateQueue, &uRun, 0);
           break;
@@ -1177,10 +1473,14 @@ int iBrewKey(int xx, int yy)
         }
       case BUTTON_6:
         {
-
           Brew[BrewState.ucStep].ucComplete = 1;
-          vBrewNextStep();
-          xQueueSendToBack(xBrewTaskStateQueue, &uRun, 0);
+          if (BrewState.ucRunningState == RUNNING)
+            {
+              vBrewNextStep();
+            }
+          else
+            BrewState.ucStep++;
+          //xQueueSendToBack(xBrewTaskStateQueue, &uRun, 0);
           break;
         }
 
@@ -1189,19 +1489,19 @@ int iBrewKey(int xx, int yy)
           iAppletState = QUIT;
           vConsolePrint("QUIT Pressed\r\n");
           xSemaphoreTake(xBrewAppletRunningSemaphore, portMAX_DELAY); //given back in QUIT state
-                vTaskSuspend(xBrewAppletDisplayHandle);
-                CLEAR_APPLET_CANVAS;
-                //if (iOneShot == 0)
-                  {
-                lcd_DrawRect(Q_X1, Q_Y1, Q_X2, Q_Y2, White);
-                lcd_fill(Q_X1+1, Q_Y1+1, Q_W, Q_H, Blue);
-                lcd_printf(13,4,13,"QUIT???");
-                lcd_printf(13,5,13,"IF YES PRESS");
-                lcd_printf(13,6,13,"QUIT AGAIN");
-                lcd_printf(13,7,13,"IF NO, PRESS");
-                lcd_printf(13,8,13,"HERE");
-                vConsolePrint("Press back again to exit BREW\r\n");
-                  }
+          vTaskSuspend(xBrewAppletDisplayHandle);
+          CLEAR_APPLET_CANVAS;
+          //if (iOneShot == 0)
+          {
+            lcd_DrawRect(Q_X1, Q_Y1, Q_X2, Q_Y2, White);
+            lcd_fill(Q_X1+1, Q_Y1+1, Q_W, Q_H, Blue);
+            lcd_printf(13,4,13,"QUIT???");
+            lcd_printf(13,5,13,"IF YES PRESS");
+            lcd_printf(13,6,13,"QUIT AGAIN");
+            lcd_printf(13,7,13,"IF NO, PRESS");
+            lcd_printf(13,8,13,"HERE");
+            vConsolePrint("Press back again to exit BREW\r\n");
+          }
           break;
         }
       case NO_BUTTON:
@@ -1226,7 +1526,7 @@ int iBrewKey(int xx, int yy)
               vTaskDelay(100);
               xBrewAppletDisplayHandle = NULL;
             }
-
+          vBrewTotalReset();
           //return the semaphore for taking by another task.
           xSemaphoreGive(xBrewAppletRunningSemaphore);
           iAppletState = MAIN;
@@ -1245,40 +1545,53 @@ int iBrewKey(int xx, int yy)
     }// case QUIT
   }//Switch iAppletState
 
-    vTaskDelay(10);
-    return 0;
+  vTaskDelay(10);
+  return 0;
 }
 
 
 
 static struct BrewStep Brew[] = {
     // TEXT                       SETUP                           POLL                                   PARMS          TIMEOUT   START    ELAPSED COMPLETE WAIT
-    {"Waiting",              NULL,                              (void *)vBrewWaitingPollFunction , {10,0,0,0,0},                         20,     0,      0, 0, 0},
-    {"Raise Crane",          (void *)vBrewCraneSetupFunction,   NULL,                              {UP,0,0,0,0},                         0,      0,      0, 0, 0},
-    {"Close D-Valves",       (void *)vBrewValvesSetupFunction,  NULL,                              {CLOSE,0,0,0,0},                      0,      0,      0, 0, 0},
-    {"Close BoilValve",      (void *)vBrewBoilValveSetupFunction,NULL,                             {CLOSE,0,0,0,0},                      0,      0,      0, 0, 0},
-    {"Fill+Heat:Strike",     (void *)vBrewHLTSetupFunction,     NULL,                              {HLT_STATE_FILL_HEAT,STRIKE,0,0,0},   0,      0,      0, 0, 0},
-    {"Drain HLT for Mash",   (void *)vBrewHLTSetupFunction,     NULL,                              {HLT_STATE_DRAIN,STRIKE,0,0,0},       0,      0,      0, 0, 1},
-    {"Grind Grains",         (void *)vBrewMillSetupFunction,    (void *)vBrewMillPollFunction,     {1,0,0,0,0},                          0,      0,      0, 0, 0},
-    {"Lower Crane",          (void *)vBrewCraneSetupFunction,   NULL,                              {DN_INC,0,0,0,0},                     0,      0,      0, 0, 0},
-    {"Fill+Heat:Mash Out",   (void *)vBrewHLTSetupFunction,     NULL,                              {HLT_STATE_FILL_HEAT, MASH_OUT,0,0,0},0,      0,      0, 0, 0},
-    {"Mash",                 NULL,                              (void *)vBrewMashPollFunction,     {5,1,1,2,2},                          0,      0,      0, 0, 0},
-    {"Drain for Mash Out",   (void *)vBrewHLTSetupFunction,     NULL,                              {HLT_STATE_DRAIN,MASH_OUT,0,0,0},     0,      0,      0, 0, 0},
-    {"Fill+Heat:Sparge",     (void *)vBrewHLTSetupFunction,     NULL,                              {HLT_STATE_FILL_HEAT,SPARGE,0,0,0},   0,      0,      0, 0, 0},
-    {"Mash Out",             NULL,                              (void *)vBrewWaitingPollFunction , {60,0,0,0,0},                         2*60,   0,      0, 0, 0},
-    {"Mash out",             NULL,                              NULL,                              {0,0,0,0,0},                          0,      0,      0, 0, 0}, // includes stirring etc (call the same func as mash with diff parms
-    {"Pump to boil",         NULL,                              NULL,                              {0,0,0,0,0},                          0,      0,      0, 0, 0}, // have to do a couple of stop/starts for pump etc
-    {"Waiting",              (void *)vBrewTestSetupFunction,    (void *)vBrewWaitingPollFunction , {60,0,0,0,0},                         2*60,   0,      0, 0, 0},
-    {"Pump to boil",         NULL,                              NULL,                              {0,0,0,0,0},                          0,      0,      0, 0, 0},
-    {"Drain for Sparge",     (void *)vBrewHLTSetupFunction,     NULL,                              {HLT_STATE_DRAIN,SPARGE,0,0,0},       0,      0,      0, 0, 0},
-    {"Fill+Heat:Clean ",     (void *)vBrewHLTSetupFunction,     NULL,                              {8,0,0,0,0},                          0,      0,      0, 0, 0},
-    {"Pump to boil",         NULL,                              NULL,                              {0,0,0,0,0},                          0,      0,      0, 0, 0}, // have to do a couple of stop/starts for pump etc
-    {"Raise Crane",          (void *)vBrewCraneSetupFunction,   NULL,                              {UP,0,0,0,0},                         0,      0,      0, 0, 0},
-    {"Boil",                 NULL,                              (void *)vBrewBoilPollFunction ,    {0,0,0,0,0},                          0,      0,      0, 0, 0},
-    {"Drain HLT",            NULL,                              NULL,                              {0,0,0,0,0},                          0,      0,      0, 0, 0},
-    {"Waiting",              NULL,                              NULL,                              {0,0,0,0,0},                          0,      0,      0, 0, 0}
+    {"Waiting",              NULL,                              (void *)vBrewWaitingPollFunction , {3,0,0,0,0},                         20,     0,      0, 0, 0},
+  //  {"Raise Crane",          (void *)vBrewCraneSetupFunction,   NULL,                              {UP,0,0,0,0},                         25,     0,      0, 0, 0},
+    {"Close D-Valves",       (void *)vBrewValvesSetupFunction,  NULL,                              {CLOSE,0,0,0,0},                      1,      0,      0, 0, 0},
+    {"Close BoilValve",      (void *)vBrewBoilValveSetupFunction,NULL,                             {CLOSE,0,0,0,0},                      5,     0,      0, 0, 0},
+    {"Fill+Heat:Strike",     (void *)vBrewHLTSetupFunction,     NULL,                              {HLT_STATE_FILL_HEAT,STRIKE,0,0,0},   40*60,  0,      0, 0, 0},
+   // {"Grind Grains",         (void *)vBrewMillSetupFunction,    (void *)vBrewMillPollFunction,     {6,0,0,0,0},                          7*60,     0,      0, 0, 0},
+    {"Drain HLT for Mash",   (void *)vBrewHLTSetupFunction,     NULL,                              {HLT_STATE_DRAIN,STRIKE,0,0,0},       5*60,   0,      0, 0, 1},
+    {"Waiting",              NULL,                              (void *)vBrewWaitingPollFunction , {3,0,0,0,0},                         20,     0,      0, 0, 0},
+  //  {"Lower Crane",          (void *)vBrewCraneSetupFunction,   NULL,                              {DN_INC,0,0,0,0},                     60,     0,      0, 0, 0},
+    {"Fill+Heat:Mash Out",   (void *)vBrewHLTSetupFunction,     NULL,                              {HLT_STATE_FILL_HEAT, MASH_OUT,0,0,0},40*60,  0,      0, 0, 1},
+    {"Mash",                 NULL,                              (void *)vBrewMashPollFunction,     {3,1,0,3,3},                          60*60,  0,      0, 0, 0},
+    {"Drain for Mash Out",   (void *)vBrewHLTSetupFunction,     NULL,                              {HLT_STATE_DRAIN,MASH_OUT,0,0,0},     5*60,   0,      0, 0, 1},
+    {"Waiting",              NULL,                              (void *)vBrewWaitingPollFunction , {3,0,0,0,0},                         20,     0,      0, 0, 0},
+    {"Fill+Heat:Sparge",     (void *)vBrewHLTSetupFunction,     NULL,                              {HLT_STATE_FILL_HEAT,SPARGE,0,0,0},   40*60,  0,      0, 0, 1},
+    {"Waiting",              NULL,                              (void *)vBrewWaitingPollFunction , {60,0,0,0,0},                         2*60,   0,      0, 0, 0},
+    {"Mash out",             NULL,                              (void *)vBrewMashPollFunction,     {10,5,0,3,3},                         0,      0,      0, 0, 0}, // includes stirring etc (call the same func as mash with diff parms
+    {"MO pump to boil",      (void *)vBrewPumpToBoilSetupFunction,(void *)vBrewPumpToBoilPollFunction,{3,5*60,0,0,0},                 11*60,   0,      0, 0, 0}, // have to do a couple of stop/starts for pump etc
+    {"Drain for Sparge",     (void *)vBrewHLTSetupFunction,     NULL,                              {HLT_STATE_DRAIN,SPARGE,0,0,0},       10*60,      0,      0, 0, 1},
+    {"Waiting",              NULL,                              (void *)vBrewWaitingPollFunction , {3,0,0,0,0},                         2*60,   0,      0, 0,0 },
+    //{"Fill+Heat:Clean ",     (void *)vBrewHLTSetupFunction,     NULL,                              {8,0,0,0,0},                          0,      0,      0, 0, 1},
+    {"Sparge",             NULL,                              (void *)vBrewMashPollFunction,     {5,1,0,1,3},                         0,      0,      0, 0, 1}, // includes stirring etc (call the same func as mash with diff parms
+    {"Pump to boil",         (void *)vBrewPumpToBoilSetupFunction, (void *)vBrewPumpToBoilPollFunction,{3,10*60,0,0,0},                 11*60,   0,      0, 0, 0}, // have to do a couple of stop/starts for pump etc
+   // {"Raise Crane",          (void *)vBrewCraneSetupFunction,   NULL,                              {UP,0,0,0,0},                         0,      0,      0, 0, 0},
+    {"BringToBoil",          (void *)vBrewBoilSetupFunction,     (void *)vBrewBoilPollFunction ,    {91,55,0,0,0},                       90*60,      0,      0, 0, 1},
+    {"Boil",                 (void *)vBrewBoilSetupFunction,     (void *)vBrewBoilPollFunction ,    {91,55,1,0,0},                       90*60,      0,      0, 0, 1},
+    {"Chill",                 (void *)vBrewChillSetupFunction,    (void *)vBrewChillPollFunction , {5,0,0,0,0},                         0,      0,      0, 0, 1},
+    {"Waiting",              NULL,                              NULL,                              {0,0,0,0,0},                          0,      0,      0, 0, 0},
+    {NULL,                    NULL,                              NULL,                              {0,0,0,0,0},                          0,     0,      0, 0, 0}
 };
 
-
-
-
+//static struct BrewStep Brew[] = {
+// TEXT                       SETUP                           POLL                                   PARMS          TIMEOUT   START    ELAPSED COMPLETE WAIT
+//    {"Waiting1",              NULL,                              (void *)vBrewWaitingPollFunction , {2,0,0,0,0},                         20,     0,      0, 0, 0},
+//    {"BringToBoil",          (void *)vBrewBoilSetupFunction,     (void *)vBrewBoilPollFunction ,    {91,55,0,0,0},                       90*60,      0,      0, 0, 1},
+//    {"Boil",                 (void *)vBrewBoilSetupFunction,     (void *)vBrewBoilPollFunction ,    {91,55,1,0,0},                       90*60,      0,      0, 0, 1},
+//    {"Chill",                 (void *)vBrewChillSetupFunction,    (void *)vBrewChillPollFunction , {5,0,0,0,0},                         0,      0,      0, 0, 1},
+//    {"Raise Crane",          (void *)vBrewCraneSetupFunction,   NULL,                              {UP,0,0,0,0},                         25,     0,      0, 0, 0},
+//    {"Waiting2",              NULL,                              (void *)vBrewWaitingPollFunction , {3,0,0,0,0},                         20,     0,      0, 0, 1},
+//    {"Waiting3",              NULL,                              (void *)vBrewWaitingPollFunction , {5,0,0,0,0},                         20,     0,      0, 0, 0},
+//   {"Waiting4",              NULL,                              (void *)vBrewWaitingPollFunction , {2,0,0,0,0},                         20,     0,      0, 0, 0},
+//    {NULL,                    NULL,                              NULL,                              {0,0,0,0,0},                          0,     0,      0, 0, 0},
+//};

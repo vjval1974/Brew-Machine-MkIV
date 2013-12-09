@@ -76,7 +76,7 @@ void vValveActuate( unsigned char valve, unsigned char state )
           GPIO_WriteBit(HLT_VALVE_PORT, HLT_VALVE_PIN, current ^ 1);
 
         }
-      else GPIO_WriteBit(HLT_VALVE_PORT, HLT_VALVE_PIN, state);
+      else GPIO_WriteBit(HLT_VALVE_PORT, HLT_VALVE_PIN, !state);
       break;
     }
   case MASH_VALVE:
@@ -87,7 +87,7 @@ void vValveActuate( unsigned char valve, unsigned char state )
           GPIO_WriteBit(MASH_VALVE_PORT, MASH_VALVE_PIN, current ^ 1);
 
         }
-      else GPIO_WriteBit(MASH_VALVE_PORT, MASH_VALVE_PIN, state);
+      else GPIO_WriteBit(MASH_VALVE_PORT, MASH_VALVE_PIN, !state);
       break;
     }
   case BOIL_VALVE:
@@ -108,7 +108,7 @@ void vValveActuate( unsigned char valve, unsigned char state )
           current = GPIO_ReadInputDataBit(INLET_VALVE_PORT, INLET_VALVE_PIN);
           GPIO_WriteBit(INLET_VALVE_PORT, INLET_VALVE_PIN, current ^ 1);
         }
-      else GPIO_WriteBit(INLET_VALVE_PORT, INLET_VALVE_PIN, state);
+      else GPIO_WriteBit(INLET_VALVE_PORT, INLET_VALVE_PIN, !state);
       break;
     }
   case CHILLER_VALVE:
@@ -118,7 +118,7 @@ void vValveActuate( unsigned char valve, unsigned char state )
            current = GPIO_ReadInputDataBit(CHILLER_VALVE_PORT, CHILLER_VALVE_PIN);
            GPIO_WriteBit(CHILLER_VALVE_PORT, CHILLER_VALVE_PIN, current ^ 1);
          }
-       else GPIO_WriteBit(CHILLER_VALVE_PORT, CHILLER_VALVE_PIN, state);
+       else GPIO_WriteBit(CHILLER_VALVE_PORT, CHILLER_VALVE_PIN, !state);
        break;
      }
 
@@ -412,7 +412,7 @@ void vValvesAppletDisplay( void *pvParameters){
 
                 lcd_printf(1, 12, 25, "HLT = %d.%ddegC", (unsigned int)floor(fHLTTemp), (unsigned int)((fHLTTemp-floor(fHLTTemp))*pow(10, 3)));
                 lcd_printf(1, 13, 25, "MASH = %d.%ddegC", (unsigned int)floor(fMashTemp), (unsigned int)((fMashTemp-floor(fMashTemp))*pow(10, 3)));
-                lcd_printf(1, 14, 25, "Currently @ %d.%d ml", (unsigned int)floor(fGetBoilFlowLitres()), (unsigned int)((fGetBoilFlowLitres()-floor(fGetBoilFlowLitres()))*pow(10, 3)));
+                lcd_printf(1, 14, 25, "Currently @ %d.%d l", (unsigned int)floor(fGetBoilFlowLitres()), (unsigned int)((fGetBoilFlowLitres()-floor(fGetBoilFlowLitres()))*pow(10, 3)));
 
               }
             else{

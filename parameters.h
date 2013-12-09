@@ -26,8 +26,10 @@ struct Parameters {
   int iStirTime2; // "            "               end
 
   //Boil
-  unsigned char ucBoilTime;
-  unsigned char ucHopTimes[6];
+  unsigned int uiBoilTime;
+  unsigned int uiBringToBoilTime;
+  unsigned int uiHopTimes[6];
+
 
 };
 

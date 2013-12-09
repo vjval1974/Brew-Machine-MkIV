@@ -140,14 +140,8 @@ void vTaskBrew(void * pvParameters);
 void vBrewApplet(int init);
 int iBrewKey(int xx, int yy);
 
-#define BREW_STEP_COMPLETE 40
-#define BREW_STEP_FAILED 41
-#define BREW_STEP_TIMEOUT  45
-#define BREW_STEP_WAIT 46
-
 extern const int STEP_COMPLETE;
 extern const int STEP_FAILED;
-extern const int STEP_TIMEOUT;
 extern const int STEP_WAIT;
 
 

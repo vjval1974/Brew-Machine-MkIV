@@ -42,11 +42,15 @@
 
 //Default Temp Sensor Addresses
 //#define HLT_TEMP_SENSOR "\x10\x99\xd7\x39\x01\x08\x00\xd5"
-#define HLT_TEMP_SENSOR  "\x28\x3C\xE7\xB5\x04\x00\x00\x8B"
-#define MASH_TEMP_SENSOR "\x10\x6c\xe2\x38\x01\x08\x00\x95"
-//#define CABINET_TEMP_SENSOR "\x10\x83\xc5\x1e\x02\x08\x00\xAC"
-#define CABINET_TEMP_SENSOR "\x28\xe1\xe6\xb5\x04\x00\x00\xc8"
-#define AMBIENT_TEMP_SENSOR "\x10\x9c\xa4\x1e\x02\x08\x00\x0f"
+
+#define HLT_TEMP_SENSOR  "\x28\xC6\x52\xB6\x04\x00\x00\x23"
+//#define MASH_TEMP_SENSOR "\x10\x6c\xe2\x38\x01\x08\x00\x95"
+//#define MASH_TEMP_SENSOR "\x10\x99\xd7\x39\x01\x08\x00\xd5"
+#define MASH_TEMP_SENSOR "\x28\x3C\xE7\xB5\x04\x00\x00\x8B"
+#define CABINET_TEMP_SENSOR "\x10\x83\xc5\x1e\x02\x08\x00\xAC"
+//#define CABINET_TEMP_SENSOR "\x28\xe1\xe6\xb5\x04\x00\x00\xc8"
+//#define AMBIENT_TEMP_SENSOR "\x10\x9c\xa4\x1e\x02\x08\x00\x0f"
+#define AMBIENT_TEMP_SENSOR "\x10\x81\x45\x18\x00\x08\x00\x04"
 #define HLT_SSR_TEMP_SENSOR "\x10\xA5\x91\x1E\x02\x08\x00\x22"
 
 #define BOIL_SSR_TEMP_SENSOR "\x10\5Dc\xB0\x1E\x02\x08\x00\xC4"
@@ -91,7 +95,7 @@ void vTaskDS1820Convert( void *pvParameters ){
     char buf[30];
     static char print_buf[80];
     int ii = 0;
-
+    static float fTemp = 0.0;
 
     // initialise the bus
     ds1820_init();
@@ -142,8 +146,14 @@ void vTaskDS1820Convert( void *pvParameters ){
         vTaskDelay(750/portTICK_RATE_MS); // wait for conversion
 
         // save values in array for use by application
-        for (ii = 0 ; ii < NUM_SENSORS; ii++)
-            temps[ii] = ds1820_read_device(b[ii]);
+        for (ii = 0 ; ii < NUM_SENSORS; ii++){
+            fTemp = ds1820_read_device(b[ii]);
+            // Dont want spurious values - crude.
+            if (fTemp < 120.0)
+              temps[ii] = fTemp;
+
+        }
+
 
         taskYIELD();
 

@@ -136,7 +136,7 @@ void vTaskBoil( void * pvParameters)
   uint8_t boil_level = 0;
   uint16_t compare = 0;
   portBASE_TYPE xStatus;
-  char buf[50];
+  static char buf[50];
   for(;;){
       boil_level =  uGetBoilLevel();
       xStatus = xQueueReceive(xBoilQueue, &xMessage, 10);
@@ -180,6 +180,15 @@ void vTaskBoil( void * pvParameters)
               GPIO_ResetBits(BOIL_PORT, BOIL_PIN);
               boil_state = OFF;
              vConsolePrint("Boil level too low during boil... stopped boil\r\n");
+            }
+          // Testing code
+          if (xMessage->ucFromTask == BREW_TASK)
+            {
+
+
+
+
+
             }
           //printf("Nothing in boil queue!\r\n");
         }

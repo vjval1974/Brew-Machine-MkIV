@@ -29,13 +29,21 @@ xQueueHandle xPrintQueue;
 
 void vConsolePrintTask(void * pvParameters)
 {
- char * pcMessageToPrint;
- for (;;)
+  char * pcMessageToPrint;
+  static char * pcLastMessage;
+  for (;;)
     {
       xQueueReceive(xPrintQueue, &pcMessageToPrint, portMAX_DELAY);
       //sprintf(cBuffer,"%s", &pcMessageToPrint);
-      printf(pcMessageToPrint);
 
+      //if (pcMessageToPrint != pcLastMessage)
+        {
+          portENTER_CRITICAL();
+          printf(pcMessageToPrint);
+          portEXIT_CRITICAL();
+      //    pcLastMessage = pcMessageToPrint;
+
+        }
     }
 
 
@@ -43,5 +51,7 @@ void vConsolePrintTask(void * pvParameters)
 
 void vConsolePrint(const char * cX)
 {
-    xQueueSendToBack(xPrintQueue, &cX, 0);
+  const char * pcX = "ConsolePrint failed\r\n";
+   if ( xQueueSendToBack(xPrintQueue, &cX, 10) != pdPASS)
+     xQueueSendToBack(xPrintQueue, &pcX, 10);
 }

@@ -128,6 +128,7 @@ void vTaskCrane(void * pvParameters)
   xToSend->ucFromTask = CRANE_TASK;
   xToSend->ucToTask = BREW_TASK;
   xToSend->pvMessageContent = (void *)&iComplete;
+  const int iTest = 40;
 
   uint8_t limit = 0xFF, limit1 = 0xFF; //neither on or off.
   static int iC = STOP;
@@ -138,7 +139,7 @@ void vTaskCrane(void * pvParameters)
   for (;;)
     {
 
-      if(xQueueReceive(xCraneQueue, &xMessage, 0) != pdPASS)
+      if(xQueueReceive(xCraneQueue, &xMessage, 50) != pdPASS)
         {
           xMessage->pvMessageContent = xLastMessage->pvMessageContent;
         }
@@ -373,7 +374,10 @@ void vTaskCrane(void * pvParameters)
       if (iCommandState == 1 && xMessage->ucFromTask == BREW_TASK)
         {
           vConsolePrint("Crane Command Complete, Sending Message\r\n");
-          xQueueSendToBack(xBrewTaskReceiveQueue, &xToSend, 0);
+          vTaskDelay(50);
+          xToSend->pvMessageContent = (void*)&iTest;
+          xQueueSendToBack(xBrewTaskReceiveQueue, &xToSend, 1000);
+          //xQueueSendToBack(xBrewTaskReceiveQueue, (void *)40, 100);
           iCommandState  = 0;
           iCraneState = STOPPED;
         }

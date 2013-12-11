@@ -93,7 +93,7 @@ void vTaskHops(void * pvParameters){
    // Initialise the xLastWakeTime variable with the current time.
   xLastWakeTime = xTaskGetTickCount ();
 
-  xHopsQueue = xQueueCreate(1, sizeof(uint8_t));
+  xHopsQueue = xQueueCreate(5, sizeof(uint8_t));
   if (xHopsQueue == NULL)
     vConsolePrint("Can't Create Hops Queue\r\n");
 

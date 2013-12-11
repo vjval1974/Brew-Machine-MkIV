@@ -161,7 +161,7 @@ void vTaskBrewHLT(void * pvParameters)
             {
               vTaskDelay(2000);
               vValveActuate(INLET_VALVE, CLOSE);
-              vConsolePrint("HLT is FULL \r\n");
+             // vConsolePrint("HLT is FULL \r\n");
             }
           else
             vValveActuate(INLET_VALVE, OPEN);

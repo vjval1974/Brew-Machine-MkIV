@@ -225,7 +225,7 @@ int main( void )
 {
     prvSetupHardware();// set up peripherals etc 
 
-    xPrintQueue = xQueueCreate(5, sizeof(char *));
+    xPrintQueue = xQueueCreate(15, sizeof(char *));
     if (xPrintQueue == NULL)
       {
         printf("Failed to make print queue\r\n");
@@ -274,7 +274,7 @@ int main( void )
         ( signed portCHAR * ) "PrintTask",
         configMINIMAL_STACK_SIZE,
         NULL,
-        tskIDLE_PRIORITY + 2,
+        tskIDLE_PRIORITY,
         &xPrintTaskHandle );
 
     xTaskCreate( vTouchTask, 
@@ -324,14 +324,14 @@ int main( void )
         ( signed portCHAR * ) "Crane",
         configMINIMAL_STACK_SIZE + 200 ,
         NULL,
-        tskIDLE_PRIORITY,
+        tskIDLE_PRIORITY+1,
         &xCraneTaskHandle );
 
     xTaskCreate( vTaskBoilValve,
         ( signed portCHAR * ) "boilvalve",
         configMINIMAL_STACK_SIZE +200,
         NULL,
-        tskIDLE_PRIORITY,
+        tskIDLE_PRIORITY+1,
         &xBoilValveTaskHandle );
 
     /*xTaskCreate( vTaskBrew,

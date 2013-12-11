@@ -317,7 +317,7 @@ void vI2C_TestTask(void *pvParameters)
 void vI2C_SendTask(void *pvParameters)
 {
   portBASE_TYPE xStatus = pdFAIL;
-  int iRCVStatus = FAIL;
+  int iRCVStatus = PASS;
   int iSNDStatus = PASS;
   uint16_t message;
   static uint8_t cnt = 0;
@@ -364,15 +364,15 @@ for (;;)
 
         cnt = 0;
 
-       sprintf(pcPrintBuf, "utoSend =  %x\r\n", uToSend);
-       sprintf(pcPrintBuf, "message =  %x\r\n", message);
-       vConsolePrint(pcPrintBuf);
+       //sprintf(pcPrintBuf, "utoSend =  %x\r\n", uToSend);
+       //sprintf(pcPrintBuf, "message =  %x\r\n", message);
+       //vConsolePrint(pcPrintBuf);
 
        iSNDStatus = iI2C_Send(uAddress, uToSend);
        while((iSNDStatus == FAIL) && (cnt < 10))
          {
            vConsolePrint("Sending failed, trying again\r\n");
-           vTaskDelay(100);
+           vTaskDelay(100);// this MUST stay or errors occur in sending;
            vI2C_Init();
            vTaskDelay(100);
            iSNDStatus = iI2C_Send(uAddress, uToSend);

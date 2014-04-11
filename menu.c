@@ -133,55 +133,55 @@ static void menu_paint_row(int row)
 */
 static void menu_update(void)
 {
-	start_time = xTaskGetTickCount();
-	
-    unsigned char ii;
-    uint16_t bgCol = COL_BG_NORM;    	
+  //start_time = xTaskGetTickCount();
 
-	lcd_lock();
-	lcd_background(0);
+  unsigned char ii;
+  uint16_t bgCol = COL_BG_NORM;
 
-    // clear menu bg
-    lcd_fill(0, CRUMB_H, LCD_W, LCD_H - CRUMB_H, bgCol);
+  lcd_lock();
+  lcd_background(0X4567);
 
-    // draw the crumbs
-    char crumbs[90] = "MKIV";
-    for (ii = 1; ii <= g_index; ii++)
+  // clear menu bg
+  lcd_fill(0, CRUMB_H, LCD_W, LCD_H - CRUMB_H, bgCol);
+
+  // draw the crumbs
+  //char crumbs[90] = "MKIV";
+  //for (ii = 1; ii <= g_index; ii++)
+  //  {
+  //    strcat(crumbs, ":");
+  //    strcat(crumbs, g_menu[ii-1][g_crumbs[ii-1]].text);
+  //  }
+  lcd_fill(0, 0, LCD_W, CRUMB_H, 0x0);
+  //lcd_text(0, 0, crumbs);
+  lcd_fill(0, CRUMB_H - 2, LCD_W, 2, 0xFFFF);
+
+  // how big is the menu?
+  g_entries = 0;
+  for (ii = 0; g_menu[g_index][ii].text; ii++)
     {
-        strcat(crumbs, ":");
-        strcat(crumbs, g_menu[ii-1][g_crumbs[ii-1]].text);
-    }
-    lcd_fill(0, 0, LCD_W, CRUMB_H, 0x0);
-    lcd_text(0, 0, crumbs);
-	lcd_fill(0, CRUMB_H - 2, LCD_W, 2, 0xFFFF);
-
-    // how big is the menu?
-    g_entries = 0;
-    for (ii = 0; g_menu[g_index][ii].text; ii++)
-    {
-    	g_entries++;
-    }
-
-    // if above a certain size draw in two columns
-    if (g_entries > 4)
-    {
-    	menu_two_column();
-    }
-    else
-    {
-    	g_rows = g_entries;
-    	g_rowh = (240 - CRUMB_H) / g_entries;
-
-    	for (ii = 0; g_menu[g_index][ii].text; ii++)
-    	{
-    		menu_paint_cell(ii);
-    		if (ii != g_entries - 1)
-    			lcd_fill(0,  CRUMB_H + (ii +1) * (g_rowh) - 1, LCD_W, 1,    0xFFFF);
-    	}
+      g_entries++;
     }
 
-    lcd_printf(30, 0, 10, "%dms", (xTaskGetTickCount() - start_time));
-    lcd_release();
+  // if above a certain size draw in two columns
+  if (g_entries > 4)
+    {
+      menu_two_column();
+    }
+  else
+    {
+      g_rows = g_entries;
+      g_rowh = (240 - CRUMB_H) / g_entries;
+
+      for (ii = 0; g_menu[g_index][ii].text; ii++)
+        {
+          menu_paint_cell(ii);
+          if (ii != g_entries - 1)
+            lcd_fill(0,  CRUMB_H + (ii +1) * (g_rowh) - 1, LCD_W, 1,    0xFFFF);
+        }
+    }
+
+ // lcd_printf(30, 0, 10, "%dms", (xTaskGetTickCount() - start_time));
+  lcd_release();
 }
 
 void menu_set_root(struct menu *root_menu)

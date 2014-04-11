@@ -32,6 +32,7 @@ const float fMashLitresPerPulseL = (0.0033);
 const float fBoilLitresPerPulseH = (0.0042);
 const float fMashLitresPerPulseH = (0.0042);
 const unsigned long ulLowerThresh = 13; //26 pulses per second is the thresh, but we use 0.5seconds
+const unsigned long ulUpperThresh = 30; //if we are over this, there is a problem.. dont record
 float fLitresDeliveredToBoil = 0, fLitresDeliveredToMash = 0;
 volatile uint8_t uBoilFlowState = NOT_FLOWING, uMashFlowState = NOT_FLOWING;
 
@@ -59,7 +60,7 @@ void vFlow1Init( void )
   // Set up the input pin configuration for PE4
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
   GPIO_InitStructure.GPIO_Pin =  HLT_FLOW_PIN;
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
   GPIO_Init( HLT_FLOW_PORT, &GPIO_InitStructure );
 
   // Make sure the peripheral clocks are enabled.
@@ -158,17 +159,21 @@ void vTaskLitresToBoil ( void * pvParameters )
               {
                 fLitresDeliveredToBoil = fLitresDeliveredToBoil + ((float)ulPulsesSinceLast * fBoilLitresPerPulseL);
               }
-            else
+            else if (ulPulsesSinceLast > ulLowerThresh && ulPulsesSinceLast <= ulUpperThresh)
               {
                 fLitresDeliveredToBoil = fLitresDeliveredToBoil + ((float)ulPulsesSinceLast * fBoilLitresPerPulseH);
               }
+            else // we have recorded a bad value, put in the average now.
+              {
+                fLitresDeliveredToBoil = fLitresDeliveredToBoil + (15.0 * fBoilLitresPerPulseH);
+              }
             if (fLitresDeliveredToBoil < 0.01 || fLitresDeliveredToBoil > 50000)
               fLitresDeliveredToBoil = 0.000;
-            if (ulPulsesSinceLast > 0)
+            if (ulPulsesSinceLast > 0 && ulPulsesSinceLast <= ulUpperThresh)
               {
                 uBoilFlowState = FLOWING;
-                //sprintf(buf, "last:%d, acc:%d\r\n", ulPulsesSinceLast, fLitresDeliveredToBoil);
-                //  vConsolePrint(buf);
+                sprintf(buf, "last:%d,\r\n", ulPulsesSinceLast);
+                vConsolePrint(buf);
               }
             else
               uBoilFlowState = NOT_FLOWING;

@@ -36,6 +36,7 @@ void Delay(unsigned i)
     unsigned n;
     for(;i;i--)
     {
+        // was 3100
 	for(n=0;n<3100;n++)
 	{
 	    asm("nop");
@@ -162,7 +163,7 @@ void lcd_init(void)
     //TEST//
     display_OFF(); //Switch off the display for tests
     lcd_data_bus_test();
-    lcd_gram_test(); 
+    lcd_gram_test();
     display_ON();  //Switch on the display
 #endif
 
@@ -170,20 +171,20 @@ void lcd_init(void)
     write_reg(0x0003,0x1018);//Entry Mode BGR, Horizontal, then vertical
 
     //Eye Candy//
-    /*
-    Delay(10);      
-    lcd_clear( 0xA0FF );
-    Delay(100);      
-    lcd_clear( Black );
-    Delay(100);
-    lcd_clear( 0xA0FF );
-    Delay(100);
-    lcd_clear( Black );
 
-    Delay(1000);     
-    */
+    Delay(100);      
+    //lcd_clear( 0xA0FF );
+    //Delay(100);
+   // lcd_clear( Black );
+   // Delay(100);
+   // lcd_clear( 0xA0FF );
+   // Delay(100);
+    lcd_clear( Red );
+
+    Delay(10);
+
 #endif
-    printf("Lcd_init done\r\n");
+    //printf("Lcd_init done\r\n");
 }
 
 //---------------------------------------------------------------------/
@@ -195,9 +196,9 @@ static void LCD_FSMCConfig(void)
     FSMC_NORSRAMTimingInitTypeDef  p;
 
     /*-- FSMC Configuration ----------------------------------------------*/
-    p.FSMC_AddressSetupTime = 2; //was 2            /* ��ַ����ʱ��  */
-    p.FSMC_AddressHoldTime = 1; //was 1             /* ��ַ����ʱ��  */
-    p.FSMC_DataSetupTime = 3; //was 3               /* ��ݽ���ʱ��  */
+    p.FSMC_AddressSetupTime = 10; //was 2            /* ��ַ����ʱ��  */
+    p.FSMC_AddressHoldTime = 0; //was 1             /* ��ַ����ʱ��  */
+    p.FSMC_DataSetupTime = 10; //was 3               /* ��ݽ���ʱ��  */
     p.FSMC_BusTurnAroundDuration = 0;        /* ���߷�תʱ��  */
     p.FSMC_CLKDivision = 0;                  /* ʱ�ӷ�Ƶ      */
     p.FSMC_DataLatency = 0; //was 0                  /* ��ݱ���ʱ��  */
@@ -313,32 +314,82 @@ static void power_SET(void)
     //Step-Up Circuit 1,2 = Fosc/128,
     // VciOut - 1 * Vci
     write_reg(0x0010,0x1628);//Power Control Setup Reg 1
+    //DDVDH activates separately from VGH : Halt step-up circuit 1 (VLOUT1). (Default)
+    //Grayscale voltage generating circuit = 0.5
+    //
     write_reg(0x0012,0x0000);//Power Control Setup Reg 3
+
     write_reg(0x0013,0x104d);//Power Control Setup Reg 4
+    // VREG1OUT x 0.420
+
+
     Delay(10);
     write_reg(0x0012,0x0010);//VREGout = 1.47
     Delay(10);
     write_reg(0x0010,0x2620);//Power Control Setup Reg1
+    //DDVDH activates at the same timing as VGH.
+    //Grayscale voltage generating circuit = 0.5
+    //Constant current (ratio to 3) : 0.8
+
     write_reg(0x0013,0x344d); //304d
+    //VREG1OUT x 0.625
+    //VREG1OUT x 0.69
+
     Delay(10);
     
     write_reg(0x0001,0x0100);//Driver Output Control
+    //the source pins output from S720 to S1
+
     write_reg(0x0002,0x0300);//Driving Range Control
+    // Line inversion waveform is selected
+    // alternation occured by applying EOR(Exclusive OR) operatin to an odd/even
+    // frame selecting signal and n-raster-row inversion signal while a C-pattenr waveform is generated(BC0=1).
+
     write_reg(0x0003,0x1008);//Entry Mode BGR, Horizontal, then vertical
+    //16-bit RAM data is transferred in one transfer
+    // 16-bit interface MSB mode(2 transfers/pixel) – 262k colors available
+    // Reverses the order of RGB dots to BGR when writing 18-bit pixel data to the internal GRAM
+    // horizontal decrement, vertical decrement.
+
     write_reg(0x0008,0x0604);//Display Control, first 4 and last 6
-    //lines blank
+    // Number of lines for the front/back porches 6 lines front, 4 lines back
+
     write_reg(0x0009,0x0000);//Display Control
+    // interval of scan =  disabled
+    // scan mode = normal
+    //
     write_reg(0x000A,0x0008);//Output FMARK every 1 Frame
+    // When FMARKOE=1, the LGDP4532 starts outputting FMARK signal from the FMARK
+    // pin in the output interval set with the FMI[2:0] bits
+    // interval = 1 frame
 
     write_reg(0x000C,0x1003);
-
+    // RAM data write cycle = disabled
+    // Interface for RAM access = system/VSYNC interface
+    // RGB interface mode = disabled
     
     write_reg(0x0041,0x0002);
+    // VcomH level from register R13h
+
     write_reg(0x0060,0x2700);
+    // Sets the number of lines to drive the LCD at an interval of 8lines = 320
+
+
     write_reg(0x0061,0x0001);
+    // The grayscale level corresponding to the GRAM data can be reversed by setting REV = 1
+    // amount of scrolling the base image by the number of lines = 0
+
     write_reg(0x0090,0x0182);
+    // clocks per line = 130
+    // Division ratio of the internal clock = 2
+
     write_reg(0x0093,0x0001);
+    // source output timing by the number of internal clock from a reference point = 4
+    // Source equalization period = 2
+
     write_reg(0x00a3,0x0010);
+    // Write pulse width test... no more info
+
     Delay(10);
 }
 
@@ -411,7 +462,7 @@ static void lcd_gram_test(void)
     unsigned short temp; //Temp value to put in GRAM
     unsigned int test_x;
     unsigned int test_y;
-
+static int i = 1;
     printf("LCD GRAM test....\r\n");
 
     /* write */
@@ -434,7 +485,11 @@ static void lcd_gram_test(void)
 	{
 	    if(  lcd_read_gram(test_x,test_y) != temp++)
 	    {
-		printf("LCD GRAM ERR!!");
+		//if (i == 1) // print once
+		  {
+	            printf("LCD GRAM ERR %d, %d!!\r\n", test_x, test_y);
+	            i = 0;
+		  }
 		// while(1);
 	    }
 	}

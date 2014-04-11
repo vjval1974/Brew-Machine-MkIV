@@ -21,9 +21,13 @@
 #include "brew.h"
 #include "boil.h"
 #include "console.h"
+#include "adc.h"
+
 
 #define BOIL_PORT GPIOD
 #define BOIL_PIN GPIO_Pin_12
+
+#define BOIL_DUTY_ADC_CHAN 10 // This is PC0
 
 #define BOIL_LEVEL_PORT GPIOC
 #define BOIL_LEVEL_PIN GPIO_Pin_12
@@ -35,9 +39,10 @@
 xQueueHandle xBoilQueue = NULL;
 
 
+
 #define TIM_ARR_TOP 10000
 
-uint8_t diag_duty = 50;
+int diag_duty = 50;
 volatile uint8_t boil_state = OFF;
 
 //void vBoil(uint8_t duty, uint8_t state);
@@ -108,7 +113,7 @@ void vBoilInit(void)
   if (xBoilQueue != NULL)
     {
       xTaskCreate( vTaskBoil,
-          ( signed portCHAR * ) "boil",
+          ( signed portCHAR * ) "boil Task",
           configMINIMAL_STACK_SIZE + 500,
           NULL,
           tskIDLE_PRIORITY ,
@@ -130,70 +135,109 @@ uint8_t uGetBoilLevel(void)
 }
 void vTaskBoil( void * pvParameters)
 {
+  // Generic message struct for message storage.
   struct GenericMessage * xMessage;
   xMessage = (struct GenericMessage *)malloc(sizeof(struct GenericMessage));
-  uint8_t duty = 0; // receive value from queue;
-  uint8_t boil_level = 0;
-  uint16_t compare = 0;
-  portBASE_TYPE xStatus;
-  static char buf[50];
-  for(;;){
-      boil_level =  uGetBoilLevel();
-      xStatus = xQueueReceive(xBoilQueue, &xMessage, 10);
-      if (xStatus == pdPASS)
+  int iDefaultDuty = 0; // receive value from queue.
+  float fDuty = 0.0; // duty in float type
+  int iDuty = 0; // duty in int type
+  uint16_t uADCIn = 0; //value read from ADC channel
+  unsigned int boil_level = 0; //to store the value from the boil level switch
+  static unsigned int compare = 0; //value of the duty cycle when tranformed to timer units
+  portBASE_TYPE xStatus; //queue receive status
+  static char buf[50], buf1[50]; //text storage buffers
+  for(;;)
+    {
+      boil_level =  uGetBoilLevel(); // each loop iteration, get the level of the boiler.
+
+      xStatus = xQueueReceive(xBoilQueue, &xMessage, 10); // check the queue and block for 10ms
+      if (xStatus == pdPASS) // message received
         {
-          //WE have received a value from the queue.. time to act.
-          duty = *(int *)xMessage->pvMessageContent;
-          if (duty > 100)
-            duty = 100;
-
-          compare = ((TIM_ARR_TOP/100) * duty);
-          sprintf(buf, "Boil: Received duty cycle of %d\r\n", duty);
-          vConsolePrint(buf);
-          // ensure we have water above the elements
-
-          if (boil_level && duty > 0)
-            {
-
-              TIM_SetCompare1(TIM4, compare);
-              TIM_Cmd( TIM4, ENABLE );
-              boil_state = BOILING;
-         //     printf("Boiling, duty = %d\r\n", duty);
-
-            }
-
-            else
-            {
+          //if the boil level is low, ensure the elements are off and leave.
+          if (!boil_level){
               TIM_SetCompare1(TIM4, 0);
               TIM_Cmd( TIM4, DISABLE );
               GPIO_ResetBits(BOIL_PORT, BOIL_PIN);
               boil_state = OFF;
-           //   printf("Boiling stopped or level too low\r\n");
+              vConsolePrint("Boil level too low..Boil off. message ignored\r\n");
+          }
+          else // we get here if the boil level is ok to process the message
+            {
+              //WE have received a value from the queue.. time to act.
+              //-----------------------------------------------------
+              iDefaultDuty = *(int *)xMessage->pvMessageContent;
+              if (iDefaultDuty > 100)
+                iDefaultDuty = 100;
+              if (iDefaultDuty < 0)
+                iDefaultDuty = 0;
+              // ensure we have water above the elements
+
+              // ***** Set timer value based on duty cycle *****
+              //------------------------------------------------
+              // run code when message received from auto brew task
+              if (xMessage->ucFromTask == (unsigned char)BREW_TASK)
+                {
+                  vConsolePrint("Boil: Message received from BREW TASK");
+                      uADCIn = read_adc(BOIL_DUTY_ADC_CHAN);
+                  fDuty = (float)uADCIn/4095.0 * 100.0;
+                  iDuty = (int)fDuty;
+                  if (fDuty <= 20.0)
+                    iDuty = iDefaultDuty;
+
+                  sprintf(buf1, "Boil: Boil ADC %d. iDuty = %d%% \r\n", uADCIn, iDuty);
+                  vConsolePrint(buf1);
+
+                  compare = ((TIM_ARR_TOP/100) * iDuty); // set the timer value to the duty cycle %
+
+                }
+              else if(xMessage->ucFromTask == (unsigned char)BREW_TASK_RESET)
+                {
+                  compare = 0;
+                }
+              else // this code run when message is not from the auto brew task
+                {
+                  compare = ((TIM_ARR_TOP/100) * iDefaultDuty);
+                  vConsolePrint("Boil: Message received");
+                  sprintf(buf, "Boil: Received duty cycle of %d, from ID #%d\r\n", iDefaultDuty, xMessage->ucFromTask);
+                  vConsolePrint(buf);
+                }
+              //****ENABLE BOIL*****
+              //--------------------
+              if (compare > 0)
+                {
+                  TIM_SetCompare1(TIM4, compare);
+                  TIM_Cmd( TIM4, ENABLE );
+                  boil_state = BOILING;
+                  //     printf("Boiling, duty = %d\r\n", duty);
+                }
+              else
+                {
+                  TIM_SetCompare1(TIM4, 0);
+                  TIM_Cmd( TIM4, DISABLE );
+                  GPIO_ResetBits(BOIL_PORT, BOIL_PIN);
+                  boil_state = OFF;
+                  vConsolePrint("Boil: 0 duty cycle. Turning off\r\n");
+                }
             }
+
         }
-      else
+      else //no message received
         {
+
           if (!boil_level && boil_state == BOILING)
             {
               TIM_SetCompare1(TIM4, 0);
               TIM_Cmd( TIM4, DISABLE );
               GPIO_ResetBits(BOIL_PORT, BOIL_PIN);
               boil_state = OFF;
-             vConsolePrint("Boil level too low during boil... stopped boil\r\n");
+              vConsolePrint("Boil: Boil state = ON, Boil level = low, stopping boil\r\n");
             }
-          // Testing code
-          if (xMessage->ucFromTask == BREW_TASK)
-            {
 
 
-
-
-
-            }
-          //printf("Nothing in boil queue!\r\n");
         }
-      vTaskDelay(100);
-  }
+
+      vTaskDelay(1000);
+    }
 }
 
 // ==========================
@@ -339,7 +383,7 @@ int iBoilKey(int xx, int yy)
   struct GenericMessage * xMessage;
   xMessage = (struct GenericMessage *)malloc(sizeof(struct GenericMessage));
   xMessage->pvMessageContent = (void *)&diag_duty;
-  uint8_t zero = 0;
+  static int zero = 0;
   static uint8_t w = 5,h = 5;
   static uint16_t last_window = 0;
   if (xx > DUTY_UP_X1+1 && xx < DUTY_UP_X2-1 && yy > DUTY_UP_Y1+1 && yy < DUTY_UP_Y2-1)

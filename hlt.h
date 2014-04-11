@@ -45,6 +45,10 @@ int  HLTKey(int xx, int yy);
 void hlt_init(void);
 void vHLTAppletCallback (int in_out);
 void vTaskBrewHLT(void * pvParameters);
+void vTaskHLTLevelChecker( void * pvParameters);
+
 extern xTaskHandle xHeatHLTTaskHandle, xHLTAppletDisplayHandle;
+extern xTaskHandle xBrewHLTTaskHandle;
 extern xQueueHandle xBrewTaskHLTQueue;
+extern xTaskHandle xTaskHLTLevelCheckerTaskHandle;
 #endif /* HLT_H_ */

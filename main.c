@@ -236,13 +236,16 @@ int main( void )
 
     vParametersInit();
 
-    lcd_init();          
+    lcd_init();
+    //lcd_init();
+    //lcd_init();
+
+    menu_set_root(main_menu);
+
 
     vLEDInit();
 
     vI2C_Init();
-
-    menu_set_root(main_menu);
 
     vMillInit();
 
@@ -270,6 +273,8 @@ int main( void )
 
     vBoilValveInit();
 
+    //vRunTimeTimerSetup(); // set up the runtime timer
+
     xTaskCreate( vConsolePrintTask,
         ( signed portCHAR * ) "PrintTask",
         configMINIMAL_STACK_SIZE,
@@ -278,7 +283,7 @@ int main( void )
         &xPrintTaskHandle );
 
     xTaskCreate( vTouchTask, 
-        ( signed portCHAR * ) "touch",
+        ( signed portCHAR * ) "touch    ",
         configMINIMAL_STACK_SIZE +600,
         NULL,
         tskIDLE_PRIORITY,
@@ -286,42 +291,42 @@ int main( void )
 
     // Create your application tasks if needed here
     xTaskCreate( vTaskDS1820Convert,
-        ( signed portCHAR * ) "DS1820",
+        ( signed portCHAR * ) "TempSensors",
         configMINIMAL_STACK_SIZE + 100,
         NULL,
         tskIDLE_PRIORITY,
         &xDS1820TaskHandle );
 
     xTaskCreate( vTaskLitresToBoil,
-        ( signed portCHAR * ) "hlt_litres",
+        ( signed portCHAR * ) "boil_litres",
         configMINIMAL_STACK_SIZE,
         NULL,
         tskIDLE_PRIORITY ,
         &xLitresToBoilHandle );
 
     xTaskCreate( vTaskLitresToMash,
-            ( signed portCHAR * ) "hlt_litres",
+            ( signed portCHAR * ) "mash_litres",
             configMINIMAL_STACK_SIZE,
             NULL,
             tskIDLE_PRIORITY ,
             &xLitresToMashHandle );
 
     xTaskCreate( vTaskHops,
-           ( signed portCHAR * ) "hops",
+           ( signed portCHAR * ) "hops    ",
            configMINIMAL_STACK_SIZE,
            NULL,
            tskIDLE_PRIORITY,
            &xHopsTaskHandle );
 
     xTaskCreate( vCheckTask,
-        ( signed portCHAR * ) "check",
+        ( signed portCHAR * ) "check     ",
         configMINIMAL_STACK_SIZE +200,
         NULL,
         tskIDLE_PRIORITY,
         &xCheckTaskHandle );
 
     xTaskCreate( vTaskCrane,
-        ( signed portCHAR * ) "Crane",
+        ( signed portCHAR * ) "Crane    ",
         configMINIMAL_STACK_SIZE + 200 ,
         NULL,
         tskIDLE_PRIORITY+1,
@@ -334,19 +339,21 @@ int main( void )
         tskIDLE_PRIORITY+1,
         &xBoilValveTaskHandle );
 
-    /*xTaskCreate( vTaskBrew,
-            ( signed portCHAR * ) "BREW",
-            configMINIMAL_STACK_SIZE +200,
-            (void *)54,
-            tskIDLE_PRIORITY + 1,
-            &xBrewTaskHandle );
-*/
+
 //      xTaskCreate( vI2C_TestTask,
 //          ( signed portCHAR * ) "i2c_test",
 //          configMINIMAL_STACK_SIZE +400,
 //          NULL,
 //          tskIDLE_PRIORITY,
 //          &xI2C_TestHandle );
+
+    xTaskCreate(  vTaskHLTLevelChecker,
+                 ( signed portCHAR * ) "hlt_level",
+                 configMINIMAL_STACK_SIZE +100,
+                 NULL,
+                 tskIDLE_PRIORITY,
+                 & xTaskHLTLevelCheckerTaskHandle );
+
 
 
     xTaskCreate(  vI2C_SendTask,

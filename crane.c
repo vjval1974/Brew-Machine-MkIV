@@ -34,6 +34,7 @@
 #include "brew.h"
 #include "io_util.h"
 #include "message.h"
+#include "stir.h"
 
 volatile int8_t cs = STOPPED;
 int8_t iCraneState = STOPPED;
@@ -129,7 +130,7 @@ void vTaskCrane(void * pvParameters)
   xToSend->ucToTask = BREW_TASK;
   xToSend->pvMessageContent = (void *)&iComplete;
   const int iTest = 40;
-
+  static unsigned char ucDownIncrements = 0;
   uint8_t limit = 0xFF, limit1 = 0xFF; //neither on or off.
   static int iC = STOP;
   static int iCommandState = 0;
@@ -155,6 +156,7 @@ void vTaskCrane(void * pvParameters)
           iComplete = 0;
           xToSend->uiStepNumber = xMessage->uiStepNumber;
           iCommandState = 0;
+          ucDownIncrements = 0;
         }
 
       switch(iCraneState)
@@ -264,6 +266,7 @@ void vTaskCrane(void * pvParameters)
             }
           else// if (xMessage->cDirection == DN)
             {
+              vConsolePrint("waiting on lower limit\r\n");
               limit = debounce(CRANE_LIMIT_PORT, CRANE_LOWER_LIMIT_PIN);
               if (limit == 1)
                 {
@@ -290,8 +293,8 @@ void vTaskCrane(void * pvParameters)
               vTaskDelay(200);
               vCraneFunc(STOP);
               vConsolePrint("Crane STOP \r\n");
-              vTaskDelay(1000);
-
+              vTaskDelay(1500);
+              ucDownIncrements++;
             }
           else
             {
@@ -304,11 +307,15 @@ void vTaskCrane(void * pvParameters)
               iCraneState = BOTTOM;
               iComplete = STEP_COMPLETE;
               iCommandState = 1;
+              ucDownIncrements = 0;
+              vStir(STOP);
 
               // if (xMessage->ucFromTask == BREW_TASK)
               //   xQueueSendToBack(xBrewTaskReceiveQueue, &xToSend, 0);
 
             }
+          if (ucDownIncrements == 11)
+            vStir(DRIVING);
           break;
         }
       case STOPPED:

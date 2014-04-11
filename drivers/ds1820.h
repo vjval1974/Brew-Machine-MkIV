@@ -12,6 +12,8 @@
 
 #define DS1820_PORT GPIOC
 #define DS1820_PIN  GPIO_Pin_10
+#define DS1820_POWER_PORT GPIOE
+#define DS1820_POWER_PIN GPIO_Pin_0 // wired to Normally Closed... Power on to reset.
 
 
 #define BUS_ERROR      0xFE

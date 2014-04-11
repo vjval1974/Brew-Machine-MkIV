@@ -81,7 +81,7 @@ static uint8_t ds1820_search();
 static float ds1820_read_device(uint8_t * rom_code);
 static void delay_us(uint16_t count); 
 static void ds1820_error(uint8_t code);
-
+static unsigned char ds1820_power_reset(void); // created to see if the bus will reset with a longer time
 
 
 uint8_t rom[8]; //temporary to store rom codes
@@ -95,7 +95,10 @@ void vTaskDS1820Convert( void *pvParameters ){
     char buf[30];
     static char print_buf[80];
     int ii = 0;
-    static float fTemp = 0.0;
+    static float fTemp[NUM_SENSORS] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}, fLastTemp[NUM_SENSORS] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
+
+
+
 
     // initialise the bus
     ds1820_init();
@@ -137,6 +140,15 @@ void vTaskDS1820Convert( void *pvParameters ){
         vConsolePrint("NO SENSOR\r\n");
       }
 
+      ds1820_convert();
+
+      vTaskDelay(750/portTICK_RATE_MS); // wait for conversion
+
+      // save values in array for use by application
+      for (ii = 0 ; ii < NUM_SENSORS; ii++)
+          temps[ii] = ds1820_read_device(b[ii]);
+
+
 
     for (;;)
     {
@@ -147,12 +159,22 @@ void vTaskDS1820Convert( void *pvParameters ){
 
         // save values in array for use by application
         for (ii = 0 ; ii < NUM_SENSORS; ii++){
-            fTemp = ds1820_read_device(b[ii]);
+            fTemp[ii] = ds1820_read_device(b[ii]);
             // Dont want spurious values - crude.
-            if (fTemp < 120.0)
-              temps[ii] = fTemp;
-
+            if (fTemp[ii] < 120.0){
+                if (fTemp[ii] < (temps[ii] + 5.0))
+                  temps[ii] = fTemp [ii];
+                if (fTemp[ii] > (temps[ii] - 5.0))
+                  temps[ii] = fTemp [ii];
+            }
+            if (fTemp[ii] == 0.0)
+              {
+                vConsolePrint("zero values. Temp Bus Resetting\r\n");
+                ds1820_power_reset();
+                ds1820_reset();
+              }
         }
+
 
 
         taskYIELD();
@@ -369,6 +391,14 @@ static void ds1820_init(void) {
     GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IN_FLOATING;
     GPIO_Init(GPIOC, &GPIO_InitStructure);
+
+
+    GPIO_InitStructure.GPIO_Pin =  DS1820_POWER_PIN;
+    GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+    GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+    GPIO_Init(DS1820_POWER_PORT, &GPIO_InitStructure);
+    GPIO_ResetBits(DS1820_POWER_PORT, DS1820_POWER_PIN); //pull low
+
     //printf("ioMode = %x\r\n", GPIOC->CRH);
     for (i = 0; i < 8; i++){
         rom[i] = 0;
@@ -402,6 +432,16 @@ static unsigned char ds1820_reset(void)
     return NO_ERROR;
 
 }
+
+static unsigned char ds1820_power_reset(void) // created to see if the bus will reset with a longer time
+{
+    GPIO_SetBits(DS1820_POWER_PORT, DS1820_POWER_PIN);
+    vTaskDelay(5000);
+    GPIO_ResetBits(DS1820_POWER_PORT, DS1820_POWER_PIN);
+    return 0;
+}
+
+
 ////////////////////////////////////////////////////////////////////////////
 
 static void ds1820_write_bit(uint8_t bit){

@@ -177,7 +177,7 @@ void vTaskBoil( void * pvParameters)
               // run code when message received from auto brew task
               if (xMessage->ucFromTask == (unsigned char)BREW_TASK)
                 {
-                  vConsolePrint("Boil: Message received from BREW TASK");
+                  vConsolePrint("Boil: Message received from BREW TASK\r\n");
                       uADCIn = read_adc(BOIL_DUTY_ADC_CHAN);
                   fDuty = (float)uADCIn/4095.0 * 100.0;
                   iDuty = (int)fDuty;

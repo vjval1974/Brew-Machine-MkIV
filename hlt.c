@@ -279,8 +279,8 @@ void vTaskHLTLevelChecker( void * pvParameters)
               GPIO_WriteBit(HLT_SSR_PORT, HLT_SSR_PIN, 0);
               vConsolePrint("HLT Level Check Task: INTERVENED\r\n");
               vConsolePrint("HLT Level Check Task: SSR on while level low!\r\n");
-              vTaskPrioritySet(NULL,  tskIDLE_PRIORITY + 5);
-              while(1);
+             // vTaskPrioritySet(NULL,  tskIDLE_PRIORITY + 5);
+              //while(1);
             }
         }
       if (hlt_level_high  && GPIO_ReadInputDataBit(INLET_VALVE_PORT, INLET_VALVE_PIN))

@@ -9,11 +9,19 @@
 #define PARAMETERS_H_
 
 struct Parameters {
+  //Mill
+  int iGrindTime; //mins
+
+  //Pump
+  int iPumpPrimingCycles; // amount of cycles to prime the pump
+  int iPumpPrimingTime; //seconds
+
   //HLT
   float fHLTMaxLitres; // Maximum amount of litres at high level probe
   float fStrikeTemp;
   float fMashOutTemp;
   float fSpargeTemp;
+  float fCleanTemp;
   float fStrikeLitres;
   float fMashOutLitres;
   float fSpargeLitres;
@@ -30,6 +38,12 @@ struct Parameters {
   unsigned int uiBringToBoilTime;
   unsigned int uiHopTimes[6];
 
+  //Chill etc
+  unsigned int uiSettlingTime; //settling time after the boil (for hop steep) mins
+  unsigned int uiSettlingRecircTime; //recirc for valve sterilisation. mins
+  unsigned int uiChillerPumpPrimingCycles;
+  unsigned int uiChillerPumpPrimingTime;
+  unsigned int uiChillTime; //time it takes to run through the chiller. mins
 
 };
 

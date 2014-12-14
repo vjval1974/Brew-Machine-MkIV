@@ -14,13 +14,15 @@
 #define STIR_PORT PORTU
 #define STIR_PIN PCF_PIN0
 
-void vStirInit(void);
-void vStirApplet(int init);
-int iStirKey(int xx, int yy);
-void vStir( int state );
+typedef enum
+{
+  STIR_DRIVING = 1,
+  STIR_STOPPED = 2
+} StirState;
 
-#define DRIVING 1
-#define STOPPED -1
+void vStirInit(void); // initialises the output and semaphores for applet.
+void vStir( StirState state ); // gives the command to the output
+StirState xGetStirState(void); //returns the current state of the stirrer
 
 
 #endif /* STIR_H_ */

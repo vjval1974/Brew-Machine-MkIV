@@ -17,6 +17,7 @@
 #include "stm32f10x_it.h"
 #include "stm32f10x_rcc.h"
 #include "stm32f10x_i2c.h"
+#include "semphr.h"
 
 /*app includes. */
 //#include "stm3210e_lcd.h"
@@ -38,6 +39,7 @@
 #include "hop_dropper.h"
 #include "boil.h"
 #include "stir.h"
+#include "stirApplet.h"
 #include "Flow1.h"
 #include "diag_pwm.h"
 #include "I2C-IO.h"

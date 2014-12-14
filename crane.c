@@ -308,14 +308,14 @@ void vTaskCrane(void * pvParameters)
               iComplete = STEP_COMPLETE;
               iCommandState = 1;
               ucDownIncrements = 0;
-              vStir(STOP);
+              vStir(STIR_STOPPED);
 
               // if (xMessage->ucFromTask == BREW_TASK)
               //   xQueueSendToBack(xBrewTaskReceiveQueue, &xToSend, 0);
 
             }
           if (ucDownIncrements == 11)
-            vStir(DRIVING);
+            vStir(STIR_DRIVING);
           break;
         }
       case STOPPED:

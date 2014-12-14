@@ -101,6 +101,7 @@ SOURCE=	main.c 	drivers/lcd.c \
 		boil.c \
 		hop_dropper.c \
 		stir.c \
+		stirApplet.c \
 		menu.c \
 		valves.c \
 		diag_temps.c \

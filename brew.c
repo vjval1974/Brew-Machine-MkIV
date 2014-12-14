@@ -572,7 +572,7 @@ void vBrewHLTSetupFunction(int piParameters[5]){
 void vBrewMillSetupFunction (int piParameters[5])
 {
 
-  vMill(DRIVING);
+  vMill(MILL_DRIVING);
   vConsolePrint("Grain Mill Started\r\n");
   //xQueueSendToBack(xBrewTaskReceiveQueue, &STEP_COMPLETE, 0);
 }
@@ -876,14 +876,14 @@ void vBrewMashPollFunction(int piParameters[5])
         {
           if ((Brew[BrewState.ucStep].uElapsedTime > 30) && (Brew[BrewState.ucStep].uElapsedTime < iStirTime1))
             {
-              vStir(DRIVING);
+              vStir(STIR_DRIVING);
               iStirState = MASH_STAGE_2;
               flag =0;
               vConsolePrint("MashPoll1: Stirring\r\n");
             }
           if (iStirTime1 == 0)
             {
-              vStir(STOPPED);
+              vStir(STIR_STOPPED);
               iStirState = MASH_STAGE_2;
               flag =0;
               vConsolePrint("MashPoll1: Stir Time 1 = 0, not Stirring\r\n");
@@ -894,7 +894,7 @@ void vBrewMashPollFunction(int piParameters[5])
         {
           if ((Brew[BrewState.ucStep].uElapsedTime > iStirTime1))
             {
-              vStir(STOPPED);
+              vStir(STIR_STOPPED);
               iStirState = MASH_STAGE_3;
               flag =0;
               vConsolePrint("MashPoll2: Stopped Stirring\r\n");
@@ -905,14 +905,14 @@ void vBrewMashPollFunction(int piParameters[5])
         {
           if (iTimeRemaining < iStirTime2)
             {
-              vStir(DRIVING);
+              vStir(STIR_DRIVING);
               iStirState = MASH_STAGE_4;
               flag =0;
               vConsolePrint("MashPoll3: Stirring\r\n");
             }
           if (iStirTime2 == 0)
             {
-              vStir(STOPPED);
+              vStir(STIR_STOPPED);
               iStirState = MASH_STAGE_4;
               flag =0;
               vConsolePrint("MashPoll3: Stir Time 2 = 0, not Stirring\r\n");
@@ -931,7 +931,7 @@ void vBrewMashPollFunction(int piParameters[5])
   if (Brew[BrewState.ucStep].uElapsedTime >= iMashTime)
     {
       vMashPump(STOPPED);
-      vStir(STOPPED);
+      vStir(STIR_STOPPED);
       iStirState = MASH_STAGE_1;
       iPumpState = MASH_STAGE_1;
       Brew[BrewState.ucStep].ucComplete = 1;

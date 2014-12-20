@@ -33,6 +33,21 @@ struct Parameters {
   int iStirTime1; // "           stir     "       start     "
   int iStirTime2; // "            "               end
 
+
+  //Mash out
+    int iMashOutTime; // Minutes
+    int iMashOutPumpTime1; // How long to pump for at the start of the mash out
+    int iMashOutPumpTime2; // "             "             end       "
+    int iMashOutStirTime1; // "           stir     "       start     "
+    int iMashOutStirTime2; // "            "               end
+
+    //Mash out
+       int iSpargeTime; // Minutes
+       int iSpargePumpTime1; // How long to pump for at the start of the sparge
+       int iSpargePumpTime2; // "             "             end       "
+       int iSpargeStirTime1; // "           stir     "       start     "
+       int iSpargeStirTime2; // "            "               end
+
   //Boil
   unsigned int uiBoilTime;
   unsigned int uiBringToBoilTime;

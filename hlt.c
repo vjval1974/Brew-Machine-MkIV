@@ -234,6 +234,12 @@ void vTaskBrewHLT(void * pvParameters)
             }
           vValveActuate(HLT_VALVE, OPEN);
           fActualLitresDelivered = fGetBoilFlowLitres();
+          if(((int)(fActualLitresDelivered * 1000) % 100) < 10)
+            {
+              sprintf(buf, "ml delivered = %d\r\n", (int)(fActualLitresDelivered*1000));
+
+              vConsolePrint(buf);
+            }
           if (fActualLitresDelivered >= fLitresToDrain)
             {
               vValveActuate(HLT_VALVE, CLOSE);

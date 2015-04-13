@@ -64,6 +64,8 @@ struct Parameters {
 
 extern struct Parameters BrewParameters;
 
+int iParametersKey(int xx, int yy);
+void vParametersApplet(int init);
 void vParametersInit(void);
 
 

@@ -214,8 +214,9 @@ struct menu pumps_valves[] =
 struct menu main_menu[] =
     {
         {"Manual Control",      manual_menu,    		NULL, 				NULL, 			NULL},
-        {"Pumps/Valves" ,     pumps_valves,                   NULL,                           NULL,                   NULL},
+        {"Pumps/Valves" ,     pumps_valves,                     NULL,                           NULL,                   NULL},
         {"Diagnostics",         diag_menu,                      NULL,                           NULL,                   NULL},
+        {"Parameters",         NULL,                            vParametersApplet,              NULL,                   iParametersKey},
         {"BREW",                NULL,                           vBrewApplet,                    NULL,                   iBrewKey},
         {NULL,                  NULL, 				NULL,                           NULL, 			NULL}
     };

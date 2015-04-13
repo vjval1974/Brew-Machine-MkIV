@@ -55,10 +55,10 @@ void vCraneInit(void)
   GPIO_InitTypeDef GPIO_InitStructure;
 
   // Set up the input pin configuration for PE4
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-  GPIO_InitStructure.GPIO_Pin =  CRANE_UPPER_LIMIT_PIN;
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPD;
-  GPIO_Init( CRANE_UPPER_LIMIT_PORT, &GPIO_InitStructure );
+//  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+//  GPIO_InitStructure.GPIO_Pin =  CRANE_UPPER_LIMIT_PIN;
+//  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPD;
+//  GPIO_Init( CRANE_UPPER_LIMIT_PORT, &GPIO_InitStructure );
 
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
   GPIO_InitStructure.GPIO_Pin =  CRANE_LOWER_LIMIT_PIN;
@@ -223,7 +223,8 @@ void vTaskCrane(void * pvParameters)
             }
           else
             {
-              limit = debounce(CRANE_UPPER_LIMIT_PORT, CRANE_UPPER_LIMIT_PIN);
+              limit = cI2cGetInput(CRANE_UPPER_LIMIT_PORT, CRANE_UPPER_LIMIT_PIN);
+              //limit = debounce(CRANE_UPPER_LIMIT_PORT, CRANE_UPPER_LIMIT_PIN);
               if (limit == 1)
                 {
                   vCraneFunc(STOP);
@@ -250,7 +251,8 @@ void vTaskCrane(void * pvParameters)
             }
           else if (iC == UP)
             {
-              limit = debounce(CRANE_UPPER_LIMIT_PORT, CRANE_UPPER_LIMIT_PIN);
+              //limit = debounce(CRANE_UPPER_LIMIT_PORT, CRANE_UPPER_LIMIT_PIN);
+              limit = cI2cGetInput(CRANE_UPPER_LIMIT_PORT, CRANE_UPPER_LIMIT_PIN);
               if (limit == 1)
                 {
                   iCraneState = TOP;
@@ -322,7 +324,8 @@ void vTaskCrane(void * pvParameters)
         {
           if (iC == UP)
             {
-              limit = debounce(CRANE_UPPER_LIMIT_PORT, CRANE_UPPER_LIMIT_PIN);
+              limit = cI2cGetInput(CRANE_UPPER_LIMIT_PORT, CRANE_UPPER_LIMIT_PIN);
+              //limit = debounce(CRANE_UPPER_LIMIT_PORT, CRANE_UPPER_LIMIT_PIN);
               if (limit != 1)
                 {
                   vCraneFunc(UP);

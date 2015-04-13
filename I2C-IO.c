@@ -257,6 +257,7 @@ void vI2C_TestTask(void *pvParameters)
   uint8_t uAddress, uData, uRData = 3, uDirection = 0;
   uAddress = 0x70;
   int em = 0;
+  char input1;
   static char flag = 0;
   vTaskDelay(5000);
   for (;;)
@@ -266,43 +267,51 @@ void vI2C_TestTask(void *pvParameters)
       uTestMessage = uTestMessage | (uint16_t)(uData & 0x000F);
       if (uDirection)
           uTestMessage |= 1<<4;
-
-
-      //printf("===================\r\n");
-      //fflush(stdout);
-//      em = iI2C_Receive(uAddress, &uRData);
-//      if ( em == -1){
-//          printf("failed %d", em);
-//          //xQueueSendToBack(xI2C_SendQueue, &uTestMessage, 100);
-//          printf("failed, sending again\r\n");
-//          fflush(stdout);
-//        }
-
-
-
-      //printf("\r\n******I2C Test Task Start\r\n");
-      //printf("received = %x\r\n", uRData);
-      //printf("sending message:\r\n");
-      //printf("message = %x\r\n", uTestMessage);
-      //printf("address = %x\r\n", uAddress);
-      //printf("data = %x\r\n", uData);
-
       vConsolePrint("I2C Test Task Start\r\n");
+          fflush(stdout);
+
+      printf("===================\r\n");
       fflush(stdout);
-  if (flag == 0){
-          vPCF_SetBits(0, I2C_SLAVE_ADDRESS0);
-          flag= 1;
-      }
-      else
-        {
-          vPCF_ResetBits(0, I2C_SLAVE_ADDRESS0);
-          flag = 0;
+      em = iI2C_Receive(uAddress, &uRData);
+      if ( em == -1){
+          printf("failed %d", em);
+          //xQueueSendToBack(xI2C_SendQueue, &uTestMessage, 100);
+          printf("failed, sending again\r\n");
+          fflush(stdout);
         }
+
+
+//
+//      printf("\r\n******I2C Test Task Start\r\n");
+      printf("received = %x\r\n", uRData);
+      input1 = cI2cGetInput(PORTV, 1);
+      printf("pin 1 low? %d\r\n", input1);
+      input1 = cI2cGetInput(PORTV, 2);
+           printf("pin 2 low? %d\r\n", input1);
+           input1 = cI2cGetInput(PORTV, 3);
+                printf("pin 3 low? %d\r\n", input1);
+                input1 = cI2cGetInput(PORTV, 4);
+                     printf("pin 4 low? %d\r\n", input1);
+//      printf("sending message:\r\n");
+//      printf("message = %x\r\n", uTestMessage);
+//      printf("address = %x\r\n", uAddress);
+//      printf("data = %x\r\n", uData);
+
+
+//  if (flag == 0){
+//          vPCF_SetBits(0, I2C_SLAVE_ADDRESS0);
+//          flag= 1;
+//      }
+//      else
+//        {
+//          vPCF_ResetBits(0, I2C_SLAVE_ADDRESS0);
+//          flag = 0;
+//        }
 
   vConsolePrint("\r\n******I2C Test Task END\r\n");
     //printf("=========================\r\n");
     fflush(stdout);
-    vTaskDelay(10000);
+    vTaskDelay(1000);
     //xQueueSendToBack(xI2C_SendQueue, &uTestMessage, portMAX_DELAY);
       //xQueueSendToBack(xI2C_SendQueue, &uTestMessage+1, portMAX_DELAY);
       //xQueueSendToBack(xI2C_SendQueue, &uTestMessage+2, portMAX_DELAY);
@@ -438,6 +447,19 @@ void vPCF_SetBits(uint8_t bitnum, uint8_t add){
 
 }
 
-
+char cI2cGetInput(char port, char pin)
+{
+  char data = 0;
+  char read = iI2C_Receive(port, &data);
+  if (read == -1)
+    {
+      return ERROR;
+    }
+  //printf("~data = %x\r\n", ~data);
+  if (((1<<(pin-1)) & ~data)) {
+        return TRUE;
+  }
+  else return FALSE;
+}
 
 

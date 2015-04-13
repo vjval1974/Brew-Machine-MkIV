@@ -108,7 +108,7 @@ void vBoilInit(void)
 
   vSemaphoreCreateBinary(xAppletRunningSemaphore);
 
-  xBoilQueue = xQueueCreate(5, sizeof(struct GenericMessage *));
+  xBoilQueue = xQueueCreate(1, sizeof(struct GenericMessage *));
 
   if (xBoilQueue != NULL)
     {

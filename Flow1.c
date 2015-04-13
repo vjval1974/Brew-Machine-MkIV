@@ -172,8 +172,8 @@ void vTaskLitresToBoil ( void * pvParameters )
             if (ulPulsesSinceLast > 0 && ulPulsesSinceLast <= ulUpperThresh)
               {
                 uBoilFlowState = FLOWING;
-                sprintf(buf, "last:%d,\r\n", ulPulsesSinceLast);
-                vConsolePrint(buf);
+                //sprintf(buf, "last:%d,\r\n", ulPulsesSinceLast);
+                //vConsolePrint(buf);
               }
             else
               uBoilFlowState = NOT_FLOWING;

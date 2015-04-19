@@ -26,6 +26,7 @@ void vParametersAppletDisplay( void *pvParameters);
 
 #define LCD_FLOAT( x, y, dp , var ) lcd_printf(x, y, 4, "%d.%d", (unsigned int)floor(var), (unsigned int)((var-floor(var))*pow(10, dp)));
 
+//#define LCD_FLOAT( x, y, dp,  var ) lcd_printf(x, y, 4, "%d.%04d", (unsigned int)(var), trunc( ( (float)(var - (unsigned int)(var)) ) * 10000) );
 xTaskHandle xParametersAppletDisplayHandle = NULL;
 // semaphore that stops the returning from the applet to the menu system until the applet goes into the blocked state.
 xSemaphoreHandle xAppletRunningSemaphore;
@@ -45,13 +46,13 @@ struct UserParameters
 //this struct to define pointers to the parameters.
 struct UserParameters UserParametersList[] =
 {
-    {&BrewParameters.fStrikeTemp, FLOAT_TYPE, "Strike Temp"},
-    {&BrewParameters.fMashOutTemp, FLOAT_TYPE, "Mash Out Temp"},
-    {&BrewParameters.fSpargeTemp, FLOAT_TYPE, "Sparge Temp"},
     {&BrewParameters.iGrindTime, INT_TYPE, "Milling Time"},
-    {&BrewParameters.fMashOutLitres, FLOAT_TYPE, "Mash Out(l)"},
-    {&BrewParameters.fSpargeLitres, FLOAT_TYPE, "Sparge(l)"},
+    {&BrewParameters.fStrikeTemp, FLOAT_TYPE, "Strike Temp"},
     {&BrewParameters.fStrikeLitres, FLOAT_TYPE, "Strike(l)"},
+    {&BrewParameters.fMashOutTemp, FLOAT_TYPE, "Mash Out Temp"},
+    {&BrewParameters.fMashOutLitres, FLOAT_TYPE, "Mash Out(l)"},
+    {&BrewParameters.fSpargeTemp, FLOAT_TYPE, "Sparge Temp"},
+    {&BrewParameters.fSpargeLitres, FLOAT_TYPE, "Sparge(l)"},
     {&BrewParameters.iMashTime, INT_TYPE, "Mash Time"},
     {&BrewParameters.iMashOutTime, INT_TYPE, "Mash Out Time"},
     {&BrewParameters.iSpargeTime, INT_TYPE, "Sparge Time"},
@@ -86,16 +87,16 @@ void vParametersInit(void)
   BrewParameters.fMashOutLitres = 12.6;
   BrewParameters.fSpargeLitres = 9.77;
   BrewParameters.iMashTime = 45;
-  BrewParameters.iPumpTime1 = 5;
+  BrewParameters.iPumpTime1 = 15;
   BrewParameters.iStirTime1 = 15;
-  BrewParameters.iPumpTime2 = 5;
+  BrewParameters.iPumpTime2 = 15;
   BrewParameters.iStirTime2 = 0;
 
   //Mash Out
   BrewParameters.iMashOutTime = 10;
-    BrewParameters.iMashOutPumpTime1 = 3;
-    BrewParameters.iMashOutStirTime1 = 3;
-    BrewParameters.iMashOutPumpTime2 = 3;
+    BrewParameters.iMashOutPumpTime1 = 4;
+    BrewParameters.iMashOutStirTime1 = 4;
+    BrewParameters.iMashOutPumpTime2 = 6;
     BrewParameters.iMashOutStirTime2 = 0;
 
     //Sparge
@@ -512,7 +513,11 @@ int ii = 0;
     }
   else if (xx > C_X1 && xx < C_X2 && yy > C_Y1 && yy < C_Y2)
     {
-      indexToChar--;
+      for (ii = 0; ii < 32; ii++)
+                   {
+                     input[ii] = '\0';
+                   }
+                 indexToChar=0;
       vConsolePrint("C\r\n");
     }
   else if (xx > UP_X1 && xx < UP_X2 && yy > UP_Y1 && yy < UP_Y2)

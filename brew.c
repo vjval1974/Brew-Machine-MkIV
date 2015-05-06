@@ -224,7 +224,8 @@ void vTaskBrew(void * pvParameters)
   portTickType xBrewStart;
   static uint16_t uBrewSecondsElapsed = 0, uBrewMinutesElapsed = 0, uBrewHoursElapsed=0;
   xBrewStart = xTaskGetTickCount();
-  char pcBrewElapsedTime[9], pcStepElapsedTime[16];
+  char pcBrewElapsedTime[50], pcStepElapsedTime[50];
+  char pcBrewElapsedHours[25], pcBrewElapsedMinutes[25], pcBrewElapsedSeconds[25];
 //char pcStepRemainingTime[16];
   //uint32_t uStartingStep = (uint32_t)pvParameters;
   //char buf1[40];
@@ -275,12 +276,18 @@ void vTaskBrew(void * pvParameters)
           // Every thirty seconds, print the brew time and step time to the console.
           if ((BrewState.uSecondsElapsed % 15) == 0)
             {
-              sprintf(pcBrewElapsedTime, "Brew: %02u:%02u:%02u\r\n", BrewState.uHoursElapsed, BrewState.uMinutesElapsed, BrewState.uSecondsElapsed);
-              vConsolePrint(pcBrewElapsedTime);
-              sprintf(pcStepElapsedTime, "Step:%02um:%02us\r\n", Brew[BrewState.ucStep].uElapsedTime/60, Brew[BrewState.ucStep].uElapsedTime%60);
-              vConsolePrint(pcStepElapsedTime);
+             // sprintf(pcBrewElapsedTime, "Brew: %02u:%02u:%02u\r\n", BrewState.uHoursElapsed, BrewState.uMinutesElapsed, BrewState.uSecondsElapsed);
+             // vConsolePrint(pcBrewElapsedTime);
+             // sprintf(pcStepElapsedTime, "Step:%02um:%02us\r\n", Brew[BrewState.ucStep].uElapsedTime/60, Brew[BrewState.ucStep].uElapsedTime%60);
+             // vConsolePrint(pcStepElapsedTime);
              // sprintf(pcStepRemainingTime, "Remaining:%02um:%02us\r\n", Brew[BrewState.ucStep].uTimeRemaining/60, Brew[BrewState.ucStep].uTimeRemaining%60);
              // vConsolePrint(pcStepRemainingTime);
+              sprintf(pcBrewElapsedHours, "CMDBrewElapsedHours:%02u\r\n", BrewState.uHoursElapsed);
+              vConsolePrint(pcBrewElapsedHours);
+              sprintf(pcBrewElapsedMinutes, "CMDBrewElapsedMinutes:%02u\r\n", BrewState.uMinutesElapsed);
+              vConsolePrint(pcBrewElapsedMinutes);
+              sprintf(pcBrewElapsedSeconds, "CMDBrewElapsedSeconds:%02u\r\n", BrewState.uSecondsElapsed);
+              vConsolePrint(pcBrewElapsedSeconds);
             }
 
 

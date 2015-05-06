@@ -139,6 +139,7 @@ extern const char * pcCraneStates[6];
 void vTaskBrew(void * pvParameters);
 void vBrewApplet(int init);
 int iBrewKey(int xx, int yy);
+void vBrewRemoteStart();
 
 extern const int STEP_COMPLETE;
 extern const int STEP_FAILED;

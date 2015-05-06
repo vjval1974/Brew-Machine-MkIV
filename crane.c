@@ -121,9 +121,9 @@ void vTaskCrane(void * pvParameters)
   static struct GenericMessage * xMessage, *xLastMessage, * xToSend;
 
 
-  xLastMessage = (struct GenericMessage *)malloc(sizeof(struct GenericMessage));
-  xMessage = (struct GenericMessage *)malloc(sizeof(struct GenericMessage));
-  xToSend = (struct GenericMessage *)malloc(sizeof(struct GenericMessage));
+  xLastMessage = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
+  xMessage = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
+  xToSend = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
   static int iComplete = 0;
   static int iStep = 0;
   xToSend->ucFromTask = CRANE_TASK;
@@ -603,7 +603,7 @@ int iCraneKey(int xx, int yy){
   static uint8_t w = 5,h = 5;
   static uint16_t last_window = 0;
 
-  pxMessage = (struct GenericMessage *)malloc(sizeof(struct GenericMessage));
+  pxMessage = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
 
   pxMessage->pvMessageContent = &iStop;
 

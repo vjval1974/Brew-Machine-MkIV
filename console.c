@@ -23,6 +23,7 @@
 #include "leds.h"
 #include "semphr.h"
 #include "queue.h"
+#include "console.h"
 
 xQueueHandle xPrintQueue;
 
@@ -34,24 +35,27 @@ void vConsolePrintTask(void * pvParameters)
   for (;;)
     {
       xQueueReceive(xPrintQueue, &pcMessageToPrint, portMAX_DELAY);
+
       //sprintf(cBuffer,"%s", &pcMessageToPrint);
 
       //if (pcMessageToPrint != pcLastMessage)
         {
           portENTER_CRITICAL();
           printf(pcMessageToPrint);
+          fflush(stdout);
           portEXIT_CRITICAL();
       //    pcLastMessage = pcMessageToPrint;
-
+          vTaskDelay(100); //wait for the usart to print before filling it's buffer.
+          //maybe can do something with the interrupt flags here?
         }
     }
 
 
 }
 
-void vConsolePrint(const char * cX)
+void vConsolePrint(const char * format, ...)
 {
   const char * pcX = "ConsolePrint failed\r\n";
-   if ( xQueueSendToBack(xPrintQueue, &cX, 10) != pdPASS)
+   if ( xQueueSendToBack(xPrintQueue, &format, 10) != pdPASS)
      xQueueSendToBack(xPrintQueue, &pcX, 10);
 }

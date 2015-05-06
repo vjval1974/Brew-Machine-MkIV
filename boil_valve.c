@@ -104,9 +104,9 @@ void vTaskBoilValve(void * pvParameters)
 {
   // Create Message structures in memory
   static struct GenericMessage * xMessage, *xLastMessage, *xToSend;
-  xLastMessage = (struct GenericMessage *)malloc(sizeof(struct GenericMessage));
-  xMessage = (struct GenericMessage *)malloc(sizeof(struct GenericMessage));
-  xToSend = (struct GenericMessage *)malloc(sizeof(struct GenericMessage));
+  xLastMessage = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
+  xMessage = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
+  xToSend = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
     static int iComplete = 0;
   uint8_t limit = 0xFF, limit1 = 0xFF; //neither on or off.
   static int iC = STOP;
@@ -469,7 +469,7 @@ int iBoilValveKey(int xx, int yy){
   static uint8_t w = 5,h = 5;
   static uint16_t last_window = 0;
   static struct GenericMessage * pxMessage;
-  pxMessage = (struct GenericMessage *)malloc(sizeof(struct GenericMessage));
+  pxMessage = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
   int iOpen= OPEN, iClose = CLOSE, iStop = STOP;
   pxMessage->pvMessageContent = &iStop;
 

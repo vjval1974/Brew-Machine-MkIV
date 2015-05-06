@@ -20,14 +20,18 @@
  */
 
 #include "stm32f10x.h"
-#include <stdlib.h>
+#include <unistd.h>
+
 #include <string.h>
 #include <stdio.h>
 #include <errno.h>
+
 #include <time.h>
 #include <sys/stat.h>
-#include "FreeRTOS.h"
 #include "serial.h"
+#include "FreeRTOS.h"
+#include <stdlib.h>
+
 
 // Function declaration.
 void _exit(int i);
@@ -101,6 +105,22 @@ int _lseek(int file, int ptr, int dir)
 
 int _read(int file, char *ptr, int len)
 {
+
+  int n;
+     int num = 0;
+     switch (file) {
+     case STDIN_FILENO:
+         for (n = 0; n < len; n++) {
+             char c = comm_get();
+             *ptr++ = c;
+             num++;
+         }
+         break;
+     default:
+         errno = EBADF;
+         return -1;
+     }
+     return num;
 	return 0;
 }
 
@@ -213,8 +233,10 @@ _PTR _malloc_r(struct _reent *re, size_t size) {
 _VOID _free_r(struct _reent *re, _PTR ptr) {
 	vPortFree(ptr);
 }
-
-void *malloc(size_t size)
+/*
+ void * __attribute__((malloc)) malloc(size_t size)
 {
     return pvPortMalloc(size);
 }
+*/
+

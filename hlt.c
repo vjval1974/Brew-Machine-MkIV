@@ -90,9 +90,9 @@ void vTaskBrewHLT(void * pvParameters)
   float hlt_level = 0.0;
   char hlt_ok = 0;
   struct TextMsg  * NewMessage;
-  NewMessage = (struct TextMsg *)malloc(sizeof(struct TextMsg));
+  NewMessage = (struct TextMsg *)pvPortMalloc(sizeof(struct TextMsg));
   struct GenericMessage * xMessage;
-  xMessage = (struct GenericMessage *)malloc(sizeof(struct GenericMessage));
+  xMessage = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
   char pcMessageText[40];
   static unsigned char ucStep = 0;
   static unsigned char ucHeatAndFillMessageSent = 0;

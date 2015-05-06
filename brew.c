@@ -13,7 +13,7 @@
 //-------------------------------------------------------------------------
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
+
 #include <math.h>
 #include "stm32f10x.h"
 #include "FreeRTOS.h"
@@ -245,7 +245,7 @@ void vTaskBrew(void * pvParameters)
   static int iContent = 0;
   static int iWaiting = 0, iStepsToComplete = 0;
 
-  xMessage = (struct GenericMessage *)malloc(sizeof(struct GenericMessage));
+  xMessage = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
 
   static char buf[50], buf1[50];
 
@@ -377,7 +377,7 @@ void vBrewReset(void){
   static struct GenericMessage * xMessage = NULL;
   const int iCommand = 0; // changed to see if its more stable
   if (xMessage == NULL)
-    xMessage = (struct GenericMessage *)malloc(sizeof(struct GenericMessage));
+    xMessage = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
   xMessage->ucFromTask = BREW_TASK_RESET;
   xMessage->ucToTask = BOIL_TASK;
   xMessage->pvMessageContent = (void *)&iCommand;
@@ -399,7 +399,7 @@ void vBrewNextStep(void){
   static int iCount = 0;
   iCount++;
   if (xMessage ==  NULL)
-    xMessage = (struct GenericMessage *)malloc(sizeof(struct GenericMessage));
+    xMessage = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
   xMessage->ucFromTask = BREW_TASK;
   xMessage->ucToTask = BREW_TASK;
   xMessage->pvMessageContent = (void *)&iCommand;
@@ -465,9 +465,9 @@ void vBrewHLTSetupFunction(int piParameters[5]){
   struct GenericMessage * Message = NULL;
 
   if (Content == NULL)
-    Content = (struct HLTMsg *)malloc(sizeof(struct HLTMsg));
+    Content = (struct HLTMsg *)pvPortMalloc(sizeof(struct HLTMsg));
   if (Message == NULL)
-    Message = (struct GenericMessage *)malloc(sizeof(struct GenericMessage));
+    Message = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
 
   switch( piParameters[0] )
   {
@@ -597,7 +597,7 @@ void vBrewBoilValveSetupFunction (int piParameters[5])
   static int * iCommand;
   iCommand = &piParameters[0];
   if (xMessage == NULL)
-    xMessage = (struct GenericMessage *)malloc(sizeof(struct GenericMessage));
+    xMessage = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
   xMessage->ucFromTask = BREW_TASK;
   xMessage->ucToTask = BOIL_VALVE_TASK;
   xMessage->uiStepNumber = BrewState.ucStep;
@@ -613,7 +613,7 @@ void vBrewCraneSetupFunction(int piParameters[5])
   static int * iCommand;
   iCommand = &piParameters[0];
   if (xMessage == NULL)
-    xMessage = (struct GenericMessage *)malloc(sizeof(struct GenericMessage));
+    xMessage = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
   xMessage->ucFromTask = BREW_TASK;
   xMessage->ucToTask = CRANE_TASK;
   xMessage->uiStepNumber = BrewState.ucStep;
@@ -641,7 +641,7 @@ void vBrewPreChillSetupFunction(int piParameters[5])
   int ii;
    const int iCommand1 = 0; // changed to see if its more stable
    if (xMessage1 == NULL)
-     xMessage1 = (struct GenericMessage *)malloc(sizeof(struct GenericMessage));
+     xMessage1 = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
    xMessage1->ucFromTask = BREW_TASK_RESET;
    xMessage1->ucToTask = BOIL_TASK;
    xMessage1->pvMessageContent = (void *)&iCommand1;
@@ -654,7 +654,7 @@ void vBrewPreChillSetupFunction(int piParameters[5])
    static struct GenericMessage * xMessage = NULL;
     const int iCommand = CLOSE;
     if (xMessage ==  NULL)
-      xMessage = (struct GenericMessage *)malloc(sizeof(struct GenericMessage));
+      xMessage = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
     xMessage->ucFromTask = CHILL_TASK;
     xMessage->ucToTask = BOIL_VALVE_TASK;
     xMessage->uiStepNumber = BrewState.ucStep;
@@ -684,7 +684,7 @@ void vBrewChillSetupFunction(int piParameters[5])
   static struct GenericMessage * xMessage = NULL;
   const int iCommand = OPEN;
   if (xMessage ==  NULL)
-    xMessage = (struct GenericMessage *)malloc(sizeof(struct GenericMessage));
+    xMessage = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
   xMessage->ucFromTask = CHILL_TASK;
   xMessage->ucToTask = BOIL_VALVE_TASK;
   xMessage->uiStepNumber = BrewState.ucStep;
@@ -735,7 +735,7 @@ void vBrewChillPollFunction(int piParameters[5])
       vValveActuate(CHILLER_VALVE, CLOSE);
       Brew[BrewState.ucStep].ucComplete = 1;
       if (xMessage ==  NULL)
-          xMessage = (struct GenericMessage *)malloc(sizeof(struct GenericMessage));
+          xMessage = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
         xMessage->ucFromTask = CHILL_TASK;
         xMessage->ucToTask = BOIL_VALVE_TASK;
         xMessage->uiStepNumber = BrewState.ucStep;
@@ -1036,9 +1036,9 @@ void vBrewBoilSetupFunction(int piParameters[5])
 {
   const int i100 = 100;
   if (xBoilMessage == NULL)
-    xBoilMessage = (struct GenericMessage *)malloc(sizeof(struct GenericMessage));
+    xBoilMessage = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
   if (xBoilTextMessage == NULL)
-    xBoilTextMessage = (struct TextMsg *)malloc(sizeof(struct TextMsg));
+    xBoilTextMessage = (struct TextMsg *)pvPortMalloc(sizeof(struct TextMsg));
 
 
   if (piParameters[2] == 1)
@@ -1086,7 +1086,7 @@ void vBrewBoilPollFunction(int piParameters[5])
   //not ideal, but will do for now.
   if(xBoilMessage == NULL)
     {
-      xBoilMessage = (struct GenericMessage *)malloc(sizeof(struct GenericMessage));
+      xBoilMessage = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
       vConsolePrint("Had to allocate memory for xBoilMessage!!!\r\n");
     }
   if (iBoilState != BOIL_7)
@@ -1233,11 +1233,10 @@ void vBrewBoilPollFunction(int piParameters[5])
 // BREW APPLET - Called from menu
 //----------------------------------------------------------------------------------------------------------------------------
 void vBrewApplet(int init){
-  size_t heap;
+
   if (init)
     {
-      heap = xPortGetFreeHeapSize();
-      vConsolePrint("HEAP REMAINING: %d\r\n", heap);
+
       lcd_DrawRect(TOP_BANNER_X1, TOP_BANNER_Y1, TOP_BANNER_X2, TOP_BANNER_Y2, Cyan);
       lcd_fill(TOP_BANNER_X1+1, TOP_BANNER_Y1+1, TOP_BANNER_W, TOP_BANNER_H, Blue);
       //lcd_printf(12,0,13,"BREW");
@@ -1448,7 +1447,7 @@ void vBrewAppletDisplay( void *pvParameters){
   static char buf[8][40];
   static char b[40], a[40];
   struct TextMsg * RcvdTextMsg;
-  RcvdTextMsg = (struct TextMsg *)malloc(sizeof(struct TextMsg));
+  RcvdTextMsg = (struct TextMsg *)pvPortMalloc(sizeof(struct TextMsg));
   unsigned char ucHLTLevel;
   static unsigned char ucLastStep = 255;
   static unsigned char ucLastState = 255;
@@ -1572,6 +1571,11 @@ void vBrewAppletDisplay( void *pvParameters){
 
 }
 
+void vBrewRemoteStart(){
+  const uint8_t uRun = RUNNING;
+  vBrewRunStep();
+  xQueueSendToBack(xBrewTaskStateQueue, &uRun, 0);
+}
 
 static uint8_t uEvaluateTouch(int xx, int yy)
 {
@@ -1607,7 +1611,7 @@ int iBrewKey(int xx, int yy)
   static uint8_t iOneShot = 0;
   static unsigned char ucPause = 0;
   static struct GenericMessage * xMessage;
-  xMessage = (struct GenericMessage *)malloc(sizeof(struct GenericMessage));
+  xMessage = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
 
 
 
@@ -1952,7 +1956,7 @@ int iBrewKey(int xx, int yy)
 
 
 
-static struct BrewStep Brew_test[] = {
+static struct BrewStep BrewTest[] = {
     // TEXT                       SETUP                           POLL                                   PARMS                          TIMEOUT   START ELAPSED COMPLETE WAIT
     {"Waiting",              NULL,                                (void *)vBrewWaitingPollFunction , {3,0,0,0,0},                          20,     0,      0, 0, 0},
     {"Raise Crane",          (void *)vBrewCraneSetupFunction,     NULL,                              {UP,0,0,0,0},                         25,     0,      0, 0, 0},

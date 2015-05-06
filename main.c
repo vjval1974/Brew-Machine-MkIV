@@ -45,6 +45,7 @@
 #include "I2C-IO.h"
 #include "chiller_pump.h"
 #include "console.h"
+
 #include "brew.h"
 #include "parameters.h"
 #include "boil_valve.h"
@@ -78,7 +79,9 @@ xTaskHandle xLCDTaskHandle,
     xLitresToMashHandle,
     xHopsTaskHandle,
     xBrewTaskHandle,
-    xBoilValveTaskHandle;
+    xBoilValveTaskHandle,
+    xSerialHandlerTaskHandle,
+    xSerialControlTaskHandle;
 
 
 
@@ -121,7 +124,8 @@ int example_applet_touch_handler(int xx, int yy)
 
 void vCheckTask(void *pvParameters)
 {
-
+char buf[50];
+int ii = 0;
   unsigned int touch, hops, ds1820, timer, litres, check, low_level = 90, heap, print;
   for (;;){
 
@@ -133,7 +137,10 @@ void vCheckTask(void *pvParameters)
       print = uxTaskGetStackHighWaterMark(xPrintTaskHandle);
       hops = uxTaskGetStackHighWaterMark(xHopsTaskHandle);
       check = uxTaskGetStackHighWaterMark(NULL);
-      heap = xPortGetFreeHeapSize();
+
+      sprintf(buf, "CMDTest:%d \r \n", ii++%1024);
+
+       vConsolePrint(buf);
 
       if (touch < low_level ||
           timer < low_level ||
@@ -158,8 +165,8 @@ void vCheckTask(void *pvParameters)
           vConsolePrint(cBuf);
           sprintf(cBuf, "check = %d\r\n", check);
           vConsolePrint(cBuf);
-          sprintf(cBuf, "Free Heap Size = %d\r\n", heap);
-          vConsolePrint(cBuf);
+
+
           sprintf(cBuf, "print = %d\r\n", print);
           vConsolePrint(cBuf);
           vConsolePrint("=============================\r\n");
@@ -228,14 +235,22 @@ int main( void )
 {
     prvSetupHardware();// set up peripherals etc 
 
-    xPrintQueue = xQueueCreate(15, sizeof(char *));
+  USARTInit(USART_PARAMS1);
+
+
+
+    //  printf("Usart up and running!\r\n");
+    xPrintQueue = xQueueCreate(20, sizeof(char *));
     if (xPrintQueue == NULL)
       {
         printf("Failed to make print queue\r\n");
         for (;;);
       }
 
-    USARTInit(USART_PARAMS1);
+
+
+
+
 
     vParametersInit();
 
@@ -276,7 +291,23 @@ int main( void )
 
     vBoilValveInit();
 
+
     //vRunTimeTimerSetup(); // set up the runtime timer
+
+    xTaskCreate( vSerialHandlerTask,
+            ( signed portCHAR * ) "SerialTask",
+            configMINIMAL_STACK_SIZE,
+            NULL,
+            tskIDLE_PRIORITY +4,
+            &xSerialHandlerTaskHandle );
+
+
+      xTaskCreate( vSerialControlCentreTask,
+                  ( signed portCHAR * ) "SerialctrlTask",
+                  configMINIMAL_STACK_SIZE + 800,
+                  NULL,
+                  tskIDLE_PRIORITY +2,
+                  &xSerialControlTaskHandle );
 
     xTaskCreate( vConsolePrintTask,
         ( signed portCHAR * ) "PrintTask",
@@ -367,10 +398,11 @@ int main( void )
               & xI2C_SendHandle );
 
 
-
     /* Start the scheduler. */
-    vTaskStartScheduler();
+           vTaskStartScheduler();
+
     
+
     printf("FAIL\r\n");
 
     /* Will only get here if there was insufficient memory to create the idle

@@ -26,7 +26,6 @@
 
 #define BOIL_PORT GPIOD
 #define BOIL_PIN GPIO_Pin_12
-
 #define BOIL_DUTY_ADC_CHAN 10 // This is PC0
 
 #define BOIL_LEVEL_PORT GPIOC
@@ -137,7 +136,7 @@ void vTaskBoil( void * pvParameters)
 {
   // Generic message struct for message storage.
   struct GenericMessage * xMessage;
-  xMessage = (struct GenericMessage *)malloc(sizeof(struct GenericMessage));
+  xMessage = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
   int iDefaultDuty = 0; // receive value from queue.
   float fDuty = 0.0; // duty in float type
   int iDuty = 0; // duty in int type
@@ -381,7 +380,7 @@ void vBoilAppletDisplay( void *pvParameters){
 int iBoilKey(int xx, int yy)
 {
   struct GenericMessage * xMessage;
-  xMessage = (struct GenericMessage *)malloc(sizeof(struct GenericMessage));
+  xMessage = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
   xMessage->pvMessageContent = (void *)&diag_duty;
   static int zero = 0;
   static uint8_t w = 5,h = 5;

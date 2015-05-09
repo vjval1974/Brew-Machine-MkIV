@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <math.h>
 
 /* Scheduler includes. */
 #include "FreeRTOS.h"
@@ -122,9 +123,35 @@ int example_applet_touch_handler(int xx, int yy)
 	return xx > 200 && yy > 200;
 }
 
+/*
+ mashtemp    E21DFC36AFB24226A323D7931B6A1F30
+ test        BD52AA172CAE4F58A11EC35872EFEB99
+hlt temp 81A73894E64546868F39EE1758D459AD
+mash litres 86D9AD06427A4CA5A3D73104E8AC8AAC
+mash out litres 00ECDA3F7E294557B29BA74A40B71CD9
+sparge litres CFDE12E5173D49F9A2E8DE7EE809970D
+brew step 1308CA31CAEE4A9A8AC5B353F5ACB594
+brew elapsed hours 4D51E338F02649DFA173631622024A90
+brew elapsed minutes 99A2038A62BF47E7BFB1922A43C0825C
+brew elapsed seconds E9C4FDDEDEBC41D7AC3A3F4C636759A2
+brew step elapsed hours 78EC4E5F06604291888E6A723134AD55
+brew step elapsed minutes 35C22A915227449C8F2A740F2C26B344
+brew step elapsed seconds 02BA9C74C1384C069ECB648C3CEFFCBA
+boil duty F066509116CA43F7B6845C8E2EBA69FA
+461F715060F5468883F6F8500CEAA4BC
+60140A1EB194439B8C9A198355FD93AA
+FB46F7E5DF914AF1816035EC02DEE0DC
+3AEE6966D7664AA4BE05BBBBF48E2836
+B9118BEE3E5948C9806A71439478177E
+49DA95B5F4A94FA4AB1630C8B451BEEB
+     */
+
 void vCheckTask(void *pvParameters)
 {
 char buf[50];
+char pcBrewElapsedTime[50], pcStepElapsedTime[50];
+  char pcBrewElapsedHours[45], pcBrewElapsedMinutes[45], pcBrewElapsedSeconds[45], pcBrewStep[45];
+  char pcBrewStepElapsedHours[45], pcBrewStepElapsedMinutes[45], pcBrewStepElapsedSeconds[45], pcMashTemp[45], pcHLTTemp[45];
 int ii = 0;
   unsigned int touch, hops, ds1820, timer, litres, check, low_level = 90, heap, print;
   for (;;){
@@ -138,7 +165,36 @@ int ii = 0;
       hops = uxTaskGetStackHighWaterMark(xHopsTaskHandle);
       check = uxTaskGetStackHighWaterMark(NULL);
 
-      sprintf(buf, "CMDTest:%d \r \n", ii++%1024);
+
+      sprintf(pcBrewElapsedHours, "4D51E338F02649DFA173631622024A90:%02u\r\n\0", ucGetBrewHoursElapsed());
+      vConsolePrint(pcBrewElapsedHours);
+      vTaskDelay(50);
+      sprintf(pcBrewElapsedMinutes, "99A2038A62BF47E7BFB1922A43C0825C:%02u\r\n\0", ucGetBrewMinutesElapsed());
+      vConsolePrint(pcBrewElapsedMinutes);
+      vTaskDelay(50);
+      sprintf(pcBrewElapsedSeconds, "E9C4FDDEDEBC41D7AC3A3F4C636759A2:%02u\r\n\0", ucGetBrewSecondsElapsed());
+      vConsolePrint(pcBrewElapsedSeconds);
+      vTaskDelay(50);
+      sprintf(pcBrewStep, "1308CA31CAEE4A9A8AC5B353F5ACB594:%02u\r\n\0", ucGetBrewStep());
+      vConsolePrint(pcBrewStep);
+      vTaskDelay(50);
+      sprintf(pcBrewStepElapsedSeconds, "02BA9C74C1384C069ECB648C3CEFFCBA:%02u\r\n\0", ucGetBrewStepSecondsElapsed());
+      vConsolePrint(pcBrewStepElapsedSeconds);
+      vTaskDelay(50);
+      sprintf(pcBrewStepElapsedMinutes, "35C22A915227449C8F2A740F2C26B344:%02u\r\n\0", ucGetBrewStepMinutesElapsed());
+      vConsolePrint(pcBrewStepElapsedMinutes);
+      vTaskDelay(50);
+      sprintf(pcMashTemp, "E21DFC36AFB24226A323D7931B6A1F30:%02u\r\n\0", (unsigned int)floor(ds1820_get_temp(MASH)));
+      vConsolePrint(pcMashTemp);
+      vTaskDelay(50);
+      sprintf(pcHLTTemp, "81A73894E64546868F39EE1758D459AD:%02u\r\n\0", (unsigned int)floor(ds1820_get_temp(HLT)));
+      vConsolePrint(pcHLTTemp);
+      vTaskDelay(50);
+
+
+
+
+      sprintf(buf, "BD52AA172CAE4F58A11EC35872EFEB99:%d \r \n", ii++%1024);
 
        vConsolePrint(buf);
 
@@ -175,7 +231,7 @@ int ii = 0;
 
         }
 
-      vTaskDelay(1000);
+      vTaskDelay(500);
       taskYIELD();
   }
 
@@ -240,7 +296,7 @@ int main( void )
 
 
     //  printf("Usart up and running!\r\n");
-    xPrintQueue = xQueueCreate(20, sizeof(char *));
+    xPrintQueue = xQueueCreate(50, sizeof(char *));
     if (xPrintQueue == NULL)
       {
         printf("Failed to make print queue\r\n");
@@ -304,7 +360,7 @@ int main( void )
 
       xTaskCreate( vSerialControlCentreTask,
                   ( signed portCHAR * ) "SerialctrlTask",
-                  configMINIMAL_STACK_SIZE + 800,
+                  configMINIMAL_STACK_SIZE + 500,
                   NULL,
                   tskIDLE_PRIORITY +2,
                   &xSerialControlTaskHandle );

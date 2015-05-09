@@ -146,6 +146,18 @@ extern const int STEP_FAILED;
 extern const int STEP_WAIT;
 
 
+
+unsigned char ucGetBrewHoursElapsed();
+
+
+unsigned char ucGetBrewMinutesElapsed();
+
+unsigned char ucGetBrewSecondsElapsed();
+
+unsigned char ucGetBrewStepMinutesElapsed();
+unsigned char ucGetBrewStep();
+unsigned char ucGetBrewStepSecondsElapsed();
+
 extern xQueueHandle xBrewTaskReceiveQueue,  xBrewAppletTextQueue;
 
 #endif /* BREW_H_ */

@@ -216,6 +216,41 @@ void vBrewTotalReset(void){
 
 }
 
+
+
+unsigned char ucGetBrewHoursElapsed()
+{
+  return BrewState.uHoursElapsed;
+}
+
+unsigned char ucGetBrewMinutesElapsed()
+{
+  return BrewState.uMinutesElapsed;
+}
+
+unsigned char ucGetBrewSecondsElapsed()
+{
+  return BrewState.uSecondsElapsed;
+}
+
+unsigned char ucGetBrewStepMinutesElapsed()
+{
+  return Brew[BrewState.ucStep].uElapsedTime/60;
+}
+
+unsigned char ucGetBrewStepSecondsElapsed()
+{
+  return Brew[BrewState.ucStep].uElapsedTime%60;
+}
+
+unsigned char ucGetBrewStep()
+{
+  return BrewState.ucStep;
+
+}
+
+
+
 //----------------------------------------------------------------------------------------------------------------------------
 // Brew Task
 //----------------------------------------------------------------------------------------------------------------------------
@@ -224,9 +259,10 @@ void vTaskBrew(void * pvParameters)
   portTickType xBrewStart;
   static uint16_t uBrewSecondsElapsed = 0, uBrewMinutesElapsed = 0, uBrewHoursElapsed=0;
   xBrewStart = xTaskGetTickCount();
-  char pcBrewElapsedTime[50], pcStepElapsedTime[50];
-  char pcBrewElapsedHours[25], pcBrewElapsedMinutes[25], pcBrewElapsedSeconds[25];
-//char pcStepRemainingTime[16];
+//  char pcBrewElapsedTime[50], pcStepElapsedTime[50];
+//  char pcBrewElapsedHours[45], pcBrewElapsedMinutes[45], pcBrewElapsedSeconds[45], pcBrewStep[45];
+//  char pcBrewStepElapsedHours[45], pcBrewStepElapsedMinutes[45], pcBrewStepElapsedSeconds[45], pcMashTemp[45], pcHLTTemp[45];
+////char pcStepRemainingTime[16];
   //uint32_t uStartingStep = (uint32_t)pvParameters;
   //char buf1[40];
   BrewState.ucStep = 0;
@@ -273,23 +309,16 @@ void vTaskBrew(void * pvParameters)
         }
       case RUNNING:
         {
+
           // Every thirty seconds, print the brew time and step time to the console.
           if ((BrewState.uSecondsElapsed % 15) == 0)
             {
-             // sprintf(pcBrewElapsedTime, "Brew: %02u:%02u:%02u\r\n", BrewState.uHoursElapsed, BrewState.uMinutesElapsed, BrewState.uSecondsElapsed);
-             // vConsolePrint(pcBrewElapsedTime);
-             // sprintf(pcStepElapsedTime, "Step:%02um:%02us\r\n", Brew[BrewState.ucStep].uElapsedTime/60, Brew[BrewState.ucStep].uElapsedTime%60);
-             // vConsolePrint(pcStepElapsedTime);
-             // sprintf(pcStepRemainingTime, "Remaining:%02um:%02us\r\n", Brew[BrewState.ucStep].uTimeRemaining/60, Brew[BrewState.ucStep].uTimeRemaining%60);
-             // vConsolePrint(pcStepRemainingTime);
-              sprintf(pcBrewElapsedHours, "CMDBrewElapsedHours:%02u\r\n", BrewState.uHoursElapsed);
-              vConsolePrint(pcBrewElapsedHours);
-              sprintf(pcBrewElapsedMinutes, "CMDBrewElapsedMinutes:%02u\r\n", BrewState.uMinutesElapsed);
-              vConsolePrint(pcBrewElapsedMinutes);
-              sprintf(pcBrewElapsedSeconds, "CMDBrewElapsedSeconds:%02u\r\n", BrewState.uSecondsElapsed);
-              vConsolePrint(pcBrewElapsedSeconds);
+            // this is where the print statements were for the console
             }
+          if ((BrewState.uSecondsElapsed % 16) == 0)
+            {
 
+            }
 
           // receive message from queue and if there is one, act on it.. (ie if the message is STEP COMPLETED.. then change to the next step.
           if(xQueueReceive(xBrewTaskReceiveQueue, &xMessage, 0) == pdPASS)
@@ -445,8 +474,8 @@ void vBrewRunStep(void){
 
   //vConsolePrint("vBrewRunStep Called\r\n");
 
-  sprintf(buf, "RunStep: %d -> %s\r\n", BrewState.ucStep, Brew[BrewState.ucStep].pcStepName);
-  vConsolePrint(buf);
+  //sprintf(buf, "RunStep: %d -> %s\r\n", BrewState.ucStep, Brew[BrewState.ucStep].pcStepName);
+  //vConsolePrint(buf);
 
   vBrewReset();
 
@@ -586,10 +615,8 @@ void vBrewMillSetupFunction (int piParameters[5])
 
 void vBrewValvesSetupFunction (int piParameters[5])
 {
-
   vValveActuate(HLT_VALVE, CLOSE);
   vValveActuate(MASH_VALVE, CLOSE);
-
   vValveActuate(INLET_VALVE, CLOSE);
   vConsolePrint("Valves Setup Func Called\r\n");
   vTaskDelay(50);
@@ -1304,7 +1331,7 @@ void vBrewApplet(int init){
       if (xBrewTaskHandle == NULL)
         xTaskCreate( vTaskBrew,
             ( signed portCHAR * ) "Brew Task",
-            configMINIMAL_STACK_SIZE + 800,
+            configMINIMAL_STACK_SIZE + 900,
             NULL,
             tskIDLE_PRIORITY+2,
             &xBrewTaskHandle );
@@ -1963,7 +1990,7 @@ int iBrewKey(int xx, int yy)
 
 
 
-static struct BrewStep BrewTest[] = {
+static struct BrewStep Brew[] = {
     // TEXT                       SETUP                           POLL                                   PARMS                          TIMEOUT   START ELAPSED COMPLETE WAIT
     {"Waiting",              NULL,                                (void *)vBrewWaitingPollFunction , {3,0,0,0,0},                          20,     0,      0, 0, 0},
     {"Raise Crane",          (void *)vBrewCraneSetupFunction,     NULL,                              {UP,0,0,0,0},                         25,     0,      0, 0, 0},
@@ -2026,7 +2053,7 @@ static struct BrewStep BrewClean[] = {
 
 
 
-static struct BrewStep Brew[] = {
+static struct BrewStep BrewTest[] = {
     //TEXT                       SETUP                                POLL                                   PARMS            TIMEOUT   START    ELAPSED COMPLETE WAIT
     {"Waiting1",               NULL,                               (void *)vBrewWaitingPollFunction ,  {2,0,0,0,0},            20,     0,      0, 0, 0},
     {"Close D-Valves",        (void *)vBrewValvesSetupFunction,    NULL,                               {CLOSE,0,0,0,0},        1,      0,      0, 0, 1},

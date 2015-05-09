@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <string.h>
 #include "stm32f10x.h"
 #include "FreeRTOS.h"
 #include "lcd.h"
@@ -53,9 +54,13 @@ void vConsolePrintTask(void * pvParameters)
 
 }
 
+static char pcStringBuffer[100];
+const char * pcX = "ConsolePrint failed\r\n";
 void vConsolePrint(const char * format, ...)
 {
-  const char * pcX = "ConsolePrint failed\r\n";
+
    if ( xQueueSendToBack(xPrintQueue, &format, 10) != pdPASS)
      xQueueSendToBack(xPrintQueue, &pcX, 10);
 }
+
+//was sending &buffer over to printf.. changed for static char array

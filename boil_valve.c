@@ -24,6 +24,10 @@
 #include "boil_valve.h"
 #include "io_util.h"
 #include "brew.h"
+<<<<<<< HEAD
+=======
+#include "main.h"
+>>>>>>> PCF8574_bug
 
 
 xQueueHandle xBoilValveQueue;
@@ -135,6 +139,25 @@ void vTaskBoilValve(void * pvParameters)
               iComplete = 0;
               xToSend->uiStepNumber = xMessage->uiStepNumber;
               iCommandState = 0;
+<<<<<<< HEAD
+=======
+
+//#ifdef TESTING
+//
+//      iCommandState = 1;
+//      vTaskDelay(100);
+//      if (xBrewTaskReceiveQueue != NULL)
+//
+//              {
+//                           const int iTest = 40;
+//                           vConsolePrint("BoilValve: Sending Step Complete message\r\n");
+//                           xToSend->pvMessageContent = (void *)&iTest;
+//                            xQueueSendToBack(xBrewTaskReceiveQueue, &xToSend, 10000);
+//                            iCommandState  = 0;
+//                            iBoilValveState = STOPPED;
+//                          }
+//#endif
+>>>>>>> PCF8574_bug
             }
 
 
@@ -298,6 +321,10 @@ void vTaskBoilValve(void * pvParameters)
 
         }
       }// Switch
+<<<<<<< HEAD
+=======
+
+>>>>>>> PCF8574_bug
       if (iCommandState == 1 && xMessage->ucFromTask == BREW_TASK)
              {
               const int iTest = 40;

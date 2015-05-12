@@ -20,6 +20,10 @@
 #include "leds.h"
 #include "semphr.h"
 #include "console.h"
+<<<<<<< HEAD
+=======
+#include "main.h"
+>>>>>>> PCF8574_bug
 
 struct Parameters BrewParameters;
 void vParametersAppletDisplay( void *pvParameters);
@@ -74,6 +78,15 @@ struct UserParameters UserParametersList[] =
 // BREW PARAMETERS
 void vParametersInit(void)
 {
+<<<<<<< HEAD
+=======
+#ifdef TESTING
+  //
+  //IF THIS AREA IS NOT GREYED OUT, THEN YOU ARE IN TESTING MODE
+  //
+#endif
+
+>>>>>>> PCF8574_bug
   //Grind
   BrewParameters.iGrindTime = 8;
 
@@ -90,19 +103,34 @@ void vParametersInit(void)
   BrewParameters.iPumpTime1 = 15;
   BrewParameters.iStirTime1 = 15;
   BrewParameters.iPumpTime2 = 15;
+<<<<<<< HEAD
   BrewParameters.iStirTime2 = 0;
 
   //Mash Out
   BrewParameters.iMashOutTime = 15;
     BrewParameters.iMashOutPumpTime1 = 3;
     BrewParameters.iMashOutStirTime1 = 5;
+=======
+  BrewParameters.iStirTime2 = 10;  // mashing out so stirring here is OK
+
+  //Mash Out
+  BrewParameters.iMashOutTime = 15;
+    BrewParameters.iMashOutPumpTime1 = 5;
+    BrewParameters.iMashOutStirTime1 = 7;
+>>>>>>> PCF8574_bug
     BrewParameters.iMashOutPumpTime2 = 10;
     BrewParameters.iMashOutStirTime2 = 0;
 
     //Sparge
+<<<<<<< HEAD
     BrewParameters.iSpargeTime = 15;
       BrewParameters.iSpargePumpTime1 = 3;
       BrewParameters.iSpargeStirTime1 = 5;
+=======
+    BrewParameters.iSpargeTime = 20;
+      BrewParameters.iSpargePumpTime1 = 5;
+      BrewParameters.iSpargeStirTime1 = 7;
+>>>>>>> PCF8574_bug
       BrewParameters.iSpargePumpTime2 = 10;
       BrewParameters.iSpargeStirTime2 = 0;
 
@@ -114,6 +142,10 @@ void vParametersInit(void)
   //Boil
   BrewParameters.uiBoilTime = 90;//60;
   BrewParameters.uiBringToBoilTime = 18;
+<<<<<<< HEAD
+=======
+
+>>>>>>> PCF8574_bug
   BrewParameters.uiHopTimes[0] = 90;
   BrewParameters.uiHopTimes[1] = 60;
   BrewParameters.uiHopTimes[2] = 45;
@@ -121,12 +153,67 @@ void vParametersInit(void)
   BrewParameters.uiHopTimes[4] = 10;
   BrewParameters.uiHopTimes[5] = 5;
 
+<<<<<<< HEAD
   //Chill
   BrewParameters.uiSettlingRecircTime = 2; //mins
   BrewParameters.uiSettlingTime = 6; //mins
   BrewParameters.uiChillTime = 8; //mins
   BrewParameters.uiChillerPumpPrimingCycles = 3;
   BrewParameters.uiChillerPumpPrimingTime = 3; //seconds
+=======
+  BrewParameters.uiSettlingRecircTime = 2; //mins
+    BrewParameters.uiSettlingTime = 6; //mins
+    BrewParameters.uiChillTime = 8; //mins
+    BrewParameters.uiChillerPumpPrimingCycles = 3;
+    BrewParameters.uiChillerPumpPrimingTime = 3; //seconds
+
+
+
+ //-------------TESTING ONLY ------------------------------
+#ifdef TESTING
+  BrewParameters.uiHopTimes[0] = 1;
+    BrewParameters.uiHopTimes[1] = 1;
+    BrewParameters.uiHopTimes[2] = 1;
+    BrewParameters.uiHopTimes[3] = 1;
+    BrewParameters.uiHopTimes[4] = 1;
+    BrewParameters.uiHopTimes[5] = 1;
+
+
+  //Chill
+  BrewParameters.uiSettlingRecircTime = 1; //mins
+  BrewParameters.uiSettlingTime = 1; //mins
+  BrewParameters.uiChillTime = 1; //mins
+  BrewParameters.uiChillerPumpPrimingCycles = 3;
+  BrewParameters.uiChillerPumpPrimingTime = 3; //seconds
+
+  BrewParameters.iGrindTime = 1;
+
+  BrewParameters.iMashTime = 1;
+    BrewParameters.iPumpTime1 = 1;
+    BrewParameters.iStirTime1 = 1;
+    BrewParameters.iPumpTime2 = 1;
+    BrewParameters.iStirTime2 = 1;
+
+    //Mash Out
+     BrewParameters.iMashOutTime = 1;
+       BrewParameters.iMashOutPumpTime1 = 1;
+       BrewParameters.iMashOutStirTime1 = 1;
+       BrewParameters.iMashOutPumpTime2 = 1;
+       BrewParameters.iMashOutStirTime2 = 1;
+
+       //Sparge
+       BrewParameters.iSpargeTime = 1;
+         BrewParameters.iSpargePumpTime1 = 1;
+         BrewParameters.iSpargeStirTime1 = 1;
+         BrewParameters.iSpargePumpTime2 = 1;
+         BrewParameters.iSpargeStirTime2 = 1;
+
+         //Boil
+           BrewParameters.uiBoilTime = 1;//60;
+           BrewParameters.uiBringToBoilTime = 0;
+
+#endif
+>>>>>>> PCF8574_bug
 }
 
 //// PARAMETER SET FOR CHECKING

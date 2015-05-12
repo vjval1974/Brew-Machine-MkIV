@@ -20,6 +20,10 @@
 #include "leds.h"
 #include "semphr.h"
 #include "mill.h"
+<<<<<<< HEAD
+=======
+#include "main.h"
+>>>>>>> PCF8574_bug
 
 void vMillAppletDisplay( void *pvParameters);
 void vMillApplet(int init);

@@ -22,6 +22,10 @@
 #include "boil.h"
 #include "console.h"
 #include "adc.h"
+<<<<<<< HEAD
+=======
+#include "main.h"
+>>>>>>> PCF8574_bug
 
 
 #define BOIL_PORT GPIOD
@@ -48,6 +52,13 @@ volatile uint8_t boil_state = OFF;
 void vBoilAppletDisplay(void * pvParameters);
 void vTaskBoil( void * pvParameters);
 
+<<<<<<< HEAD
+=======
+unsigned char ucGetBoilState(){
+  return boil_state;
+}
+
+>>>>>>> PCF8574_bug
 // semaphore that stops the returning from the applet to the menu system until the applet goes into the blocked state.
 xSemaphoreHandle xAppletRunningSemaphore;
 

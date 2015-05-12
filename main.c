@@ -155,7 +155,9 @@ void vCheckTask(void *pvParameters)
   char pcBrewStepElapsedHours[45], pcBrewStepElapsedMinutes[45], pcBrewStepElapsedSeconds[45], pcMashTemp[45], pcHLTTemp[45];
   char pcChillerPumpState[45], pcBoilState[45], pcHeapRemaining[45];
   int ii = 0;
+  char upper_limit = 255, lower_limit = 255;
   unsigned int touch, hops, ds1820, timer, litres, check, low_level = 90, heap, print, serial, serialcontrol;
+  unsigned int display_applet, stats_applet, res_applet, graph_applet, brew_task;
   for (;;){
 
       touch = uxTaskGetStackHighWaterMark(xTouchTaskHandle);
@@ -169,6 +171,14 @@ void vCheckTask(void *pvParameters)
       serial = uxTaskGetStackHighWaterMark(xSerialHandlerTaskHandle);
       serialcontrol = uxTaskGetStackHighWaterMark(xSerialControlTaskHandle);
       heap = xPortGetFreeHeapSize();
+
+      display_applet =  uiGetBrewAppletDisplayHWM();
+      res_applet =  uiGetBrewResAppletHWM();
+      stats_applet =  uiGetBrewStatsAppletHWM();
+      graph_applet =  uiGetBrewGraphAppletHWM();
+      brew_task =  uiGetBrewTaskHWM();
+
+
 
       sprintf(pcBrewElapsedHours, "4D51E338F02649DFA173631622024A90:%02u\r\n\0", ucGetBrewHoursElapsed());
       vConsolePrint(pcBrewElapsedHours);
@@ -204,22 +214,31 @@ void vCheckTask(void *pvParameters)
 
 
 
-
+      lower_limit = cI2cGetInput(CRANE_LOWER_LIMIT_PORT, CRANE_LOWER_LIMIT_PIN);
+      upper_limit = cI2cGetInput(CRANE_UPPER_LIMIT_PORT, CRANE_UPPER_LIMIT_PIN);
 
       sprintf(buf, "BD52AA172CAE4F58A11EC35872EFEB99:%d \r \n", ii++%1024);
-      sprintf(pcHeapRemaining, "*********Heap:%u*******\r\n\0", heap);
+      sprintf(pcHeapRemaining, "*Heap:%u*low=%d,up=%d\r\n\0", heap, lower_limit, upper_limit);
             vConsolePrint(pcHeapRemaining);
             vTaskDelay(50);
 
 
        vConsolePrint(buf);
 
-      if (touch < low_level ||
-          timer < low_level ||
-          litres < low_level||
-          print < low_level ||
-          hops < low_level ||
-          check < low_level|| TRUE)
+
+       if (touch < low_level ||
+           timer < low_level ||
+           litres < low_level||
+           print < low_level ||
+           hops < low_level ||
+           check < low_level||
+           display_applet < low_level ||
+           res_applet < low_level ||
+           stats_applet < low_level ||
+           graph_applet < low_level ||
+           brew_task < low_level || TRUE)
+
+
         {
           //vTaskSuspendAll();
           vConsolePrint("=============================\r\n");
@@ -246,16 +265,33 @@ void vCheckTask(void *pvParameters)
           vConsolePrint(cBuf);
           vTaskDelay(50);
           sprintf(cBuf, "serial = %d\r\n", serial);
-                   vConsolePrint(cBuf);
-                   vTaskDelay(50);
-                   sprintf(cBuf, "serialcontrol = %d\r\n", serialcontrol);
-                            vConsolePrint(cBuf);
-                            vTaskDelay(50);
+          vConsolePrint(cBuf);
+          vTaskDelay(50);
+          sprintf(cBuf, "serialcontrol = %d\r\n", serialcontrol);
+          vConsolePrint(cBuf);
+          vTaskDelay(50);
+
+          sprintf(cBuf, "brewtask = %d\r\n", brew_task);
+          vConsolePrint(cBuf);
+          vTaskDelay(50);
+          sprintf(cBuf, "stats = %d\r\n", stats_applet);
+          vConsolePrint(cBuf);
+          vTaskDelay(50);
+          sprintf(cBuf, "res = %d\r\n", res_applet);
+          vConsolePrint(cBuf);
+          vTaskDelay(50);
+          sprintf(cBuf, "graph = %d\r\n", graph_applet);
+          vConsolePrint(cBuf);
+          vTaskDelay(50);
+          sprintf(cBuf, "brew_display = %d\r\n", display_applet);
+          vConsolePrint(cBuf);
+          vTaskDelay(50);
+
 
           sprintf(cBuf, "print = %d\r\n", print);
           vConsolePrint(cBuf);
           vConsolePrint("=============================\r\n");
-//xTaskResumeAll();
+          //xTaskResumeAll();
           vTaskDelay(500);
 
         }
@@ -439,7 +475,7 @@ int main( void )
 
     xTaskCreate( vCheckTask,
         ( signed portCHAR * ) "check     ",
-        configMINIMAL_STACK_SIZE +200,
+        configMINIMAL_STACK_SIZE +400,
         NULL,
         tskIDLE_PRIORITY,
         &xCheckTaskHandle );

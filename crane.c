@@ -144,6 +144,9 @@ void vTaskCrane(void * pvParameters)
   char buf[40];
   xLastMessage->pvMessageContent = &iC;
   unsigned char failedI2cReads = 0;
+  // testing vars
+  char cCount = 0;
+  char cLimitVal = 255;
 
   for (;;)
     {
@@ -163,6 +166,9 @@ void vTaskCrane(void * pvParameters)
           xToSend->uiStepNumber = xMessage->uiStepNumber;
           iCommandState = 0;
           ucDownIncrements = 0;
+
+
+
 //#ifdef TESTING
 //      iCommandState = 1;
 //      iComplete = STEP_COMPLETE;
@@ -341,7 +347,14 @@ void vTaskCrane(void * pvParameters)
         }
       case DRIVING_DOWN_INC:
         {
+
           limit = cI2cGetInput(CRANE_LOWER_LIMIT_PORT, CRANE_LOWER_LIMIT_PIN);
+//          cLimitVal = limit;
+//                  while( cLimitVal  == 1 && cCount < 5)
+//                    {
+//                      limit = cI2cGetInput(CRANE_LOWER_LIMIT_PORT, CRANE_LOWER_LIMIT_PIN);
+//                      cLimitVal = limit;
+//                    }
           if (limit == 255) // read failed
             {
               vTaskDelay(200);
@@ -357,7 +370,8 @@ void vTaskCrane(void * pvParameters)
               vTaskDelay(1500);
               ucDownIncrements++;
             }
-          else
+
+          else if (limit == 1)
             {
               // Make sure we are down
               vCraneFunc(DN);
@@ -628,6 +642,7 @@ void vCraneApplet(int init){
 }
 
 
+struct GenericMessage  xMessage;
 struct GenericMessage * pxMessage;
 volatile int iUp= UP, iDn = DN, iStop = STOP;
 int iCraneKey(int xx, int yy){
@@ -636,7 +651,7 @@ int iCraneKey(int xx, int yy){
   static uint8_t w = 5,h = 5;
   static uint16_t last_window = 0;
 
-  pxMessage = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
+  pxMessage = &xMessage;
 
   pxMessage->pvMessageContent = &iStop;
 

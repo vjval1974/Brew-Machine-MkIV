@@ -450,6 +450,8 @@ void vPCF_SetBits(uint8_t bitnum, uint8_t add){
 char cI2cGetInput(char port, char pin)
 {
   char data = 0;
+  iI2C_Send(port, 0xFF);
+  vTaskDelay(50);
   char read = iI2C_Receive(port, &data);
   if (read == -1)
     {

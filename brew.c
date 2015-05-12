@@ -1573,6 +1573,40 @@ void vBrewResAppletDisplay(void * pvParameters){
 //    }
 
 
+unsigned int uiGetBrewAppletDisplayHWM()
+{
+  if (xBrewAppletDisplayHandle)
+   {return uxTaskGetStackHighWaterMark(xBrewAppletDisplayHandle);}
+  else return 0;
+}
+
+unsigned int uiGetBrewTaskHWM()
+{
+  if (xBrewTaskHandle)
+  {return uxTaskGetStackHighWaterMark(xBrewTaskHandle);}
+  else return 0;
+}
+
+unsigned int uiGetBrewGraphAppletHWM()
+{
+  if(xBrewGraphAppletDisplayHandle)
+  {return uxTaskGetStackHighWaterMark(xBrewGraphAppletDisplayHandle);}
+  else return 0;
+}
+unsigned int uiGetBrewStatsAppletHWM()
+{
+  if(xBrewStatsAppletDisplayHandle)
+  {return uxTaskGetStackHighWaterMark(xBrewStatsAppletDisplayHandle);}
+  else return 0;
+}
+
+unsigned int uiGetBrewResAppletHWM()
+{
+  if (xBrewResAppletDisplayHandle)
+  {return uxTaskGetStackHighWaterMark(xBrewResAppletDisplayHandle);}
+  else return 0;
+}
+
 
 void vBrewAppletDisplay( void *pvParameters){
 
@@ -1592,6 +1626,7 @@ void vBrewAppletDisplay( void *pvParameters){
   lcd_printf(0,11,40, "|      |      |      |      |");
   ucLastStep = BrewState.ucStep+1;
   ucLastState = BrewState.ucRunningState-1;
+
 
   for(;;)
     {
@@ -1735,6 +1770,7 @@ static uint8_t uEvaluateTouch(int xx, int yy)
 
 }
 
+
 int iBrewKey(int xx, int yy)
 {
   uint16_t window = 0;
@@ -1746,10 +1782,6 @@ int iBrewKey(int xx, int yy)
   uButton = uEvaluateTouch(xx,yy);
   static uint8_t iOneShot = 0;
   static unsigned char ucPause = 0;
-  static struct GenericMessage * xMessage;
-  xMessage = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
-
-
 
   if (xx == -1 || yy == -1)
     return 0;
@@ -2115,7 +2147,6 @@ static struct BrewStep Brew[] = {
     {"Fill+Heat:Clean ",     (void *)vBrewHLTSetupFunction,       NULL,                              {HLT_STATE_FILL_HEAT, CLEAN,0,0,0},40*60,  0,      0, 0, 0},
     {"BringToBoil",          (void *)vBrewBoilSetupFunction,      (void *)vBrewBoilPollFunction ,    {18,100,0,0,0},                       90*60,  0,      0, 0, 0},
     {"Pump to boil",         (void *)vBrewPumpToBoilSetupFunction,(void *)vBrewPumpToBoilPollFunction,{0,30,0,0,0},                        11*60,  0,      0, 0, 1},
-    {"Raise Crane",          (void *)vBrewCraneSetupFunction,     NULL,                              {UP,0,0,0,0},                         10,     0,      0, 0, 0},
     {"Boil",                 (void *)vBrewBoilSetupFunction,      (void *)vBrewBoilPollFunction ,    {60,55,1,0,0},                        90*60,  0,      0, 0, 1},
     {"SettlingBeforeChill",  (void *)vBrewPreChillSetupFunction,  (void *)vBrewPreChillPollFunction,  {6*60,0,0,0,0},                       6*60,   0,      0, 0, 0},
     {"Chill",                (void *)vBrewChillSetupFunction,     (void *)vBrewChillPollFunction ,   {8,0,0,0,0},                          10*60,  0,      0, 0, 1},

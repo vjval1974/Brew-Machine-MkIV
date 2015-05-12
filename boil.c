@@ -22,11 +22,14 @@
 #include "boil.h"
 #include "console.h"
 #include "adc.h"
+<<<<<<< HEAD
+=======
+#include "main.h"
+>>>>>>> PCF8574_bug
 
 
 #define BOIL_PORT GPIOD
 #define BOIL_PIN GPIO_Pin_12
-
 #define BOIL_DUTY_ADC_CHAN 10 // This is PC0
 
 #define BOIL_LEVEL_PORT GPIOC
@@ -49,6 +52,13 @@ volatile uint8_t boil_state = OFF;
 void vBoilAppletDisplay(void * pvParameters);
 void vTaskBoil( void * pvParameters);
 
+<<<<<<< HEAD
+=======
+unsigned char ucGetBoilState(){
+  return boil_state;
+}
+
+>>>>>>> PCF8574_bug
 // semaphore that stops the returning from the applet to the menu system until the applet goes into the blocked state.
 xSemaphoreHandle xAppletRunningSemaphore;
 
@@ -108,7 +118,7 @@ void vBoilInit(void)
 
   vSemaphoreCreateBinary(xAppletRunningSemaphore);
 
-  xBoilQueue = xQueueCreate(5, sizeof(struct GenericMessage *));
+  xBoilQueue = xQueueCreate(1, sizeof(struct GenericMessage *));
 
   if (xBoilQueue != NULL)
     {
@@ -137,7 +147,7 @@ void vTaskBoil( void * pvParameters)
 {
   // Generic message struct for message storage.
   struct GenericMessage * xMessage;
-  xMessage = (struct GenericMessage *)malloc(sizeof(struct GenericMessage));
+  xMessage = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
   int iDefaultDuty = 0; // receive value from queue.
   float fDuty = 0.0; // duty in float type
   int iDuty = 0; // duty in int type
@@ -381,7 +391,7 @@ void vBoilAppletDisplay( void *pvParameters){
 int iBoilKey(int xx, int yy)
 {
   struct GenericMessage * xMessage;
-  xMessage = (struct GenericMessage *)malloc(sizeof(struct GenericMessage));
+  xMessage = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
   xMessage->pvMessageContent = (void *)&diag_duty;
   static int zero = 0;
   static uint8_t w = 5,h = 5;

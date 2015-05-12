@@ -20,11 +20,18 @@
 
 //---CRANE LIMITS PORT/PINS
 //#define CRANE_UPPER_LIMIT_PIN GPIO_Pin_14
-#define CRANE_UPPER_LIMIT_PIN GPIO_Pin_12
-#define CRANE_UPPER_LIMIT_PORT GPIOA
+//#define CRANE_UPPER_LIMIT_PIN GPIO_Pin_8
+//#define CRANE_UPPER_LIMIT_PORT GPIOC
 
-#define CRANE_LOWER_LIMIT_PIN GPIO_Pin_12
-#define CRANE_LIMIT_PORT GPIOB
+//now on I2C
+#define CRANE_UPPER_LIMIT_PIN 1
+#define CRANE_UPPER_LIMIT_PORT PORTV
+
+#define CRANE_LOWER_LIMIT_PIN 2
+#define CRANE_LOWER_LIMIT_PORT PORTV
+
+//#define CRANE_LOWER_LIMIT_PIN GPIO_Pin_12
+//#define CRANE_LIMIT_PORT GPIOB
 
 // Crane outputs
 #define CRANE_PORT PORTU
@@ -39,9 +46,15 @@ void vCraneApplet(int init);
 int iCraneKey(int x, int y);
 
 // Directions
+<<<<<<< HEAD
 #define UP 1
 #define DN 2
 #define DN_INC 3
+=======
+#define UP 10
+#define DN 20
+#define DN_INC 30
+>>>>>>> PCF8574_bug
 #define STOP -1
 
 // Crane States

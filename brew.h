@@ -139,12 +139,37 @@ extern const char * pcCraneStates[6];
 void vTaskBrew(void * pvParameters);
 void vBrewApplet(int init);
 int iBrewKey(int xx, int yy);
+void vBrewRemoteStart();
 
 extern const int STEP_COMPLETE;
 extern const int STEP_FAILED;
 extern const int STEP_WAIT;
 
 
+
+unsigned char ucGetBrewHoursElapsed();
+
+
+unsigned char ucGetBrewMinutesElapsed();
+
+unsigned char ucGetBrewSecondsElapsed();
+
+unsigned char ucGetBrewStepMinutesElapsed();
+unsigned char ucGetBrewStep();
+unsigned char ucGetBrewStepSecondsElapsed();
+
+<<<<<<< HEAD
+=======
+unsigned int uiGetBrewAppletDisplayHWM();
+unsigned int uiGetBrewResAppletHWM();
+unsigned int uiGetBrewStatsAppletHWM();
+unsigned int uiGetBrewGraphAppletHWM();
+unsigned int uiGetBrewTaskHWM();
+
+
+
+
+>>>>>>> PCF8574_bug
 extern xQueueHandle xBrewTaskReceiveQueue,  xBrewAppletTextQueue;
 
 #endif /* BREW_H_ */

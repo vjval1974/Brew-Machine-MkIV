@@ -24,6 +24,7 @@ void menu_key(unsigned char key);
 void menu_clear(void);
 void menu_run_applet(int (*applet_key_handler)(unsigned char));
 void menu_touch(int xx, int yy);
+void menu_command(unsigned item);
 
 #define CRUMB_H 18
 #define COL_W    (LCD_W / 2)

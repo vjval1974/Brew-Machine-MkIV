@@ -1,0 +1,681 @@
+LCD Device ID : 4532 bus test
+Data bus test pass!
+LCD GRAM test....
+TEST PASS!
+Flow Sensor Initialised
+Crane Initialised
+ToucCreated Brew HLT Task Queues
+hCreated Boil Valve Queue
+ed Boil 28-04-42-b4-04-00-00-03
+V-00-00-03
+
+last:1,
+last:2,
+Crane Task has received a message
+xMessage = 2, Step:-1515870811
+Receiving failed, trying again
+waiting on lower limit
+
+waiting on lower limit
+waiting on lower limit
+STOP limit DDN 
+last:3,
+Crane Task has received a message
+xMessage = 1, Step:-1515870811
+last:2,
+STOP limit DU 
+last:1,
+HEAP REMAINING: 536886376
+Brew Applet Opened
+Created Brew Task Queues
+Created Applet Text Queue
+Brew Task Created
+Brew HLT Task Created
+Graph Applet Task Created
+Stats Applet Task Created
+Resume Applet Task Created
+BrewTask HWM: 1014
+RunStep: 0 -> Waiting
+Boil level too low..Boil off. message ignored
+BrewState changing to RUNNING
+Brew: 00:00:00
+Step:00m:00s
+BrewTask HWM: 980
+Requesting next step: 2, Close D-Valves
+RunStep: 2 -> Close D-Valves
+Requesting next step: 2, Close D-Valves
+RunStep: 2 -> Close D-Valves
+Valves Setup Func Called
+Crane Task has received a message
+xMessage = 1, Step:1
+Crane Command Complete, Sending Message
+BrewTask HWM: 950
+Requesting next step: 3, Close BoilValve
+NextStep: Count = 3
+NextStep: Count = 3
+NextStep: Count = 3
+NextStep: Count = 3
+Crane Command Complete, Sending Message
+BrewTask HWM: 942
+Boil level too low..Boil off. message ignored
+Brew Task: Msg from Brew : 42 : 2779096485
+Brew Task: iContent = Wait for previous steps
+WAITING COMMAND RECEIVED
+Waiting on Step 1:'Raise Crane' 
+Boil level too low..Boil off. message ignored
+Brew Task: Setting Step 1 to Complete
+Brew Task: iContent = Step Complete
+Brew Task: Setting Step 1 to Complete
+RunStep: 5 -> Grind Grains
+Boil Valve Setup Function called
+Requesting next step: 5, Grind Grains
+RunStep: 5 -> Grind Grains
+Requesting next step: 5, Grind Grains
+RunStep: 5 -> Grind Grains
+Grain Mill Started
+NextStep: Count = 5
+NextStep: Count = 5
+BoilValve: received message
+BoilValve: xMessage = 1, Step: 3
+HLT Message: From: Brew, to: HLT
+Strike
+HLT Entered HEAT AND FILL State
+Boil level too low..Boil off. message ignored
+Brew Task: Setting Step 1 to Complete
+Brew Task: iContent = Step Complete
+Brew Task: Setting Step 1 to Complete
+Waiting on Step 4:'Fill+Heat:Strike' 
+Waiting on Step 4:'Fill+Heat:Strike' 
+Boil level too low..Boil off. message ignored
+Waiting on Step 4:'Fill+Heat:Strike' 
+Waiting on Step 4:'Fill+Heat:Strike' 
+Boil level too low..Boil off. message ignored
+Waiting on Step 4:'Fill+Heat:Strike' 
+Waiting on Step 4:'Fill+Heat:Strike' 
+Receiving failed, trying again
+BoilValve STOP limit Closing 
+BoilValve: Sending Step Complete message
+Receiving failed, trying again
+Receiving failed, trying again
+Receiving failed, trying again
+Brew Task: Setting Step 3 to Complete
+Brew Task: iContent = Step Complete
+Brew Task: Setting Step 3 to Complete
+Waiting on Step 4:'Fill+Heat:Strike' 
+Brew: 00:00:15
+Step:00m:09s
+
+Step 5: Grind Grains - TIMEOUT
+Step 5: Grind Grains - TIMEOUT
+Requesting next step: 6, Drain HLT for Mash
+NextStep: Count = 6
+NextStep: Count = 6
+Brew Task: Msg from Brew : 42 : 2779096485
+Brew Task: iContent = Wait for previous steps
+WAITING COMMAND RECEIVED
+Waiting on Step 4:'Fill+Heat:Strike' 
+Brew: 00:08:15
+Step:08m:00s
+
+Brew: 00:12:45
+Step:08m:00s
+
+HLT: Temp and level reached, sending msg
+Brew Task: Setting Step 4 to Complete
+Brew Task: iContent = Step Complete
+Brew Task: Setting Step 4 to Complete
+RunStep: 6 -> Drain HLT for Mash
+Requesting next step: 7, Lower Crane
+NextStep: Count = 7
+NextStep: Count = 7
+FLOW1: received Reset
+Boil level too low..Boil off. message ignored
+Brew Task: Msg from Brew : 42 : 2779096485
+Brew Task: iContent = Wait for previous steps
+WAITING COMMAND RECEIVED
+HLT Message: From: Brew, to: HLT
+Drain For Strike
+HLT: Entered DRAIN State
+FLOW1: received Reset
+last:3,
+last:12,
+
+last:12,
+HLT is DRAINED
+Brew Task: Setting Step 6 to Complete
+Brew Task: iContent = Step Complete
+Brew Task: Setting Step 6 to Complete
+RunStep: 7 -> Lower Crane
+Requesting next step: 8, Fill+Heat:Mash Out
+NextStep: Count = 8
+NextStep: Count = 8
+Crane Task has received a message
+xMessage = 3, Step:7
+Crane DN 
+last:18,
+Crane STOP 
+last:1,
+Boil level too low..Boil off. message ignored
+Brew Task: Msg from Brew : 42 : 2779096485
+Brew Task: iContent = Wait for previous steps
+WAITING COMMAND RECEIVED
+Crane DN 
+Crane STOP 
+last:1,
+Crane DN 
+last:1,
+Crane STOP 
+last:1,
+Crane DN 
+Crane STOP 
+last:2,
+Crane DN 
+Crane STOP 
+last:1,
+Crane DN 
+Crane STOP 
+Crane DN 
+Crane STOP 
+Brew: 00:15:15
+Step:00m:11s
+Crane DN 
+Crane STOP 
+last:1,
+Crane DN 
+Crane STOP 
+last:2,
+Crane DN 
+last:2,
+Crane STOP 
+Crane DN 
+Crane STOP 
+last:3,
+Crane DN 
+last:2,
+Crane STOP 
+last:2,
+Crane DN 
+Crane STOP 
+Crane DN 
+Crane STOP 
+last:1,
+Crane DN 
+Crane STOP 
+last:2,
+Crane DN 
+Crane STOP 
+last:1,
+Brew: 00:15:30
+Step:00m:26s
+Crane DN 
+Crane STOP 
+Crane DN 
+Crane STOP 
+last:11,
+STOP limit DDN 
+Crane Command Complete, Sending Message
+Brew Task: Setting Step 7 to Complete
+Brew Task: iContent = Step Complete
+Brew Task: Setting Step 7 to Complete
+RunStep: 9 -> Mash
+Requesting next step: 9, Mash
+RunStep: 9 -> Mash
+HLT Message: From: Brew, to: HLT
+Mash Out
+HLT Entered HEAT AND FILL State
+Boil level too low..Boil off. message ignored
+last:1,
+Boil level too low..Boil off. message ignored
+last:16,
+last:3,
+last:15,
+NextStep: Count = 9
+MashPoll1: Pumping
+Waiting on Step 8:'Fill+Heat:Mash Out' 
+
+Brew: 00:15:45
+Step:00m:09s
+
+Brew: 00:16:00
+Step:00m:24s
+
+MashPoll1: Stirring
+Receiving failed, trying again
+
+MashPoll2: Stopped
+
+Brew: 00:30:30
+Step:14m:54s
+
+MashPoll2: Stopped Stirring
+Receiving failed, trying again
+Waiting on Step 8:'Fill+Heat:Mash Out' 
+MashPoll3: Stir Time 2 = 0, not Stirring
+
+Brew: 00:30:45
+Step:15m:09s
+
+Brew: 00:46:45
+Step:31m:09s
+Waiting on Step 8:'Fill+Heat:Mash Out' 
+
+HLT: Temp and level reached, sending msg
+Brew Task: Setting Step 8 to Complete
+Brew Task: iContent = Step Complete
+Brew Task: Setting Step 8 to Complete
+Brew: 00:47:00
+Step:31m:24s
+
+Brew: 01:10:30
+Step:54m:54s
+MashPoll3: Pumping
+Brew: 01:10:45
+Step:55m:09s
+
+Brew: 01:15:30
+Step:59m:54s
+Requesting next step: 10, Drain for Mash Out
+NextStep: Count = 10
+NextStep: Count = 10
+Receiving failed, trying again
+last:1,
+Brew Task: Msg from Brew : 42 : 2779096485
+Brew Task: iContent = Wait for previous steps
+WAITING COMMAND RECEIVED
+RunStep: 10 -> Drain for Mash Out
+Requesting next step: 11, Fill+Heat:Sparge
+NextStep: Count = 11
+NextStep: Count = 11
+FLOW1: received Reset
+Boil level too low..Boil off. message ignored
+Brew Task: Msg from Brew : 42 : 2779096485
+Brew Task: iContent = Wait for previous steps
+WAITING COMMAND RECEIVED
+HLT Message: From: Brew, to: HLT
+Drain For Mash Out
+HLT: Entered DRAIN State
+FLOW1: received Reset
+last:5,
+last:13,
+last:17,
+last:13,
+last:14,
+last:11,
+Brew: 01:17:45
+Step:02m:08s
+last:14,
+last:13,
+last:12,
+last:13,
+HLT is DRAINED
+Brew Task: Setting Step 10 to Complete
+Brew Task: iContent = Step Complete
+Brew Task: Setting Step 10 to Complete
+RunStep: 12 -> Mash out
+Requesting next step: 12, Mash out
+RunStep: 12 -> Mash out
+NextStep: Count = 12
+MashPoll1: Pumping
+HLT Message: From: Brew, to: HLT
+Sparge
+HLT Entered HEAT AND FILL State
+Boil level too low..Boil off. message ignored
+last:1,
+Waiting on Step 11:'Fill+Heat:Sparge' 
+Boil level too low..Boil off. message ignored
+
+Waiting on Step 11:'Fill+Heat:Sparge' 
+Brew: 01:18:00
+Step:00m:12s
+
+Brew: 01:18:15
+Step:00m:27s
+
+MashPoll1: Stirring
+
+Brew: 01:18:30
+Step:00m:42s
+
+MashPoll2: Stopped
+MashPoll2: Stopped Stirring
+Receiving failed, trying again
+Waiting on Step 11:'Fill+Heat:Sparge' 
+MashPoll3: Stir Time 2 = 0, not Stirring
+Brew: 01:23:00
+Step:05m:12s
+MashPoll3: Pumping
+last:1,
+
+Brew: 01:27:45
+Step:09m:57s
+Waiting on Step 11:'Fill+Heat:Sparge' 
+Waiting on Step 11:'Fill+Heat:Sparge' 
+Waiting on Step 11:'Fill+Heat:Sparge' 
+Requesting next step: 13, MO pump to boil
+RunStep: 13 -> MO pump to boil
+last:9,
+Boil level too low..Boil off. message ignored
+last:9,
+NextStep: Count = 13
+Brew: 01:28:00
+Step:00m:12s
+
+Brew: 01:32:00
+Step:04m:12s
+Waiting on Step 11:'Fill+Heat:Sparge' 
+Waiting on Step 11:'Fill+Heat:Sparge' 
+Waiting on Step 11:'Fill+Heat:Sparge' 
+HLT: Temp and level reached, sending msg
+Brew Task: Setting Step 11 to Complete
+Brew Task: iContent = Step Complete
+Brew Task: Setting Step 11 to Complete
+Brew: 01:32:15
+Step:04m:27s
+Brew: 01:32:30
+Brew: 01:33:45
+Step:05m:57s
+Requesting next step: 14, Drain for Sparge
+NextStep: Count = 14
+NextStep: Count = 14
+Brew Task: Msg from Brew : 42 : 2779096485
+Brew Task: iContent = Wait for previous steps
+WAITING COMMAND RECEIVED
+RunStep: 14 -> Drain for Sparge
+Requesting next step: 15, Sparge
+NextStep: Count = 15
+NextStep: Count = 15
+FLOW1: received Reset
+Boil: 0 duty cycle. Turning off
+Brew Task: Msg from Brew : 42 : 2779096485
+Brew Task: iContent = Wait for previous steps
+WAITING COMMAND RECEIVED
+HLT Message: From: Brew, to: HLT
+Drain For Sparge
+HLT: Entered DRAIN State
+FLOW1: received Reset
+last:6,
+
+last:15,
+HLT is DRAINED
+last:11,
+last:1,
+Brew Task: Setting Step 14 to Complete
+Brew Task: iContent = Step Complete
+Brew Task: Setting Step 14 to Complete
+RunStep: 15 -> Sparge
+MashPoll1: Pumping
+Boil: 0 duty cycle. Turning off
+last:1,
+Brew: 01:35:15
+Step:00m:04s
+Brew: 01:35:30
+Step:00m:19s
+MashPoll1: Stirring
+Receiving failed, trying again
+Brew: 01:35:45
+Step:00m:34s
+Brew: 01:36:00
+Step:00m:49s
+MashPoll2: Stopped
+last:6,
+Brew: 01:36:15
+Step:01m:04s
+Brew: 01:36:30
+Step:01m:19s
+Brew: 01:36:45
+Step:01m:34s
+Brew: 01:37:00
+Step:01m:49s
+MashPoll3: Pumping
+MashPoll2: Stopped Stirring
+Sending failed, trying again
+last:1,
+MashPoll3: Stir Time 2 = 0, not Stirring
+Brew: 01:37:15
+Step:02m:04s
+Brew: 01:37:30
+Step:02m:19s
+Brew: 01:37:45
+Step:02m:34s
+Brew: 01:38:00
+Step:02m:49s
+Brew: 01:38:15
+Step:03m:04s
+Brew: 01:38:30
+Step:03m:19s
+Brew: 01:38:45
+Step:03m:34s
+Brew: 01:39:00
+Step:03m:49s
+Brew: 01:39:15
+Step:04m:04s
+Brew: 01:39:30
+Step:04m:19s
+last:2,
+Brew: 01:39:45
+Step:04m:34s
+Brew: 01:40:00
+Step:04m:49s
+Requesting next step: 16, Pump to boil
+NextStep: Count = 16
+NextStep: Count = 16
+last:1,
+Brew Task: Msg from Brew : 42 : 2779096485
+Brew Task: iContent = Wait for previous steps
+WAITING COMMAND RECEIVED
+RunStep: 16 -> Pump to boil
+Boil: 0 duty cycle. Turning off
+last:2,
+last:20,
+Brew: 01:40:15
+Step:00m:03s
+last:3,
+Brew: 01:40:30
+Step:00m:18s
+Brew: 01:40:45
+Step:00m:33s
+Brew: 01:41:00
+Step:00m:48s
+Brew: 01:41:15
+Step:01m:03s
+Brew: 01:41:30
+Step:01m:18s
+Brew: 01:41:45
+Step:01m:33s
+Brew: 01:42:00
+Step:01m:48s
+Brew: 01:42:15
+Step:02m:03s
+Brew: 01:42:30
+Step:02m:18s
+Brew: 01:42:45
+Step:02m:33s
+Brew: 01:43:00
+Step:02m:48s
+Requesting next step: 19, BringToBoil
+RunStep: 19 -> BringToBoil
+Requesting next step: 19, BringToBoil
+RunStep: 19 -> BringToBoil
+Requesting next step: 19, BringToBoil
+RunStep: 19 -> BringToBoil
+Boil Setup Function called
+NextStep: Count = 19
+NextStep: Count = 19
+NextStep: Count = 19
+Crane Task has received a message
+xMessage = 1, Step:17
+HLT Message: From: Brew, to: HLT
+Mash Out
+HLT Entered HEAT AND FILL State
+Receiving failed, trying again
+last:27,
+BrewTask HWM: 930
+Boil: 0 duty cycle. Turning off
+
+Boil: 0 duty cycle. Turning off
+
+Boil: 0 duty cycle. Turning off
+
+Boil: Message receivedBoil: Received duty cycle of 100, from ID #107
+Brew: 01:43:15
+Step:00m:03s
+
+STOP limit DU 
+Crane Command Complete, Sending Message
+Brew Task: Setting Step 17 to Complete
+Brew Task: iContent = Step Complete
+Brew Task: Setting Step 17 to Complete
+Waiting on Step 18:'Fill+Heat:Clean ' 
+last:7,
+Brew: 01:43:30
+Step:00m:18s
+
+Requesting next step: 20, Boil
+NextStep: Count = 20
+NextStep: Count = 20
+Boil: Message receivedBoil: Received duty cycle of 100, from ID #107
+Brew Task: Msg from Brew : 42 : 2779096485
+Brew Task: iContent = Wait for previous steps
+WAITING COMMAND RECEIVED
+Waiting on Step 18:'Fill+Heat:Clean ' 
+Waiting on Step 18:'Fill+Heat:Clean ' 
+Waiting on Step 18:'Fill+Heat:Clean ' 
+Brew: 02:08:15
+Step:25m:00s
+
+Waiting on Step 18:'Fill+Heat:Clean ' 
+HLT: Temp and level reached, sending msg
+Brew Task: Setting Step 18 to Complete
+Brew Task: iContent = Step Complete
+Brew Task: Setting Step 18 to Complete
+RunStep: 20 -> Boil
+Boil Setup Function called
+Boil: 0 duty cycle. Turning off
+Hops Delivered 0
+Received Message
+State = DRIVING_GAP
+Boil: Message received from BREW TASKBoil: Boil ADC 0. iDuty = 55
+last:2,
+Receiving failed, trying again
+State = STOPPED
+Brew: 02:09:00
+Step:00m:07s
+
+Brew: 02:23:45
+Step:14m:52s
+Hops Delivered 1
+Received Message
+State = DRIVING_GAP
+last:2,
+State = STOPPED
+Brew: 02:24:00
+Step:15m:07s
+
+Brew: 02:38:45
+Step:29m:52s
+Hops Delivered 2
+Received Message
+State = DRIVING_GAP
+last:3,
+State = STOPPED
+Brew: 02:39:00
+Step:30m:07s
+
+Brew: 02:58:45
+Step:49m:52s
+Hops Delivered 3
+Received Message
+State = DRIVING_GAP
+last:1,
+State = STOPPED
+last:1,
+Brew: 02:59:00
+Step:50m:07s
+
+Brew: 03:03:45
+Step:54m:52s
+Hops Delivered 4
+Received Message
+State = DRIVING_GAP
+last:3,
+State = STOPPED
+Brew: 03:04:00
+Step:55m:07s
+
+Brew: 03:07:45
+Step:58m:52s
+Hops Delivered 5
+Received Message
+last:4,
+State = DRIVING_GAP
+State = STOPPED
+last:1,
+Brew: 03:08:00
+Step:59m:07s
+Brew: 03:08:15
+Step:59m:22s
+Brew: 03:08:30
+Step:59m:37s
+Brew: 03:08:45
+Step:59m:52s                                                         
+Requesting next step: 21, SettlingBeforeChill                        
+RunStep: 21 -> SettlingBeforeChill                                   
+Boil Valve Setup Function called                                     
+BoilValve: received message                                          
+BoilValve: xMessage = 1, Step: 21                                    
+NextStep: Count = 21                                                 
+last:2,                                                              
+Boil: Message received from BREW TASKBoil: Boil ADC 0. iDuty = 55    
+Boil: 0 duty cycle. Turning off
+Boil: 0 duty cycle. Turning off
+Brew: 03:09:00
+Step:00m:07s
+
+Brew: 03:14:45
+Step:05m:52s
+Requesting next step: 22, Chill
+NextStep: Count = 22
+NextStep: Count = 22
+Brew Task: Msg from Brew : 42 : 2779096485
+Brew Task: iContent = Wait for previous steps
+WAITING COMMAND RECEIVED
+RunStep: 22 -> Chill
+Boil Valve Setup Function called
+BoilValve: received message
+BoilValve: xMessage = 0, Step: 22
+Receiving failed, trying again
+last:28,
+last:5,
+Boil: 0 duty cycle. Turning off
+last:5,
+last:2,
+last:7,
+last:11,
+last:4,
+Brew: 03:15:00
+Step:00m:06s
+last:1,
+last:1,
+last:1,
+Receiving failed, trying again
+BoilValve STOP limit Open 
+Receiving failed, trying again
+last:29,
+Brew: 03:15:15
+Step:00m:21s
+
+Brew: 03:18:45
+Step:03m:51s
+Requesting next step: 23, Waiting
+RunStep: 23 -> Waiting
+NextStep: Count = 23
+Boil: 0 duty cycle. Turning off
+Requesting next step: 24, (null)
+Brew Finished!
+NextStep: Count = 24
+last:22,
+QUIT Pressed
+Press back again to exit BREW
+Selected to leave BREW Applet
+Leaving Brew Applet
+

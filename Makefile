@@ -37,7 +37,7 @@ LDSCRIPT=stm32_flash.ld
 
 
 # should use --gc-sections but the debugger does not seem to be able to cope with the option.
-LINKER_FLAGS=-nostartfiles -Xlinker -o$(PROJECT_NAME).axf -Xlinker -M -Xlinker -Map=$(PROJECT_NAME).map -Xlinker --no-gc-sections -lm
+LINKER_FLAGS=-nostartfiles -Xlinker -o$(PROJECT_NAME).axf -Xlinker -M -Xlinker -Map=$(PROJECT_NAME).map -Xlinker --no-gc-sections -lm 
 
 
 # Debugging format.
@@ -51,6 +51,7 @@ DEBUG= gdb
 #OPT = s
 #OPT = 2
 #OPT = 3
+#OPT = 0
 OPT = 0
 
 
@@ -90,17 +91,18 @@ CFLAGS=-g$(DEBUG)\
 #stm3210e_lcd.c 
 SOURCE=	main.c 	drivers/lcd.c \
 		printf-stdarg.c \
-		stf_syscalls_minimal.c \
 		drivers/touch.c \
 		drivers/serial.c \
 		drivers/adc.c \
 		drivers/leds.c \
+		drivers/buffer.c \
 		hlt.c \
 		mash_pump.c \
 		mill.c \
 		boil.c \
 		hop_dropper.c \
 		stir.c \
+		stirApplet.c \
 		menu.c \
 		valves.c \
 		diag_temps.c \
@@ -116,6 +118,7 @@ SOURCE=	main.c 	drivers/lcd.c \
 		brew.c \
 		parameters.c \
 		boil_valve.c \
+		stf_syscalls_minimal.c \
 		io_util.c
 		
 

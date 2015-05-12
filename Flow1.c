@@ -16,6 +16,10 @@
 #include "task.h"
 #include "semphr.h"
 #include "console.h"
+<<<<<<< HEAD
+=======
+#include "main.h"
+>>>>>>> PCF8574_bug
 // semaphore that stops the returning from the applet to the menu system until the applet goes into the blocked state.
 xSemaphoreHandle xFlow1AppletRunningSemaphore;
 
@@ -172,8 +176,8 @@ void vTaskLitresToBoil ( void * pvParameters )
             if (ulPulsesSinceLast > 0 && ulPulsesSinceLast <= ulUpperThresh)
               {
                 uBoilFlowState = FLOWING;
-                sprintf(buf, "last:%d,\r\n", ulPulsesSinceLast);
-                vConsolePrint(buf);
+                //sprintf(buf, "last:%d,\r\n", ulPulsesSinceLast);
+                //vConsolePrint(buf);
               }
             else
               uBoilFlowState = NOT_FLOWING;

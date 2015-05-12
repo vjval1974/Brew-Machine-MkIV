@@ -10,13 +10,19 @@
 
 #define MILL_PORT GPIOE
 #define MILL_PIN GPIO_Pin_6
+typedef enum
+{
+  MILL_DRIVING=1,
+  MILL_STOPPED=0
+}MillState;
+
 
 void vMillInit(void);
 void vMillApplet(int init);
 int iMillKey(int xx, int yy);
-void vMill( int state );
+void vMill( MillState state );
 
-#define MILL_DRIVING 1
-#define MILL_STOPPED -1
+
+
 
 #endif /* MILL_H_ */

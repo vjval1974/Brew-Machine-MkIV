@@ -50,10 +50,7 @@
 #include "brew.h"
 #include "parameters.h"
 #include "boil_valve.h"
-<<<<<<< HEAD
-=======
 #include "main.h"
->>>>>>> PCF8574_bug
 
 /*-----------------------------------------------------------*/
 
@@ -142,13 +139,8 @@ brew step elapsed hours 78EC4E5F06604291888E6A723134AD55
 brew step elapsed minutes 35C22A915227449C8F2A740F2C26B344
 brew step elapsed seconds 02BA9C74C1384C069ECB648C3CEFFCBA
 boil duty F066509116CA43F7B6845C8E2EBA69FA
-<<<<<<< HEAD
-461F715060F5468883F6F8500CEAA4BC
-60140A1EB194439B8C9A198355FD93AA
-=======
 chiller pump state 461F715060F5468883F6F8500CEAA4BC
 boil valve state 60140A1EB194439B8C9A198355FD93AA
->>>>>>> PCF8574_bug
 FB46F7E5DF914AF1816035EC02DEE0DC
 3AEE6966D7664AA4BE05BBBBF48E2836
 B9118BEE3E5948C9806A71439478177E
@@ -157,14 +149,6 @@ B9118BEE3E5948C9806A71439478177E
 
 void vCheckTask(void *pvParameters)
 {
-<<<<<<< HEAD
-char buf[50];
-char pcBrewElapsedTime[50], pcStepElapsedTime[50];
-  char pcBrewElapsedHours[45], pcBrewElapsedMinutes[45], pcBrewElapsedSeconds[45], pcBrewStep[45];
-  char pcBrewStepElapsedHours[45], pcBrewStepElapsedMinutes[45], pcBrewStepElapsedSeconds[45], pcMashTemp[45], pcHLTTemp[45];
-int ii = 0;
-  unsigned int touch, hops, ds1820, timer, litres, check, low_level = 90, heap, print;
-=======
   char buf[50];
   char pcBrewElapsedTime[50], pcStepElapsedTime[50];
   char pcBrewElapsedHours[45], pcBrewElapsedMinutes[45], pcBrewElapsedSeconds[45], pcBrewStep[45];
@@ -174,7 +158,6 @@ int ii = 0;
   char upper_limit = 255, lower_limit = 255;
   unsigned int touch, hops, ds1820, timer, litres, check, low_level = 90, heap, print, serial, serialcontrol;
   unsigned int display_applet, stats_applet, res_applet, graph_applet, brew_task;
->>>>>>> PCF8574_bug
   for (;;){
 
       touch = uxTaskGetStackHighWaterMark(xTouchTaskHandle);
@@ -185,8 +168,6 @@ int ii = 0;
       print = uxTaskGetStackHighWaterMark(xPrintTaskHandle);
       hops = uxTaskGetStackHighWaterMark(xHopsTaskHandle);
       check = uxTaskGetStackHighWaterMark(NULL);
-<<<<<<< HEAD
-=======
       serial = uxTaskGetStackHighWaterMark(xSerialHandlerTaskHandle);
       serialcontrol = uxTaskGetStackHighWaterMark(xSerialControlTaskHandle);
       heap = xPortGetFreeHeapSize();
@@ -197,7 +178,6 @@ int ii = 0;
       graph_applet =  uiGetBrewGraphAppletHWM();
       brew_task =  uiGetBrewTaskHWM();
 
->>>>>>> PCF8574_bug
 
 
       sprintf(pcBrewElapsedHours, "4D51E338F02649DFA173631622024A90:%02u\r\n\0", ucGetBrewHoursElapsed());
@@ -224,22 +204,6 @@ int ii = 0;
       sprintf(pcHLTTemp, "81A73894E64546868F39EE1758D459AD:%02u\r\n\0", (unsigned int)floor(ds1820_get_temp(HLT)));
       vConsolePrint(pcHLTTemp);
       vTaskDelay(50);
-<<<<<<< HEAD
-
-
-
-
-      sprintf(buf, "BD52AA172CAE4F58A11EC35872EFEB99:%d \r \n", ii++%1024);
-
-       vConsolePrint(buf);
-
-      if (touch < low_level ||
-          timer < low_level ||
-          litres < low_level||
-          print < low_level ||
-          hops < low_level ||
-          check < low_level)
-=======
       sprintf(pcChillerPumpState, "461F715060F5468883F6F8500CEAA4BC:%02u\r\n\0", ucGetChillerPumpState());
       vConsolePrint(pcChillerPumpState);
       vTaskDelay(50);
@@ -275,26 +239,11 @@ int ii = 0;
            brew_task < low_level || TRUE)
 
 
->>>>>>> PCF8574_bug
         {
           //vTaskSuspendAll();
           vConsolePrint("=============================\r\n");
           sprintf(cBuf,"check task: idle ticks = %d\r\n", ulIdleCycleCount);
           vConsolePrint(cBuf);
-<<<<<<< HEAD
-          sprintf(cBuf, "touchwm = %d\r\n", touch);
-          vConsolePrint(cBuf);
-          sprintf(cBuf, "DS1820wm = %d\r\n", ds1820);
-          vConsolePrint(cBuf);
-          sprintf(cBuf, "TimerSetupwm = %d\r\n", timer);
-          vConsolePrint(cBuf);
-          sprintf(cBuf, "litreswm = %d\r\n", litres);
-          vConsolePrint(cBuf);
-          sprintf(cBuf, "hopswm = %d\r\n", hops);
-          vConsolePrint(cBuf);
-          sprintf(cBuf, "check = %d\r\n", check);
-          vConsolePrint(cBuf);
-=======
           vTaskDelay(50);
           sprintf(cBuf, "touchwm = %d\r\n", touch);
 
@@ -337,17 +286,12 @@ int ii = 0;
           sprintf(cBuf, "brew_display = %d\r\n", display_applet);
           vConsolePrint(cBuf);
           vTaskDelay(50);
->>>>>>> PCF8574_bug
 
 
           sprintf(cBuf, "print = %d\r\n", print);
           vConsolePrint(cBuf);
           vConsolePrint("=============================\r\n");
-<<<<<<< HEAD
-//xTaskResumeAll();
-=======
           //xTaskResumeAll();
->>>>>>> PCF8574_bug
           vTaskDelay(500);
 
         }
@@ -417,11 +361,7 @@ int main( void )
 
 
     //  printf("Usart up and running!\r\n");
-<<<<<<< HEAD
-    xPrintQueue = xQueueCreate(50, sizeof(char *));
-=======
     xPrintQueue = xQueueCreate(150, sizeof(char *));
->>>>>>> PCF8574_bug
     if (xPrintQueue == NULL)
       {
         printf("Failed to make print queue\r\n");
@@ -485,11 +425,7 @@ int main( void )
 
       xTaskCreate( vSerialControlCentreTask,
                   ( signed portCHAR * ) "SerialctrlTask",
-<<<<<<< HEAD
-                  configMINIMAL_STACK_SIZE + 500,
-=======
                   configMINIMAL_STACK_SIZE + 100,
->>>>>>> PCF8574_bug
                   NULL,
                   tskIDLE_PRIORITY +2,
                   &xSerialControlTaskHandle );
@@ -503,11 +439,7 @@ int main( void )
 
     xTaskCreate( vTouchTask, 
         ( signed portCHAR * ) "touch    ",
-<<<<<<< HEAD
-        configMINIMAL_STACK_SIZE +600,
-=======
         configMINIMAL_STACK_SIZE +300,
->>>>>>> PCF8574_bug
         NULL,
         tskIDLE_PRIORITY,
         &xTouchTaskHandle );
@@ -543,11 +475,7 @@ int main( void )
 
     xTaskCreate( vCheckTask,
         ( signed portCHAR * ) "check     ",
-<<<<<<< HEAD
-        configMINIMAL_STACK_SIZE +200,
-=======
         configMINIMAL_STACK_SIZE +400,
->>>>>>> PCF8574_bug
         NULL,
         tskIDLE_PRIORITY,
         &xCheckTaskHandle );
@@ -692,15 +620,12 @@ void vApplicationStackOverflowHook( xTaskHandle *pxTask, signed portCHAR *pcTask
     for( ;; );
 }
 
-<<<<<<< HEAD
-=======
 void vApplicationMallocFailedHook( void )
 {
   vConsolePrint("MALLOC FAILED!");
   for(;;);
 }
 
->>>>>>> PCF8574_bug
 /*-----------------------------------------------------------*/
 void vApplicationIdleHook(void){
    ulIdleCycleCount++;

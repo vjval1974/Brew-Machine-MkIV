@@ -166,11 +166,7 @@ void vTaskDS1820Convert( void *pvParameters ){
                   temps[ii] = fTemp [ii];
                 else if (fTemp[ii] > (temps[ii] - 5.0))
                   temps[ii] = fTemp [ii];
-<<<<<<< HEAD
-                else if (fTemp[ii] != 85.0)
-=======
                 else if (fTemp[ii] <= 85.0 && fTemp[ii] >= 86.0)
->>>>>>> PCF8574_bug
                   temps[ii] = fTemp[ii];
             }
             if (fTemp[ii] == 0.0)

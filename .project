@@ -1,10 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-<<<<<<< HEAD
-	<name>stm32_freertos_example</name>
-=======
 	<name>BrewMachineTesting</name>
->>>>>>> PCF8574_bug
 	<comment></comment>
 	<projects>
 	</projects>
@@ -24,14 +20,8 @@
 	</buildSpec>
 	<natures>
 		<nature>org.eclipse.cdt.core.cnature</nature>
-<<<<<<< HEAD
-		<nature>org.eclipse.cdt.managedbuilder.core.managedBuildNature</nature>
-		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
-		<nature>org.eclipse.cdt.core.ccnature</nature>
-=======
 		<nature>org.eclipse.cdt.core.ccnature</nature>
 		<nature>org.eclipse.cdt.managedbuilder.core.managedBuildNature</nature>
 		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
->>>>>>> PCF8574_bug
 	</natures>
 </projectDescription>

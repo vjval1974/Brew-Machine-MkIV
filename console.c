@@ -25,10 +25,7 @@
 #include "semphr.h"
 #include "queue.h"
 #include "console.h"
-<<<<<<< HEAD
-=======
 #include "main.h"
->>>>>>> PCF8574_bug
 
 xQueueHandle xPrintQueue;
 
@@ -50,11 +47,7 @@ void vConsolePrintTask(void * pvParameters)
           fflush(stdout);
           portEXIT_CRITICAL();
       //    pcLastMessage = pcMessageToPrint;
-<<<<<<< HEAD
-          vTaskDelay(100); //wait for the usart to print before filling it's buffer.
-=======
           vTaskDelay(10); //wait for the usart to print before filling it's buffer.
->>>>>>> PCF8574_bug
           //maybe can do something with the interrupt flags here?
         }
     }
@@ -62,18 +55,6 @@ void vConsolePrintTask(void * pvParameters)
 
 }
 
-<<<<<<< HEAD
-static char pcStringBuffer[100];
-const char * pcX = "ConsolePrint failed\r\n";
-void vConsolePrint(const char * format, ...)
-{
-
-   if ( xQueueSendToBack(xPrintQueue, &format, 10) != pdPASS)
-     xQueueSendToBack(xPrintQueue, &pcX, 10);
-}
-
-//was sending &buffer over to printf.. changed for static char array
-=======
 
 const char * pcX = "ConsolePrint failed\r\n";
 void vConsolePrint(const char * format)
@@ -83,4 +64,3 @@ void vConsolePrint(const char * format)
      xQueueSendToBack(xPrintQueue, &pcX, 30);
 
 }
->>>>>>> PCF8574_bug

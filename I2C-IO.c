@@ -268,17 +268,10 @@ void vI2C_TestTask(void *pvParameters)
       if (uDirection)
           uTestMessage |= 1<<4;
       vConsolePrint("I2C Test Task Start\r\n");
-<<<<<<< HEAD
-          fflush(stdout);
-
-      printf("===================\r\n");
-      fflush(stdout);
-=======
          fflush(stdout);
 
       printf("===================\r\n");
      fflush(stdout);
->>>>>>> PCF8574_bug
       em = iI2C_Receive(uAddress, &uRData);
       if ( em == -1){
           printf("failed %d", em);
@@ -457,11 +450,8 @@ void vPCF_SetBits(uint8_t bitnum, uint8_t add){
 char cI2cGetInput(char port, char pin)
 {
   char data = 0;
-<<<<<<< HEAD
-=======
   iI2C_Send(port, 0xFF);
   vTaskDelay(50);
->>>>>>> PCF8574_bug
   char read = iI2C_Receive(port, &data);
   if (read == -1)
     {

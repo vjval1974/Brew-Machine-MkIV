@@ -158,8 +158,6 @@ unsigned char ucGetBrewStepMinutesElapsed();
 unsigned char ucGetBrewStep();
 unsigned char ucGetBrewStepSecondsElapsed();
 
-<<<<<<< HEAD
-=======
 unsigned int uiGetBrewAppletDisplayHWM();
 unsigned int uiGetBrewResAppletHWM();
 unsigned int uiGetBrewStatsAppletHWM();
@@ -169,7 +167,6 @@ unsigned int uiGetBrewTaskHWM();
 
 
 
->>>>>>> PCF8574_bug
 extern xQueueHandle xBrewTaskReceiveQueue,  xBrewAppletTextQueue;
 
 #endif /* BREW_H_ */

@@ -22,10 +22,7 @@
 #include "brew.h"
 #include "console.h"
 #include "Flow1.h"
-<<<<<<< HEAD
-=======
 #include "main.h"
->>>>>>> PCF8574_bug
 
 volatile char hlt_state = OFF;
 
@@ -217,9 +214,6 @@ void vTaskBrewHLT(void * pvParameters)
               GPIO_WriteBit(HLT_SSR_PORT, HLT_SSR_PIN, 0); //make sure its off
               //vConsolePrint("WARNING, Water not above element in HLT\r\n");
             }
-<<<<<<< HEAD
-
-=======
 #ifdef TESTING
           GPIO_WriteBit(HLT_SSR_PORT, HLT_SSR_PIN, 0);
           if (ucHeatAndFillMessageSent == 0)
@@ -234,7 +228,6 @@ void vTaskBrewHLT(void * pvParameters)
               ucHeatAndFillMessageSent = 1;
             }
 #endif
->>>>>>> PCF8574_bug
 
           break;
         }
@@ -252,8 +245,6 @@ void vTaskBrewHLT(void * pvParameters)
               lcd_printf(1,10,10, "Setpoint:");
               vValveActuate(HLT_VALVE, OPEN);
               BrewState.ucHLTState = HLT_STATE_DRAIN;
-<<<<<<< HEAD
-=======
 #ifdef TESTING
               vValveActuate(HLT_VALVE, CLOSE);
                            xMessage->ucFromTask = HLT_TASK;
@@ -264,7 +255,6 @@ void vTaskBrewHLT(void * pvParameters)
                            vConsolePrint("HLT is DRAINED\r\n");
                            uRcvdState = HLT_STATE_IDLE;
 #endif
->>>>>>> PCF8574_bug
             }
           vValveActuate(HLT_VALVE, OPEN);
           fActualLitresDelivered = fGetBoilFlowLitres();
@@ -274,12 +264,9 @@ void vTaskBrewHLT(void * pvParameters)
 
               vConsolePrint(buf);
             }
-<<<<<<< HEAD
-=======
 #ifdef TESTING
           fActualLitresDelivered = fLitresToDrain + 1;
 #endif
->>>>>>> PCF8574_bug
           if (fActualLitresDelivered >= fLitresToDrain)
             {
               vValveActuate(HLT_VALVE, CLOSE);
@@ -304,10 +291,7 @@ void vTaskBrewHLT(void * pvParameters)
     }
 
 }
-<<<<<<< HEAD
-=======
 
->>>>>>> PCF8574_bug
 //=================================================================================================================================================================
 
 void vTaskHLTLevelChecker( void * pvParameters)

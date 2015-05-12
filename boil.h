@@ -11,10 +11,7 @@
 void vBoilInit(void);
 void vBoilApplet(int init);
 int iBoilKey(int xx, int yy);
-<<<<<<< HEAD
-=======
 unsigned char ucGetBoilState();
->>>>>>> PCF8574_bug
 extern xQueueHandle xBoilQueue;
 
 #endif /* BOIL_H_ */

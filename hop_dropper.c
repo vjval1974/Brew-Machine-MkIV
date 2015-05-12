@@ -17,11 +17,8 @@
 #include "I2C-IO.h"
 #include "queue.h"
 #include "console.h"
-<<<<<<< HEAD
-=======
 #include "main.h"
 
->>>>>>> PCF8574_bug
 
 #define ON 1
 #define OFF 0

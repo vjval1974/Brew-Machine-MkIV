@@ -147,38 +147,38 @@ void vParametersInit(void)
     BrewParameters.uiHopTimes[5] = 1;
 
 
-  //Chill
-  BrewParameters.uiSettlingRecircTime = 1; //mins
-  BrewParameters.uiSettlingTime = 1; //mins
-  BrewParameters.uiChillTime = 1; //mins
-  BrewParameters.uiChillerPumpPrimingCycles = 3;
-  BrewParameters.uiChillerPumpPrimingTime = 3; //seconds
+	//Chill
+	BrewParameters.uiSettlingRecircTime = 1; //mins
+	BrewParameters.uiSettlingTime = 1; //mins
+	BrewParameters.uiChillTime = 1; //mins
+	BrewParameters.uiChillerPumpPrimingCycles = 3;
+	BrewParameters.uiChillerPumpPrimingTime = 3; //seconds
 
-  BrewParameters.iGrindTime = 1;
+	BrewParameters.iGrindTime = 1;
 
-  BrewParameters.iMashTime = 1;
-    BrewParameters.iPumpTime1 = 1;
-    BrewParameters.iStirTime1 = 1;
-    BrewParameters.iPumpTime2 = 1;
-    BrewParameters.iStirTime2 = 1;
+	BrewParameters.iMashTime = 1;
+	BrewParameters.iPumpTime1 = 1;
+	BrewParameters.iStirTime1 = 1;
+	BrewParameters.iPumpTime2 = 1;
+	BrewParameters.iStirTime2 = 1;
 
-    //Mash Out
-     BrewParameters.iMashOutTime = 1;
-       BrewParameters.iMashOutPumpTime1 = 1;
-       BrewParameters.iMashOutStirTime1 = 1;
-       BrewParameters.iMashOutPumpTime2 = 1;
-       BrewParameters.iMashOutStirTime2 = 1;
+	//Mash Out
+	BrewParameters.iMashOutTime = 1;
+	BrewParameters.iMashOutPumpTime1 = 1;
+	BrewParameters.iMashOutStirTime1 = 1;
+	BrewParameters.iMashOutPumpTime2 = 1;
+	BrewParameters.iMashOutStirTime2 = 1;
 
-       //Sparge
-       BrewParameters.iSpargeTime = 1;
-         BrewParameters.iSpargePumpTime1 = 1;
-         BrewParameters.iSpargeStirTime1 = 1;
-         BrewParameters.iSpargePumpTime2 = 1;
-         BrewParameters.iSpargeStirTime2 = 1;
+	//Sparge
+	BrewParameters.iSpargeTime = 1;
+	BrewParameters.iSpargePumpTime1 = 1;
+	BrewParameters.iSpargeStirTime1 = 1;
+	BrewParameters.iSpargePumpTime2 = 1;
+	BrewParameters.iSpargeStirTime2 = 1;
 
-         //Boil
-           BrewParameters.uiBoilTime = 1;//60;
-           BrewParameters.uiBringToBoilTime = 0;
+	//Boil
+	BrewParameters.uiBoilTime = 1;//60;
+	BrewParameters.uiBringToBoilTime = 0;
 
 #endif
 }

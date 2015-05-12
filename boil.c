@@ -22,7 +22,9 @@
 #include "boil.h"
 #include "console.h"
 #include "adc.h"
+// main.h holds the definition for the preprocessor directive TESTING
 #include "main.h"
+
 
 
 #define BOIL_PORT GPIOD

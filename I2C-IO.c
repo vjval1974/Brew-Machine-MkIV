@@ -450,14 +450,19 @@ void vPCF_SetBits(uint8_t bitnum, uint8_t add){
 char cI2cGetInput(char port, char pin)
 {
   char data = 0;
-  iI2C_Send(port, 0xFF);
-  vTaskDelay(50);
+  portENTER_CRITICAL();
+  vI2C_Init();
   char read = iI2C_Receive(port, &data);
+  read = iI2C_Receive(port, &data);
+  iI2C_Send(port, 0xFF);
+  portEXIT_CRITICAL();
+  //vTaskDelay(50);
+  read = iI2C_Receive(port, &data);
   if (read == -1)
     {
       return ERROR;
     }
-  //printf("~data = %x\r\n", ~data);
+ // printf("~data = %x\r\n", ~data);
   if (((1<<(pin-1)) & ~data)) {
         return TRUE;
   }

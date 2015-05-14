@@ -265,6 +265,8 @@ void vTaskCrane(void * pvParameters)
             }
           else
             {
+              vPCF_SetBits(CRANE_UPPER_LIMIT_PIN, CRANE_UPPER_LIMIT_PORT); // yes the port and pin are reverse from read
+              vTaskDelay(100);
               limit = cI2cGetInput(CRANE_UPPER_LIMIT_PORT, CRANE_UPPER_LIMIT_PIN);
               //limit = debounce(CRANE_UPPER_LIMIT_PORT, CRANE_UPPER_LIMIT_PIN);
               while (limit == 255) // read failed
@@ -355,12 +357,12 @@ void vTaskCrane(void * pvParameters)
 //                      limit = cI2cGetInput(CRANE_LOWER_LIMIT_PORT, CRANE_LOWER_LIMIT_PIN);
 //                      cLimitVal = limit;
 //                    }
-          if (limit == 255) // read failed
+          if (limit == ERROR) // read failed
             {
               vTaskDelay(200);
               limit = cI2cGetInput(CRANE_LOWER_LIMIT_PORT, CRANE_LOWER_LIMIT_PIN);
             }
-          if(limit != 1)
+          if(limit == FALSE)
             {
               vCraneFunc(DN);
               vConsolePrint("Crane DN \r\n");
@@ -371,7 +373,7 @@ void vTaskCrane(void * pvParameters)
               ucDownIncrements++;
             }
 
-          else if (limit == 1)
+          else if (limit == TRUE)
             {
               // Make sure we are down
               vCraneFunc(DN);
@@ -425,6 +427,8 @@ void vTaskCrane(void * pvParameters)
           else if (iC == DN)
             {
               vConsolePrint("Crane: State = Stopped, Cmd = DN\r\n");
+			  vPCF_SetBits(CRANE_LOWER_LIMIT_PIN, CRANE_LOWER_LIMIT_PORT); // yes the port and pin are reverse from read
+			  vTaskDelay(100);
               limit = cI2cGetInput(CRANE_LOWER_LIMIT_PORT, CRANE_LOWER_LIMIT_PIN);
               if (limit == 255) // read failed
                 {
@@ -446,6 +450,8 @@ void vTaskCrane(void * pvParameters)
             }
           else if (iC == DN_INC)
             {
+				vPCF_SetBits(CRANE_LOWER_LIMIT_PIN, CRANE_LOWER_LIMIT_PORT); // yes the port and pin are reverse from read
+				vTaskDelay(100);
               limit = cI2cGetInput(CRANE_LOWER_LIMIT_PORT, CRANE_LOWER_LIMIT_PIN);
               if (limit == 255) // read failed
                 {
@@ -464,12 +470,13 @@ void vTaskCrane(void * pvParameters)
                   iCraneState = BOTTOM;
                 }
             }
-          iC = 14;
+          iC = 14; // goes into undefined command state. shouldnt be needed.
 
           break;
         }
       default:
         {
+			vConsolePrint("Default Case in Crane Function\r\n");
           vCraneFunc(STOP); //stop the crane on an instant.
           iCraneState = STOPPED;
           break;
@@ -482,7 +489,7 @@ void vTaskCrane(void * pvParameters)
           vConsolePrint("Crane Command Complete, Sending Message\r\n");
           vTaskDelay(50);
           xToSend->pvMessageContent = (void*)&iTest;
-          xQueueSendToBack(xBrewTaskReceiveQueue, &xToSend, 1000);
+          xQueueSendToBack(xBrewTaskReceiveQueue, &xToSend, 10000);
           //xQueueSendToBack(xBrewTaskReceiveQueue, (void *)40, 100);
           iCommandState  = 0;
          iCraneState = STOPPED;

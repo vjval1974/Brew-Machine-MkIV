@@ -9,7 +9,7 @@
 #define I2C_IO_H_
 #define TRUE 1
 #define FALSE 0
-#define ERROR 255;
+#define ERROR 255
 
 void vI2C_Init(void);
 //void vI2C_Send(char address, char data);

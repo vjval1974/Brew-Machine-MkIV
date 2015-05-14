@@ -86,7 +86,7 @@ void vTaskBrewHLT(void * pvParameters)
   static uint8_t uFirst = 0;
   float  fTempSetpoint = 0.0;
   static float fLitresToDrain = 0.0;
- float fActualLitresDelivered = 0.0;
+  float fActualLitresDelivered = 0.0;
   float actual = 0.0;
   float hlt_level = 0.0;
   char hlt_ok = 0;
@@ -164,7 +164,7 @@ void vTaskBrewHLT(void * pvParameters)
             {
               vTaskDelay(2000);
               vValveActuate(INLET_VALVE, CLOSE);
-             // vConsolePrint("HLT is FULL \r\n");
+              // vConsolePrint("HLT is FULL \r\n");
             }
           else
             vValveActuate(INLET_VALVE, OPEN);
@@ -215,9 +215,17 @@ void vTaskBrewHLT(void * pvParameters)
               //vConsolePrint("WARNING, Water not above element in HLT\r\n");
             }
 #ifdef TESTING
-          GPIO_WriteBit(HLT_SSR_PORT, HLT_SSR_PIN, 0);
           if (ucHeatAndFillMessageSent == 0)
             {
+              GPIO_WriteBit(HLT_SSR_PORT, HLT_SSR_PIN, 0);
+              vValveActuate(INLET_VALVE, OPEN);
+              vTaskDelay(1000);
+              vValveActuate(INLET_VALVE, CLOSE);
+              vValveActuate(HLT_VALVE, OPEN);
+              vTaskDelay(4000);
+              vValveActuate(HLT_VALVE, CLOSE);
+              vTaskDelay(500);
+
               vConsolePrint("HLT: Temp and level reached, sending msg\r\n");
               BrewState.ucHLTState = HLT_STATE_AT_TEMP;
               xMessage->ucFromTask = HLT_TASK;
@@ -246,14 +254,22 @@ void vTaskBrewHLT(void * pvParameters)
               vValveActuate(HLT_VALVE, OPEN);
               BrewState.ucHLTState = HLT_STATE_DRAIN;
 #ifdef TESTING
+              GPIO_WriteBit(HLT_SSR_PORT, HLT_SSR_PIN, 0);
+              vValveActuate(INLET_VALVE, OPEN);
+              vTaskDelay(1000);
+              vValveActuate(INLET_VALVE, CLOSE);
+              vValveActuate(HLT_VALVE, OPEN);
+              vTaskDelay(4000);
               vValveActuate(HLT_VALVE, CLOSE);
-                           xMessage->ucFromTask = HLT_TASK;
-                           xMessage->ucToTask = BREW_TASK;
-                           xMessage->uiStepNumber = ucStep;
-                           xMessage->pvMessageContent = (void *)&STEP_COMPLETE;
-                           xQueueSendToBack(xBrewTaskReceiveQueue, &xMessage, 0);
-                           vConsolePrint("HLT is DRAINED\r\n");
-                           uRcvdState = HLT_STATE_IDLE;
+              vTaskDelay(500);
+              vValveActuate(HLT_VALVE, CLOSE);
+              xMessage->ucFromTask = HLT_TASK;
+              xMessage->ucToTask = BREW_TASK;
+              xMessage->uiStepNumber = ucStep;
+              xMessage->pvMessageContent = (void *)&STEP_COMPLETE;
+              xQueueSendToBack(xBrewTaskReceiveQueue, &xMessage, 0);
+              vConsolePrint("HLT is DRAINED\r\n");
+              uRcvdState = HLT_STATE_IDLE;
 #endif
             }
           vValveActuate(HLT_VALVE, OPEN);

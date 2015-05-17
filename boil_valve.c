@@ -33,11 +33,16 @@ xSemaphoreHandle xAppletRunningSemaphore;
 
 
 // Boil Valve States
-#define OPENED 10
-#define CLOSED 11
-#define OPENING 12
-#define CLOSING 13
-#define STOPPED 14
+
+
+
+
+unsigned char ucBoilValveState = BOIL_VALVE_STOPPED;
+
+unsigned char ucGetBoilValveState(void)
+{
+  return ucBoilValveState;
+}
 
 void vBoilValveInit(void)
 {
@@ -72,14 +77,14 @@ void vBoilValveFunc(int Command)
 
   switch (Command)
   {
-  case OPEN:
+  case BOIL_VALVE_OPEN:
     {
       // need to turn relay 2 off which sets up for REV direction
       vPCF_ResetBits(BOIL_VALVE_PIN2, BOIL_VALVE_PORT); //pull low
       vPCF_SetBits(BOIL_VALVE_PIN1, BOIL_VALVE_PORT); //pull low
       break;
     }
-  case CLOSE:
+  case BOIL_VALVE_CLOSE:
     {
       // need to turn relay 1 off which sets up for REV direction
       vPCF_ResetBits(BOIL_VALVE_PIN1, BOIL_VALVE_PORT); //pull low
@@ -99,8 +104,6 @@ void vBoilValveFunc(int Command)
 }
 
 
-int iBoilValveState = STOPPED;
-
 void vTaskBoilValve(void * pvParameters)
 {
   // Create Message structures in memory
@@ -110,7 +113,7 @@ void vTaskBoilValve(void * pvParameters)
   xToSend = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
     static int iComplete = 0;
   uint8_t limit = 0xFF, limit1 = 0xFF; //neither on or off.
-  static int iC = STOP;
+  static int iC = BOIL_VALVE_STOP;
   xToSend->ucFromTask = BOIL_VALVE_TASK;
   xToSend->ucToTask = BREW_TASK;
   xToSend->pvMessageContent = (void *)&iComplete;
@@ -149,63 +152,63 @@ void vTaskBoilValve(void * pvParameters)
 //                           xToSend->pvMessageContent = (void *)&iTest;
 //                            xQueueSendToBack(xBrewTaskReceiveQueue, &xToSend, 10000);
 //                            iCommandState  = 0;
-//                            iBoilValveState = STOPPED;
+//                            ucBoilValveState = BOIL_VALVE_STOPPED;
 //                          }
 //#endif
             }
 
 
-      switch(iBoilValveState)
+      switch(ucBoilValveState)
       {
-      case OPENED:
+      case BOIL_VALVE_OPENED:
         {
-          if (iC == CLOSE)
+          if (iC == BOIL_VALVE_CLOSE)
             {
               vBoilValveFunc(CLOSE);
-              iBoilValveState = CLOSING;
+              ucBoilValveState = BOIL_VALVE_CLOSING;
             }
-          else if (iC == OPEN)
+          else if (iC == BOIL_VALVE_OPEN)
             {
               iCommandState = 1;
               iComplete = STEP_COMPLETE;
             }
           break;
         }
-      case CLOSED:
+      case BOIL_VALVE_CLOSED:
         {
-          if (iC== OPEN)
+          if (iC== BOIL_VALVE_OPEN)
             {
-              vBoilValveFunc(OPEN);
-              iBoilValveState = OPENING;
+              vBoilValveFunc(BOIL_VALVE_OPEN);
+              ucBoilValveState = BOIL_VALVE_OPENING;
             }
-          else if (iC == CLOSE)
+          else if (iC == BOIL_VALVE_CLOSE)
             {
               iCommandState = 1;
               iComplete = STEP_COMPLETE;
             }
           break;
         }
-      case OPENING:
+      case BOIL_VALVE_OPENING:
         {
-          if (iC== STOP)
+          if (iC== BOIL_VALVE_STOP)
             {
-              vBoilValveFunc(STOP);
+              vBoilValveFunc(BOIL_VALVE_STOP);
               vConsolePrint("BoilValve STOP while Opening \r\n");
-              iBoilValveState = STOPPED;
+              ucBoilValveState = BOIL_VALVE_STOPPED;
               iCommandState = 1;
               iComplete = STEP_COMPLETE;
             }
-          else if (iC== CLOSE)
+          else if (iC== BOIL_VALVE_CLOSE)
             {
               uIn1 = debounce(BOIL_VALVE_CLOSED_PORT, BOIL_VALVE_CLOSED_PIN);
               if (uIn1 != 0)
                 {
-                  vBoilValveFunc(CLOSE);
-                  iBoilValveState = CLOSING;
+                  vBoilValveFunc(BOIL_VALVE_CLOSE);
+                  ucBoilValveState = BOIL_VALVE_CLOSING;
                 }
               else
                 {
-                  iBoilValveState = CLOSED;
+                  ucBoilValveState = BOIL_VALVE_CLOSED;
                   iCommandState = 1;
                   iComplete = STEP_COMPLETE;
                 }
@@ -216,9 +219,9 @@ void vTaskBoilValve(void * pvParameters)
               uIn1 = debounce(BOIL_VALVE_OPENED_PORT, BOIL_VALVE_OPENED_PIN);
               if (uIn1 == 0)
                 {
-                  vBoilValveFunc(STOP);
+                  vBoilValveFunc(BOIL_VALVE_STOP);
                   vConsolePrint("BoilValve STOP limit Open \r\n");
-                  iBoilValveState = OPENED;
+                  ucBoilValveState = BOIL_VALVE_OPENED;
                   iComplete = STEP_COMPLETE;
                   iCommandState = 1;
                 }
@@ -227,29 +230,29 @@ void vTaskBoilValve(void * pvParameters)
             }
           break;
         }
-      case CLOSING:
+      case BOIL_VALVE_CLOSING:
         {
-          if (iC== STOP)
+          if (iC== BOIL_VALVE_STOP)
             {
-              vBoilValveFunc(STOP);
+              vBoilValveFunc(BOIL_VALVE_STOP);
               vConsolePrint("BoilValve STOP while Closing \r\n");
-              iBoilValveState = STOPPED;
+              ucBoilValveState = BOIL_VALVE_STOPPED;
               iComplete = STEP_COMPLETE;
               iCommandState = 1;
             }
-          else if (iC== OPEN)
+          else if (iC== BOIL_VALVE_OPEN)
             {
               uIn1 = debounce(BOIL_VALVE_OPENED_PORT, BOIL_VALVE_OPENED_PIN);
               if (uIn1 == 0)
                 {
-                  iBoilValveState = OPENED;
+                  ucBoilValveState = BOIL_VALVE_OPENED;
                   iComplete = STEP_COMPLETE;
                   iCommandState = 1;
                 }
               else
                 {
-                  vBoilValveFunc(OPEN);
-                  iBoilValveState = OPENING;
+                  vBoilValveFunc(BOIL_VALVE_OPEN);
+                  ucBoilValveState = BOIL_VALVE_OPENING;
                 }
 
             }
@@ -260,9 +263,9 @@ void vTaskBoilValve(void * pvParameters)
               if (uIn1 == 0)
                 {
                   //vTaskDelay(200);
-                  vBoilValveFunc(STOP);
+                  vBoilValveFunc(BOIL_VALVE_STOP);
                   vConsolePrint("BoilValve STOP limit Closing \r\n");
-                  iBoilValveState = CLOSED;
+                  ucBoilValveState = BOIL_VALVE_CLOSED;
                   iCommandState = 1;
                   iComplete = STEP_COMPLETE;
                 }
@@ -270,46 +273,46 @@ void vTaskBoilValve(void * pvParameters)
 
           break;
         }
-      case STOPPED:
+      case BOIL_VALVE_STOPPED:
         {
 
-          if (iC == OPEN)
+          if (iC == BOIL_VALVE_OPEN)
             {
               uIn1 = debounce(BOIL_VALVE_OPENED_PORT, BOIL_VALVE_OPENED_PIN);
               if (uIn1 != 0)
                 {
-                  vBoilValveFunc(OPEN);
-                  iBoilValveState = OPENING;
+                  vBoilValveFunc(BOIL_VALVE_OPEN);
+                  ucBoilValveState = BOIL_VALVE_OPENING;
                 }
               else
                 {
                   iCommandState = 1;
                   iComplete = STEP_COMPLETE;
-                  iBoilValveState = OPENED;
+                  ucBoilValveState = BOIL_VALVE_OPENED;
                 }
             }
-          else if (iC== CLOSE)
+          else if (iC== BOIL_VALVE_CLOSE)
             {
               uIn1 = debounce(BOIL_VALVE_CLOSED_PORT, BOIL_VALVE_CLOSED_PIN);
               if (uIn1 != 0)
                 {
-                  vBoilValveFunc(CLOSE);
-                  iBoilValveState = CLOSING;
+                  vBoilValveFunc(BOIL_VALVE_CLOSE);
+                  ucBoilValveState = BOIL_VALVE_CLOSING;
                 }
               else{
                   iCommandState = 1;
                   iComplete = STEP_COMPLETE;
-                  iBoilValveState = CLOSED;
+                  ucBoilValveState = BOIL_VALVE_CLOSED;
               }
             }
-          iC = STOPPED;
+          iC = BOIL_VALVE_STOPPED;
 
           break;
         }
       default:
         {
-          vBoilValveFunc(STOP); //stop the  on an instant.
-          iBoilValveState = STOPPED;
+          vBoilValveFunc(BOIL_VALVE_STOP); //stop the  on an instant.
+          ucBoilValveState = BOIL_VALVE_STOPPED;
           vConsolePrint("Boil Valve in incorrect state!\r\n");
           break;
 
@@ -323,7 +326,7 @@ void vTaskBoilValve(void * pvParameters)
               xToSend->pvMessageContent = (void *)&iTest;
                xQueueSendToBack(xBrewTaskReceiveQueue, &xToSend, 10000);
                iCommandState  = 0;
-               iBoilValveState = STOPPED;
+               ucBoilValveState = BOIL_VALVE_STOPPED;
              }
 
 
@@ -341,21 +344,21 @@ void vBoilValveAppletDisplay( void *pvParameters){
       //return to the menu system until its returned
 
       //display the state and user info (the state will flash on the screen)
-      switch (iBoilValveState)
+      switch (ucBoilValveState)
       {
-      case OPENING:
+      case BOIL_VALVE_OPENING:
         {
           if(tog)
             {
               lcd_fill(1,220, 180,29, Black);
-              lcd_printf(1,13,15,"OPENING");
+              lcd_printf(1,13,15,"BOIL_VALVE_OPENING");
             }
           else{
               lcd_fill(1,210, 180,17, Black);
           }
           break;
         }
-      case CLOSING:
+      case BOIL_VALVE_CLOSING:
         {
           if(tog)
             {
@@ -367,12 +370,12 @@ void vBoilValveAppletDisplay( void *pvParameters){
           }
           break;
         }
-      case OPENED:
+      case BOIL_VALVE_OPENED:
         {
           if(tog)
             {
               lcd_fill(1,210, 180,29, Black);
-              lcd_printf(1,13,11,"OPENED");
+              lcd_printf(1,13,11,"BOIL_VALVE_OPENED");
             }
           else
             {
@@ -381,7 +384,7 @@ void vBoilValveAppletDisplay( void *pvParameters){
 
           break;
         }
-      case CLOSED:
+      case BOIL_VALVE_CLOSED:
         {
           if(tog)
             {
@@ -395,12 +398,12 @@ void vBoilValveAppletDisplay( void *pvParameters){
 
           break;
         }
-      case STOPPED:
+      case BOIL_VALVE_STOPPED:
         {
           if(tog)
             {
               lcd_fill(1,210, 180,29, Black);
-              lcd_printf(1,13,11,"STOPPED");
+              lcd_printf(1,13,11,"BOIL_VALVE_STOPPED");
             }
           else
             {

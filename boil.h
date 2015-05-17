@@ -14,4 +14,8 @@ int iBoilKey(int xx, int yy);
 unsigned char ucGetBoilState();
 extern xQueueHandle xBoilQueue;
 
+
+#define BOILING 1
+#define OFF 0
+
 #endif /* BOIL_H_ */

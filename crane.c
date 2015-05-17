@@ -50,6 +50,10 @@ xTaskHandle xCraneTaskHandle = NULL, xCraneAppletDisplayHandle = NULL;
 
 void vTaskCrane(void * pvParameters);
 
+int8_t vGetCraneState(void)
+{
+  return iCraneState;
+}
 
 void vCraneInit(void)
 {

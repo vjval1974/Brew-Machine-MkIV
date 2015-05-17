@@ -22,6 +22,15 @@
 #define BOIL_VALVE_OPENED_PIN GPIO_Pin_3
 
 
+#define BOIL_VALVE_OPEN 0
+#define BOIL_VALVE_CLOSE 1
+#define BOIL_VALVE_STOP 3
+#define BOIL_VALVE_OPENED 10
+#define BOIL_VALVE_CLOSED 11
+#define BOIL_VALVE_OPENING 12
+#define BOIL_VALVE_CLOSING 13
+#define BOIL_VALVE_STOPPED 14
+
 void vBoilValveInit();
 void vTaskBoilValve(void * pvParameters);
 int iBoilValveKey(int xx, int yy);
@@ -29,6 +38,7 @@ void vBoilValveApplet(int init);
 
 extern xQueueHandle xBoilValveQueue;
 
+unsigned char ucGetBoilValveState(void);
 
 
 

@@ -44,6 +44,8 @@ void vCraneRun(uint16_t speed);
 void vTaskCrane(void * pvParameters);
 void vCraneApplet(int init);
 int iCraneKey(int x, int y);
+int8_t vGetCraneState(void);
+
 
 // Directions
 #define UP 10

@@ -140,7 +140,7 @@ static struct BrewStep
 
 static int iBrewStepMonitor(int iWaiting)
 {
-  static char buf[50];
+  static char buf[70];
   int ii=0, jj=0, kk=0;
   int iPreviousStepsComplete;
 
@@ -430,28 +430,33 @@ void vBrewReset(void){
   vValveActuate(CHILLER_VALVE, CLOSE);
 }
 
+static struct GenericMessage xMessage10;
+static struct GenericMessage * xMessage11;
+
 void vBrewNextStep(void){
-  static struct GenericMessage * xMessage = NULL;
+  xMessage11 =  & xMessage10;
   static int iCommand;
   static char buf[50], buf1[50];
   static int iCount = 0;
   iCount++;
-  if (xMessage ==  NULL)
-    xMessage = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
-  xMessage->ucFromTask = BREW_TASK;
-  xMessage->ucToTask = BREW_TASK;
-  xMessage->pvMessageContent = (void *)&iCommand;
+  if (xMessage11 ==  NULL)
+    xMessage11 = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
+  xMessage11->ucFromTask = BREW_TASK;
+  xMessage11->ucToTask = BREW_TASK;
+  xMessage11->pvMessageContent = (void *)&iCommand;
+  xMessage11->uiStepNumber = BrewState.ucStep;
 
-
-  sprintf(buf, "Requesting next step: %d, %s\r\n", BrewState.ucStep+1, Brew[BrewState.ucStep+1].pcStepName);
-  vConsolePrint(buf);
+  if (Brew[BrewState.ucStep+1].pcStepName != NULL){
+    sprintf(buf, "Requesting next step: %d, %s\r\n", BrewState.ucStep+1, Brew[BrewState.ucStep+1].pcStepName);
+    vConsolePrint(buf);
+  }
   if (BrewState.ucStep < MAX_BREW_STEPS && Brew[BrewState.ucStep+1].ucWait == 1)
     {
       iCommand = STEP_WAIT;
-      sprintf(buf1, "NextStep:'%s' requires waiting\r\n", Brew[BrewState.ucStep].pcStepName);
+      sprintf(buf1, "NextStep:'%s' requires waiting\r\n", Brew[BrewState.ucStep+1].pcStepName);
       vConsolePrint(buf1);
       vTaskDelay(100);
-      xQueueSendToBack(xBrewTaskReceiveQueue, &xMessage, 0);
+      xQueueSendToBack(xBrewTaskReceiveQueue, &xMessage11, 0);
 
     }
   else if (BrewState.ucStep < MAX_BREW_STEPS-1){
@@ -464,6 +469,7 @@ void vBrewNextStep(void){
     {
       vConsolePrint("Brew Finished!\r\n");
       BrewState.ucRunningState = IDLE;
+      vBrewTotalReset();
     }
   sprintf(buf1, "NextStep: Count = %d\r\n", iCount);
   vConsolePrint(buf1);
@@ -773,11 +779,13 @@ void vBrewPreChillPollFunction(int piParameters[5])
 }
 
 // CHILL Polling function
+static struct GenericMessage xMessage5;
+static struct GenericMessage * xMessage6;
+
 void vBrewChillPollFunction(int piParameters[5])
 {
-  static struct GenericMessage * xMessage = NULL;
       const int iCommand = CLOSE;
-
+      xMessage6 = &xMessage5;
 
     //Brew[BrewState.ucStep].uTimeRemaining = (BrewParameters.uiChillTime*60) - Brew[BrewState.ucStep].uElapsedTime;
   if (Brew[BrewState.ucStep].uElapsedTime >= BrewParameters.uiChillTime*60)
@@ -785,13 +793,11 @@ void vBrewChillPollFunction(int piParameters[5])
       vChillerPump(STOPPED);
       vValveActuate(CHILLER_VALVE, CLOSE);
       Brew[BrewState.ucStep].ucComplete = 1;
-      if (xMessage ==  NULL)
-          xMessage = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
-        xMessage->ucFromTask = CHILL_TASK;
-        xMessage->ucToTask = BOIL_VALVE_TASK;
-        xMessage->uiStepNumber = BrewState.ucStep;
-        xMessage->pvMessageContent = (void *)&iCommand;
-        xQueueSendToBack(xBoilValveQueue, &xMessage, 1000); // Make sure the boil valve is closed.
+        xMessage6->ucFromTask = CHILL_TASK;
+        xMessage6->ucToTask = BOIL_VALVE_TASK;
+        xMessage6->uiStepNumber = BrewState.ucStep;
+        xMessage6->pvMessageContent = (void *)&iCommand;
+        xQueueSendToBack(xBoilValveQueue, &xMessage6, 1000); // Make sure the boil valve is closed.
       vBrewNextStep();
 
     }

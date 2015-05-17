@@ -203,7 +203,7 @@ void vTaskBoil( void * pvParameters)
               else // this code run when message is not from the auto brew task
                 {
                   compare = ((TIM_ARR_TOP/100) * iDefaultDuty);
-                  vConsolePrint("Boil: Message received");
+                  vConsolePrint("Boil: Message received\r\n");
                   sprintf(buf, "Boil: Received duty cycle of %d, from ID #%d\r\n", iDefaultDuty, xMessage->ucFromTask);
                   vConsolePrint(buf);
                 }

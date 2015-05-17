@@ -277,7 +277,7 @@ LOAD /usr/local/CodeSourcery/bin/../lib/gcc/arm-none-eabi/4.5.2/thumb2/libgcc.a
 LOAD /usr/local/CodeSourcery/bin/../lib/gcc/arm-none-eabi/4.5.2/../../../../arm-none-eabi/lib/thumb2/libc.a
 END GROUP
 
-.text           0x00000000    0x3b480
+.text           0x00000000    0x3b488
  *(.isr_vector)
  .isr_vector    0x00000000      0x1e0 Debug/startup_stm32f10x.o
                 0x00000000                g_pfnVectors
@@ -4847,184 +4847,185 @@ END GROUP
  .rodata        0x00038f24      0x328 Debug/hlt.o
  .rodata        0x0003924c       0x74 Debug/mash_pump.o
  .rodata        0x000392c0       0x60 Debug/mill.o
- .rodata        0x00039320      0x1b8 Debug/boil.o
- .rodata        0x000394d8       0xb8 Debug/hop_dropper.o
- .rodata        0x00039590       0x64 Debug/stirApplet.o
- .rodata        0x000395f4       0x1c Debug/menu.o
- .rodata        0x00039610       0xc8 Debug/valves.o
- .rodata        0x000396d8       0x64 Debug/diag_temps.o
- .rodata        0x0003973c      0x270 Debug/crane.o
- .rodata        0x000399ac      0x1bc Debug/ds1820.o
+ .rodata        0x00039320      0x1bc Debug/boil.o
+ .rodata        0x000394dc       0xb8 Debug/hop_dropper.o
+ .rodata        0x00039594       0x64 Debug/stirApplet.o
+ .rodata        0x000395f8       0x1c Debug/menu.o
+ .rodata        0x00039614       0xc8 Debug/valves.o
+ .rodata        0x000396dc       0x64 Debug/diag_temps.o
+ .rodata        0x00039740      0x270 Debug/crane.o
+ .rodata        0x000399b0      0x1bc Debug/ds1820.o
  .rodata.fBoilLitresPerPulseL
-                0x00039b68        0x4 Debug/Flow1.o
-                0x00039b68                fBoilLitresPerPulseL
- .rodata.fMashLitresPerPulseL
                 0x00039b6c        0x4 Debug/Flow1.o
-                0x00039b6c                fMashLitresPerPulseL
- .rodata.fBoilLitresPerPulseH
+                0x00039b6c                fBoilLitresPerPulseL
+ .rodata.fMashLitresPerPulseL
                 0x00039b70        0x4 Debug/Flow1.o
-                0x00039b70                fBoilLitresPerPulseH
- .rodata.fMashLitresPerPulseH
+                0x00039b70                fMashLitresPerPulseL
+ .rodata.fBoilLitresPerPulseH
                 0x00039b74        0x4 Debug/Flow1.o
-                0x00039b74                fMashLitresPerPulseH
- .rodata.ulLowerThresh
+                0x00039b74                fBoilLitresPerPulseH
+ .rodata.fMashLitresPerPulseH
                 0x00039b78        0x4 Debug/Flow1.o
-                0x00039b78                ulLowerThresh
- .rodata.ulUpperThresh
+                0x00039b78                fMashLitresPerPulseH
+ .rodata.ulLowerThresh
                 0x00039b7c        0x4 Debug/Flow1.o
-                0x00039b7c                ulUpperThresh
- .rodata        0x00039b80       0x84 Debug/Flow1.o
- .rodata        0x00039c04       0xb4 Debug/diag_pwm.o
+                0x00039b7c                ulLowerThresh
+ .rodata.ulUpperThresh
+                0x00039b80        0x4 Debug/Flow1.o
+                0x00039b80                ulUpperThresh
+ .rodata        0x00039b84       0x84 Debug/Flow1.o
+ .rodata        0x00039c08       0xb4 Debug/diag_pwm.o
+ *fill*         0x00039cbc        0x4 00
  .rodata.lfClock
-                0x00039cb8        0x8 Debug/diag_pwm.o
-                0x00039cb8                lfClock
- .rodata        0x00039cc0      0x154 Debug/I2C-IO.o
- .rodata        0x00039e14       0xac Debug/chiller_pump.o
- .rodata        0x00039ec0       0x18 Debug/console.o
+                0x00039cc0        0x8 Debug/diag_pwm.o
+                0x00039cc0                lfClock
+ .rodata        0x00039cc8      0x154 Debug/I2C-IO.o
+ .rodata        0x00039e1c       0xac Debug/chiller_pump.o
+ .rodata        0x00039ec8       0x18 Debug/console.o
  .rodata.STEP_COMPLETE
-                0x00039ed8        0x4 Debug/brew.o
-                0x00039ed8                STEP_COMPLETE
- .rodata.STEP_FAILED
-                0x00039edc        0x4 Debug/brew.o
-                0x00039edc                STEP_FAILED
- .rodata.STEP_WAIT
                 0x00039ee0        0x4 Debug/brew.o
-                0x00039ee0                STEP_WAIT
- .rodata        0x00039ee4      0xbfc Debug/brew.o
- .rodata        0x0003aae0      0x1ec Debug/parameters.o
- .rodata        0x0003accc      0x1e0 Debug/boil_valve.o
- .rodata        0x0003aeac       0x34 Debug/stf_syscalls_minimal.o
+                0x00039ee0                STEP_COMPLETE
+ .rodata.STEP_FAILED
+                0x00039ee4        0x4 Debug/brew.o
+                0x00039ee4                STEP_FAILED
+ .rodata.STEP_WAIT
+                0x00039ee8        0x4 Debug/brew.o
+                0x00039ee8                STEP_WAIT
+ .rodata        0x00039eec      0xbfc Debug/brew.o
+ .rodata        0x0003aae8      0x1ec Debug/parameters.o
+ .rodata        0x0003acd4      0x1e0 Debug/boil_valve.o
+ .rodata        0x0003aeb4       0x34 Debug/stf_syscalls_minimal.o
  .rodata.heapSTRUCT_SIZE
-                0x0003aee0        0x2 Debug/stf_syscalls_minimal.o
- *fill*         0x0003aee2        0x2 00
+                0x0003aee8        0x2 Debug/stf_syscalls_minimal.o
+ *fill*         0x0003aeea        0x2 00
  .rodata.AHBPrescTable
-                0x0003aee4       0x10 Debug/system_stm32f10x.o
-                0x0003aee4                AHBPrescTable
- .rodata        0x0003aef4       0x28 Debug/stm32f10x_i2c.o
- .rodata        0x0003af1c       0x20 Debug/misc.o
- .rodata        0x0003af3c       0x28 Debug/stm32f10x_rcc.o
- .rodata        0x0003af64       0x28 Debug/stm32f10x_gpio.o
- .rodata        0x0003af8c       0x28 Debug/stm32f10x_spi.o
- .rodata        0x0003afb4       0x28 Debug/stm32f10x_tim.o
- .rodata        0x0003afdc       0x2c Debug/stm32f10x_usart.o
- .rodata        0x0003b008       0x28 Debug/stm32f10x_fsmc.o
- .rodata        0x0003b030       0x2c Debug/stm32f10x_flash.o
- .rodata        0x0003b05c       0x28 Debug/stm32f10x_adc.o
- .rodata        0x0003b084       0x28 Debug/stm32f10x_exti.o
- .rodata        0x0003b0ac       0x20 Debug/tasks.o
+                0x0003aeec       0x10 Debug/system_stm32f10x.o
+                0x0003aeec                AHBPrescTable
+ .rodata        0x0003aefc       0x28 Debug/stm32f10x_i2c.o
+ .rodata        0x0003af24       0x20 Debug/misc.o
+ .rodata        0x0003af44       0x28 Debug/stm32f10x_rcc.o
+ .rodata        0x0003af6c       0x28 Debug/stm32f10x_gpio.o
+ .rodata        0x0003af94       0x28 Debug/stm32f10x_spi.o
+ .rodata        0x0003afbc       0x28 Debug/stm32f10x_tim.o
+ .rodata        0x0003afe4       0x2c Debug/stm32f10x_usart.o
+ .rodata        0x0003b010       0x28 Debug/stm32f10x_fsmc.o
+ .rodata        0x0003b038       0x2c Debug/stm32f10x_flash.o
+ .rodata        0x0003b064       0x28 Debug/stm32f10x_adc.o
+ .rodata        0x0003b08c       0x28 Debug/stm32f10x_exti.o
+ .rodata        0x0003b0b4       0x20 Debug/tasks.o
  .rodata.ucExpectedStackBytes.5755
-                0x0003b0cc       0x14 Debug/tasks.o
+                0x0003b0d4       0x14 Debug/tasks.o
  .rodata.ulKernelPriority
-                0x0003b0e0        0x4 Debug/port.o
-                0x0003b0e0                ulKernelPriority
+                0x0003b0e8        0x4 Debug/port.o
+                0x0003b0e8                ulKernelPriority
  .rodata.heapSTRUCT_SIZE
-                0x0003b0e4        0x2 Debug/heap_2.o
- *fill*         0x0003b0e6        0x2 00
- .rodata        0x0003b0e8       0x60 /usr/local/CodeSourcery/bin/../lib/gcc/arm-none-eabi/4.5.2/../../../../arm-none-eabi/lib/thumb2/libc.a(lib_a-findfp.o)
-                0x0003b0e8                __sf_fake_stdin
-                0x0003b108                __sf_fake_stdout
-                0x0003b128                __sf_fake_stderr
- .rodata        0x0003b148        0x4 /usr/local/CodeSourcery/bin/../lib/gcc/arm-none-eabi/4.5.2/../../../../arm-none-eabi/lib/thumb2/libc.a(lib_a-impure.o)
-                0x0003b148                _global_impure_ptr
+                0x0003b0ec        0x2 Debug/heap_2.o
+ *fill*         0x0003b0ee        0x2 00
+ .rodata        0x0003b0f0       0x60 /usr/local/CodeSourcery/bin/../lib/gcc/arm-none-eabi/4.5.2/../../../../arm-none-eabi/lib/thumb2/libc.a(lib_a-findfp.o)
+                0x0003b0f0                __sf_fake_stdin
+                0x0003b110                __sf_fake_stdout
+                0x0003b130                __sf_fake_stderr
+ .rodata        0x0003b150        0x4 /usr/local/CodeSourcery/bin/../lib/gcc/arm-none-eabi/4.5.2/../../../../arm-none-eabi/lib/thumb2/libc.a(lib_a-impure.o)
+                0x0003b150                _global_impure_ptr
  .rodata.str1.4
-                0x0003b14c        0x2 /usr/local/CodeSourcery/bin/../lib/gcc/arm-none-eabi/4.5.2/../../../../arm-none-eabi/lib/thumb2/libc.a(lib_a-impure.o)
+                0x0003b154        0x2 /usr/local/CodeSourcery/bin/../lib/gcc/arm-none-eabi/4.5.2/../../../../arm-none-eabi/lib/thumb2/libc.a(lib_a-impure.o)
                                   0x4 (size before relaxing)
- *fill*         0x0003b14e        0x2 00
+ *fill*         0x0003b156        0x2 00
  .rodata.str1.4
-                0x0003b150        0x2 /usr/local/CodeSourcery/bin/../lib/gcc/arm-none-eabi/4.5.2/../../../../arm-none-eabi/lib/thumb2/libc.a(lib_a-puts.o)
+                0x0003b158        0x2 /usr/local/CodeSourcery/bin/../lib/gcc/arm-none-eabi/4.5.2/../../../../arm-none-eabi/lib/thumb2/libc.a(lib_a-puts.o)
                                   0x4 (size before relaxing)
- *fill*         0x0003b152        0x6 00
- .rodata        0x0003b158       0x28 /usr/local/CodeSourcery/bin/../lib/gcc/arm-none-eabi/4.5.2/../../../../arm-none-eabi/lib/thumb2/libc.a(lib_a-strtod.o)
+ *fill*         0x0003b15a        0x6 00
+ .rodata        0x0003b160       0x28 /usr/local/CodeSourcery/bin/../lib/gcc/arm-none-eabi/4.5.2/../../../../arm-none-eabi/lib/thumb2/libc.a(lib_a-strtod.o)
  .rodata.str1.4
-                0x0003b180        0xf /usr/local/CodeSourcery/bin/../lib/gcc/arm-none-eabi/4.5.2/../../../../arm-none-eabi/lib/thumb2/libc.a(lib_a-strtod.o)
+                0x0003b188        0xf /usr/local/CodeSourcery/bin/../lib/gcc/arm-none-eabi/4.5.2/../../../../arm-none-eabi/lib/thumb2/libc.a(lib_a-strtod.o)
                                  0x10 (size before relaxing)
- *fill*         0x0003b18f        0x1 00
- .rodata        0x0003b190      0x104 /usr/local/CodeSourcery/bin/../lib/gcc/arm-none-eabi/4.5.2/../../../../arm-none-eabi/lib/thumb2/libc.a(lib_a-ctype_.o)
-                0x0003b190                _ctype_
+ *fill*         0x0003b197        0x1 00
+ .rodata        0x0003b198      0x104 /usr/local/CodeSourcery/bin/../lib/gcc/arm-none-eabi/4.5.2/../../../../arm-none-eabi/lib/thumb2/libc.a(lib_a-ctype_.o)
+                0x0003b198                _ctype_
  .rodata.str1.4
-                0x0003b294       0x1b /usr/local/CodeSourcery/bin/../lib/gcc/arm-none-eabi/4.5.2/../../../../arm-none-eabi/lib/thumb2/libc.a(lib_a-gdtoa-gethex.o)
+                0x0003b29c       0x1b /usr/local/CodeSourcery/bin/../lib/gcc/arm-none-eabi/4.5.2/../../../../arm-none-eabi/lib/thumb2/libc.a(lib_a-gdtoa-gethex.o)
                                  0x1c (size before relaxing)
- *fill*         0x0003b2af        0x1 00
+ *fill*         0x0003b2b7        0x1 00
  .rodata.str1.4
-                0x0003b2b0        0xa /usr/local/CodeSourcery/bin/../lib/gcc/arm-none-eabi/4.5.2/../../../../arm-none-eabi/lib/thumb2/libc.a(lib_a-locale.o)
+                0x0003b2b8        0xa /usr/local/CodeSourcery/bin/../lib/gcc/arm-none-eabi/4.5.2/../../../../arm-none-eabi/lib/thumb2/libc.a(lib_a-locale.o)
                                  0x14 (size before relaxing)
- *fill*         0x0003b2ba        0x6 00
- .rodata        0x0003b2c0      0x128 /usr/local/CodeSourcery/bin/../lib/gcc/arm-none-eabi/4.5.2/../../../../arm-none-eabi/lib/thumb2/libc.a(lib_a-mprec.o)
-                0x0003b2d0                __mprec_tens
-                0x0003b398                __mprec_bigtens
-                0x0003b3c0                __mprec_tinytens
- .rodata        0x0003b3e8       0x20 /usr/local/CodeSourcery/bin/../lib/gcc/arm-none-eabi/4.5.2/../../../../arm-none-eabi/lib/thumb2/libc.a(lib_a-svfprintf.o)
+ *fill*         0x0003b2c2        0x6 00
+ .rodata        0x0003b2c8      0x128 /usr/local/CodeSourcery/bin/../lib/gcc/arm-none-eabi/4.5.2/../../../../arm-none-eabi/lib/thumb2/libc.a(lib_a-mprec.o)
+                0x0003b2d8                __mprec_tens
+                0x0003b3a0                __mprec_bigtens
+                0x0003b3c8                __mprec_tinytens
+ .rodata        0x0003b3f0       0x20 /usr/local/CodeSourcery/bin/../lib/gcc/arm-none-eabi/4.5.2/../../../../arm-none-eabi/lib/thumb2/libc.a(lib_a-svfprintf.o)
  .rodata.str1.4
-                0x0003b408       0x42 /usr/local/CodeSourcery/bin/../lib/gcc/arm-none-eabi/4.5.2/../../../../arm-none-eabi/lib/thumb2/libc.a(lib_a-svfprintf.o)
+                0x0003b410       0x42 /usr/local/CodeSourcery/bin/../lib/gcc/arm-none-eabi/4.5.2/../../../../arm-none-eabi/lib/thumb2/libc.a(lib_a-svfprintf.o)
                                  0x44 (size before relaxing)
- *fill*         0x0003b44a        0x2 00
+ *fill*         0x0003b452        0x2 00
  .rodata.str1.4
-                0x0003b44c       0x10 /usr/local/CodeSourcery/bin/../lib/gcc/arm-none-eabi/4.5.2/../../../../arm-none-eabi/lib/thumb2/libc.a(lib_a-dtoa.o)
+                0x0003b454       0x10 /usr/local/CodeSourcery/bin/../lib/gcc/arm-none-eabi/4.5.2/../../../../arm-none-eabi/lib/thumb2/libc.a(lib_a-dtoa.o)
                                  0x14 (size before relaxing)
- .rodata        0x0003b45c       0x20 /usr/local/CodeSourcery/bin/../lib/gcc/arm-none-eabi/4.5.2/../../../../arm-none-eabi/lib/thumb2/libc.a(lib_a-svfiprintf.o)
+ .rodata        0x0003b464       0x20 /usr/local/CodeSourcery/bin/../lib/gcc/arm-none-eabi/4.5.2/../../../../arm-none-eabi/lib/thumb2/libc.a(lib_a-svfiprintf.o)
  .rodata.str1.4
                 0x00000000       0x30 /usr/local/CodeSourcery/bin/../lib/gcc/arm-none-eabi/4.5.2/../../../../arm-none-eabi/lib/thumb2/libc.a(lib_a-svfiprintf.o)
  *(.eh_frame_hdr)
  *(.eh_frame)
  *(.ARM.extab* .gnu.linkonce.armextab.*)
- .ARM.extab     0x0003b47c        0x0 /usr/local/CodeSourcery/bin/../lib/gcc/arm-none-eabi/4.5.2/thumb2/libgcc.a(_divdi3.o)
- .ARM.extab     0x0003b47c        0x0 /usr/local/CodeSourcery/bin/../lib/gcc/arm-none-eabi/4.5.2/thumb2/libgcc.a(_udivdi3.o)
+ .ARM.extab     0x0003b484        0x0 /usr/local/CodeSourcery/bin/../lib/gcc/arm-none-eabi/4.5.2/thumb2/libgcc.a(_divdi3.o)
+ .ARM.extab     0x0003b484        0x0 /usr/local/CodeSourcery/bin/../lib/gcc/arm-none-eabi/4.5.2/thumb2/libgcc.a(_udivdi3.o)
  *(.gcc_except_table)
  *(.eh_frame_hdr)
  *(.eh_frame)
-                0x0003b47c                . = ALIGN (0x4)
+                0x0003b484                . = ALIGN (0x4)
  *(.init)
-                0x0003b47c                . = ALIGN (0x4)
-                0x0003b47c                __preinit_array_start = .
+                0x0003b484                . = ALIGN (0x4)
+                0x0003b484                __preinit_array_start = .
  *(.preinit_array)
-                0x0003b47c                __preinit_array_end = .
-                0x0003b47c                . = ALIGN (0x4)
-                0x0003b47c                __init_array_start = .
+                0x0003b484                __preinit_array_end = .
+                0x0003b484                . = ALIGN (0x4)
+                0x0003b484                __init_array_start = .
  *(SORT(.init_array.*))
  *(.init_array)
-                0x0003b47c                __init_array_end = .
-                0x0003b47c                . = ALIGN (0x4)
+                0x0003b484                __init_array_end = .
+                0x0003b484                . = ALIGN (0x4)
  *crtbegin.o(.ctors)
  *(EXCLUDE_FILE(*crtend.o) .ctors)
  *(SORT(.ctors.*))
  *crtend.o(.ctors)
-                0x0003b47c                . = ALIGN (0x4)
+                0x0003b484                . = ALIGN (0x4)
  *(.fini)
-                0x0003b47c                . = ALIGN (0x4)
-                0x0003b47c                __fini_array_start = .
+                0x0003b484                . = ALIGN (0x4)
+                0x0003b484                __fini_array_start = .
  *(.fini_array)
  *(SORT(.fini_array.*))
-                0x0003b47c                __fini_array_end = .
+                0x0003b484                __fini_array_end = .
  *crtbegin.o(.dtors)
  *(EXCLUDE_FILE(*crtend.o) .dtors)
  *(SORT(.dtors.*))
  *crtend.o(.dtors)
-                0x0003b480                . = ALIGN (0x8)
- *fill*         0x0003b47c        0x4 00
-                0x0003b480                _etext = .
-                0x0003b480                __exidx_start = .
+                0x0003b488                . = ALIGN (0x8)
+ *fill*         0x0003b484        0x4 00
+                0x0003b488                _etext = .
+                0x0003b488                __exidx_start = .
 
-.glue_7         0x0003b480        0x0
+.glue_7         0x0003b488        0x0
  .glue_7        0x00000000        0x0 linker stubs
 
-.glue_7t        0x0003b480        0x0
+.glue_7t        0x0003b488        0x0
  .glue_7t       0x00000000        0x0 linker stubs
 
-.vfp11_veneer   0x0003b480        0x0
+.vfp11_veneer   0x0003b488        0x0
  .vfp11_veneer  0x00000000        0x0 linker stubs
 
-.v4_bx          0x0003b480        0x0
+.v4_bx          0x0003b488        0x0
  .v4_bx         0x00000000        0x0 linker stubs
 
-.ARM.exidx      0x0003b480        0x8
+.ARM.exidx      0x0003b488        0x8
  *(.ARM.exidx* .gnu.linkonce.armexidx.*)
- .ARM.exidx     0x0003b480        0x8 /usr/local/CodeSourcery/bin/../lib/gcc/arm-none-eabi/4.5.2/thumb2/libgcc.a(_divdi3.o)
- .ARM.exidx     0x0003b488        0x0 /usr/local/CodeSourcery/bin/../lib/gcc/arm-none-eabi/4.5.2/thumb2/libgcc.a(_udivdi3.o)
+ .ARM.exidx     0x0003b488        0x8 /usr/local/CodeSourcery/bin/../lib/gcc/arm-none-eabi/4.5.2/thumb2/libgcc.a(_divdi3.o)
+ .ARM.exidx     0x0003b490        0x0 /usr/local/CodeSourcery/bin/../lib/gcc/arm-none-eabi/4.5.2/thumb2/libgcc.a(_udivdi3.o)
                                   0x8 (size before relaxing)
-                0x0003b488                __exidx_end = .
-                0x0003b488                _flash_data = .
+                0x0003b490                __exidx_end = .
+                0x0003b490                _flash_data = .
 
-.data           0x20000000      0xa24 load address 0x0003b488
+.data           0x20000000      0xa24 load address 0x0003b490
                 0x20000000                _data = .
  *(vtable)
  *(.data*)
@@ -5287,7 +5288,7 @@ END GROUP
  .data          0x20000a24        0x0 /usr/local/CodeSourcery/bin/../lib/gcc/arm-none-eabi/4.5.2/thumb2/libgcc.a(_udivdi3.o)
                 0x20000a24                _edata = .
 
-.bss            0x20000a28     0xe918 load address 0x0003beb0
+.bss            0x20000a28     0xe918 load address 0x0003beb8
                 0x20000a28                _bss = .
  *(.bss*)
  .bss           0x20000a28        0x0 Debug/main.o

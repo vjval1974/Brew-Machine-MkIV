@@ -139,6 +139,41 @@ uint8_t uGetBoilLevel(void)
   return (GPIO_ReadInputDataBit(BOIL_LEVEL_PORT, BOIL_LEVEL_PIN) == 0);
 
 }
+
+// Return integer percentage of ADC input for boil duty cycle
+static unsigned int uiGetADCBoilDuty()
+{
+  float fDuty = 0.0; // duty cycle as float
+  int iDuty = 0; // as int
+  uint16_t uADCIn = read_adc(BOIL_DUTY_ADC_CHAN);
+  unsigned int uiTimerCompareValue = 0;
+  // get adc value as a %
+  fDuty = (float)uADCIn/4095.0 * 100.0;
+  iDuty = (int)fDuty;
+  return iDuty;
+}
+
+// return the timer compare value based on the duty cycle.
+static unsigned int uiTimerCompare(int iDutyCycle)
+{
+  return ((TIM_ARR_TOP/100) * iDutyCycle);
+}
+
+// start the boiling process based upon the timer compare value
+static void vStartBoilPWM(unsigned int uiTimerCompareValue)
+{
+  TIM_SetCompare1(TIM4, uiTimerCompareValue);
+  TIM_Cmd( TIM4, ENABLE );
+}
+
+// stop the boil.
+static void vStopBoilPWM(void)
+{
+  TIM_SetCompare1(TIM4, 0);
+  TIM_Cmd( TIM4, DISABLE );
+  GPIO_ResetBits(BOIL_PORT, BOIL_PIN);
+}
+
 void vTaskBoil( void * pvParameters)
 {
   // Generic message struct for message storage.
@@ -148,8 +183,9 @@ void vTaskBoil( void * pvParameters)
   float fDuty = 0.0; // duty in float type
   int iDuty = 0; // duty in int type
   uint16_t uADCIn = 0; //value read from ADC channel
+  unsigned int uiADCDuty = 0;
   unsigned int boil_level = 0; //to store the value from the boil level switch
-  static unsigned int compare = 0; //value of the duty cycle when tranformed to timer units
+  static unsigned int uiTimerCompareValue = 0; //value of the duty cycle when tranformed to timer units
   portBASE_TYPE xStatus; //queue receive status
   static char buf[50], buf1[50]; //text storage buffers
   for(;;)
@@ -184,43 +220,38 @@ void vTaskBoil( void * pvParameters)
               if (xMessage->ucFromTask == (unsigned char)BREW_TASK)
                 {
                   vConsolePrint("Boil: Message received from BREW TASK\r\n");
-                      uADCIn = read_adc(BOIL_DUTY_ADC_CHAN);
-                  fDuty = (float)uADCIn/4095.0 * 100.0;
-                  iDuty = (int)fDuty;
-                  if (fDuty <= 20.0)
-                    iDuty = iDefaultDuty;
+                  uiADCDuty = uiGetADCBoilDuty();
 
-                  sprintf(buf1, "Boil: Boil ADC %d. iDuty = %d%% \r\n", uADCIn, iDuty);
-                  vConsolePrint(buf1);
+                  // determine which duty cycle to accept
+                  if (uiADCDuty <= 20)
+                    {
+                      iDuty = iDefaultDuty;
+                    }
 
-                  compare = ((TIM_ARR_TOP/100) * iDuty); // set the timer value to the duty cycle %
-
+                  uiTimerCompareValue = uiTimerCompare(iDuty); // set the timer value to the duty cycle %
                 }
               else if(xMessage->ucFromTask == (unsigned char)BREW_TASK_RESET)
                 {
-                  compare = 0;
+                  uiTimerCompareValue = 0;
                 }
               else // this code run when message is not from the auto brew task
                 {
-                  compare = ((TIM_ARR_TOP/100) * iDefaultDuty);
+                  uiTimerCompareValue = uiTimerCompare(iDefaultDuty); // set the timer value to the duty cycle %
                   vConsolePrint("Boil: Message received\r\n");
                   sprintf(buf, "Boil: Received duty cycle of %d, from ID #%d\r\n", iDefaultDuty, xMessage->ucFromTask);
                   vConsolePrint(buf);
                 }
               //****ENABLE BOIL*****
               //--------------------
-              if (compare > 0)
+              if (uiTimerCompareValue > 0)
                 {
-                  TIM_SetCompare1(TIM4, compare);
-                  TIM_Cmd( TIM4, ENABLE );
+                  vStartBoilPWM(uiTimerCompareValue);
                   boil_state = BOILING;
                   //     printf("Boiling, duty = %d\r\n", duty);
                 }
               else
                 {
-                  TIM_SetCompare1(TIM4, 0);
-                  TIM_Cmd( TIM4, DISABLE );
-                  GPIO_ResetBits(BOIL_PORT, BOIL_PIN);
+                  vStopBoilPWM();
                   boil_state = OFF;
                   vConsolePrint("Boil: 0 duty cycle. Turning off\r\n");
                 }
@@ -232,13 +263,10 @@ void vTaskBoil( void * pvParameters)
 
           if (!boil_level && boil_state == BOILING)
             {
-              TIM_SetCompare1(TIM4, 0);
-              TIM_Cmd( TIM4, DISABLE );
-              GPIO_ResetBits(BOIL_PORT, BOIL_PIN);
+              vStopBoilPWM();
               boil_state = OFF;
               vConsolePrint("Boil: Boil state = ON, Boil level = low, stopping boil\r\n");
             }
-
 
         }
 

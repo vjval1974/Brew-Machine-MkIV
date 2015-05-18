@@ -36,7 +36,7 @@
 
 #define BOILING 1
 #define OFF 0
-
+#define WAITING_FOR_COMMAND 2
 
 xQueueHandle xBoilQueue = NULL;
 
@@ -45,14 +45,13 @@ xQueueHandle xBoilQueue = NULL;
 #define TIM_ARR_TOP 10000
 
 int diag_duty = 50;
-volatile uint8_t boil_state = OFF;
+volatile uint8_t uiBoilState = WAITING_FOR_COMMAND;
 
-//void vBoil(uint8_t duty, uint8_t state);
 void vBoilAppletDisplay(void * pvParameters);
 void vTaskBoil( void * pvParameters);
 
 unsigned char ucGetBoilState(){
-  return boil_state;
+  return uiBoilState;
 }
 
 // semaphore that stops the returning from the applet to the menu system until the applet goes into the blocked state.
@@ -110,7 +109,7 @@ void vBoilInit(void)
   TIM_SetCompare1(TIM4, 0);
   TIM_Cmd( TIM4, DISABLE );
   GPIO_ResetBits(BOIL_PORT, BOIL_PIN);
-  boil_state = OFF;
+  uiBoilState = OFF;
 
   vSemaphoreCreateBinary(xAppletRunningSemaphore);
 
@@ -174,100 +173,132 @@ static void vStopBoilPWM(void)
   GPIO_ResetBits(BOIL_PORT, BOIL_PIN);
 }
 
+static unsigned int uiValidateIntegerPct(int iValue)
+{
+  if (iValue > 100)
+    iValue = 0; //garbage result
+  if (iValue < 0)
+    iValue = 0;
+  return iValue;
+}
+
+static unsigned int uiTimerCompareController(unsigned char ucMessageSource, int iDefaultDuty)
+{
+  static char buf[50];
+  unsigned int uiADCDuty = 0;
+  int iDuty = 0;
+  unsigned int uiTimerCompareValue = 0;
+  switch (ucMessageSource)
+  {
+  case BREW_TASK:
+  {
+    vConsolePrint("Boil: Message received from BREW TASK\r\n");
+    uiADCDuty = uiGetADCBoilDuty();
+    // determine which duty cycle to accept
+    if (uiADCDuty <= 20)
+      {
+        iDuty = iDefaultDuty;
+      }
+    uiTimerCompareValue = uiTimerCompare(iDuty); // set the timer value to the duty cycle %
+    break;
+  }
+  case BREW_TASK_RESET:
+    {
+      uiTimerCompareValue = 0;
+      break;
+    }
+
+  default:
+    {
+      uiTimerCompareValue = uiTimerCompare(iDefaultDuty); // set the timer value to the duty cycle %
+      vConsolePrint("Boil: Message received\r\n");
+      sprintf(buf, "Boil: Received duty cycle of %d, from ID #%d\r\n", iDefaultDuty, ucMessageSource);
+      vConsolePrint(buf);
+      break;
+    }
+  }
+ return uiTimerCompareValue;
+}
+
+void vBoilStateController(unsigned int uiTimerCompareValue, unsigned int * uiBoilState)
+{
+  unsigned int boil_level =  uGetBoilLevel(); // each loop iteration, get the level of the boiler.
+
+  switch (*uiBoilState)
+       {
+       case BOILING:
+         {
+           //if the boil level is low, ensure the elements are off and leave.
+           if (!boil_level)
+             {
+               *uiBoilState = OFF;
+               vConsolePrint("Boil level too low..Boil off. message ignored\r\n");
+             }
+           else
+             {
+               vStartBoilPWM(uiTimerCompareValue);
+               *uiBoilState = WAITING_FOR_COMMAND;
+             }
+
+           break;
+         }
+       case OFF:
+         {
+           vStopBoilPWM();
+           *uiBoilState = WAITING_FOR_COMMAND;
+           break;
+         }
+       case WAITING_FOR_COMMAND:
+         {
+
+           break;
+         }
+       default:
+         {
+           vStopBoilPWM();
+           *uiBoilState = WAITING_FOR_COMMAND;
+         }
+       }
+}
+
 void vTaskBoil( void * pvParameters)
 {
   // Generic message struct for message storage.
   struct GenericMessage * xMessage;
   xMessage = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
   int iDefaultDuty = 0; // receive value from queue.
-  float fDuty = 0.0; // duty in float type
   int iDuty = 0; // duty in int type
-  uint16_t uADCIn = 0; //value read from ADC channel
   unsigned int uiADCDuty = 0;
-  unsigned int boil_level = 0; //to store the value from the boil level switch
+  unsigned int uiBoilState = WAITING_FOR_COMMAND;
   static unsigned int uiTimerCompareValue = 0; //value of the duty cycle when tranformed to timer units
   portBASE_TYPE xStatus; //queue receive status
   static char buf[50], buf1[50]; //text storage buffers
   for(;;)
     {
-      boil_level =  uGetBoilLevel(); // each loop iteration, get the level of the boiler.
-
+      // Receive message
       xStatus = xQueueReceive(xBoilQueue, &xMessage, 10); // check the queue and block for 10ms
       if (xStatus == pdPASS) // message received
         {
-          //if the boil level is low, ensure the elements are off and leave.
-          if (!boil_level){
-              TIM_SetCompare1(TIM4, 0);
-              TIM_Cmd( TIM4, DISABLE );
-              GPIO_ResetBits(BOIL_PORT, BOIL_PIN);
-              boil_state = OFF;
-              vConsolePrint("Boil level too low..Boil off. message ignored\r\n");
-          }
-          else // we get here if the boil level is ok to process the message
+          //Validate the message contents
+          iDefaultDuty = uiValidateIntegerPct(*(int *)xMessage->pvMessageContent);
+          // Work out what to do with the duty cycle passed in based on the source of the message
+          uiTimerCompareValue = uiTimerCompareController(xMessage->ucFromTask, iDefaultDuty);
+
+          // If the compare value is above zero, change state to boiling
+          if (uiTimerCompareValue > 0)
             {
-              //WE have received a value from the queue.. time to act.
-              //-----------------------------------------------------
-              iDefaultDuty = *(int *)xMessage->pvMessageContent;
-              if (iDefaultDuty > 100)
-                iDefaultDuty = 100;
-              if (iDefaultDuty < 0)
-                iDefaultDuty = 0;
-              // ensure we have water above the elements
-
-              // ***** Set timer value based on duty cycle *****
-              //------------------------------------------------
-              // run code when message received from auto brew task
-              if (xMessage->ucFromTask == (unsigned char)BREW_TASK)
-                {
-                  vConsolePrint("Boil: Message received from BREW TASK\r\n");
-                  uiADCDuty = uiGetADCBoilDuty();
-
-                  // determine which duty cycle to accept
-                  if (uiADCDuty <= 20)
-                    {
-                      iDuty = iDefaultDuty;
-                    }
-
-                  uiTimerCompareValue = uiTimerCompare(iDuty); // set the timer value to the duty cycle %
-                }
-              else if(xMessage->ucFromTask == (unsigned char)BREW_TASK_RESET)
-                {
-                  uiTimerCompareValue = 0;
-                }
-              else // this code run when message is not from the auto brew task
-                {
-                  uiTimerCompareValue = uiTimerCompare(iDefaultDuty); // set the timer value to the duty cycle %
-                  vConsolePrint("Boil: Message received\r\n");
-                  sprintf(buf, "Boil: Received duty cycle of %d, from ID #%d\r\n", iDefaultDuty, xMessage->ucFromTask);
-                  vConsolePrint(buf);
-                }
-              //****ENABLE BOIL*****
-              //--------------------
-              if (uiTimerCompareValue > 0)
-                {
-                  vStartBoilPWM(uiTimerCompareValue);
-                  boil_state = BOILING;
-                  //     printf("Boiling, duty = %d\r\n", duty);
-                }
-              else
-                {
-                  vStopBoilPWM();
-                  boil_state = OFF;
-                  vConsolePrint("Boil: 0 duty cycle. Turning off\r\n");
-                }
+              uiBoilState = BOILING;
+              uiBoilState = BOILING;
             }
-
+          else
+            {
+              uiBoilState = OFF;
+              uiBoilState = OFF;
+            }
         }
       else //no message received
         {
-
-          if (!boil_level && boil_state == BOILING)
-            {
-              vStopBoilPWM();
-              boil_state = OFF;
-              vConsolePrint("Boil: Boil state = ON, Boil level = low, stopping boil\r\n");
-            }
-
+          vBoilStateController(uiTimerCompareValue, &uiBoilState);
         }
 
       vTaskDelay(1000);
@@ -367,39 +398,54 @@ void vBoilAppletDisplay( void *pvParameters){
               lcd_printf(1,11,20,"level LOW");
 
             //display the state and user info (the state will flash on the screen)
-                switch (boil_state)
-                {
-                case BOILING:
-                {
-                        if(tog)
-                        {
-                              lcd_fill(1,220, 180,29, Black);
-                                lcd_printf(1,13,15,"BOILING");
-                        }
-                        else{
-                                lcd_fill(1,210, 180,17, Black);
-                        }
-                        break;
+            switch (uiBoilState)
+            {
+            case BOILING:
+              {
+                if(tog)
+                  {
+                    lcd_fill(1,220, 180,29, Black);
+                    lcd_printf(1,13,15,"BOILING");
+                  }
+                else{
+                    lcd_fill(1,210, 180,17, Black);
                 }
-                case OFF:
-                {
-                        if(tog)
-                        {
-                                lcd_fill(1,210, 180,29, Black);
-                                lcd_printf(1,13,11,"NOT BOILING");
-                        }
-                        else
-                          {
-                                lcd_fill(1,210, 180,17, Black);
-                          }
+                break;
+              }
+            case OFF:
+              {
+                if(tog)
+                  {
+                    lcd_fill(1,210, 180,29, Black);
+                    lcd_printf(1,13,11,"NOT BOILING");
+                  }
+                else
+                  {
+                    lcd_fill(1,210, 180,17, Black);
+                  }
 
-                        break;
-                }
-                default:
-                {
-                        break;
-                }
-                }
+                break;
+              }
+            case WAITING_FOR_COMMAND:
+              {
+                if(tog)
+                  {
+                    lcd_fill(1,210, 180,29, Black);
+                    lcd_printf(1,13,11,"WAITING_FOR_CMD");
+                  }
+                else
+                  {
+                    lcd_fill(1,210, 180,17, Black);
+                  }
+
+                break;
+              }
+
+            default:
+              {
+                break;
+              }
+            }
 
                 tog = tog ^ 1;
                 lcd_fill(102,99, 35,10, Black);
@@ -411,12 +457,16 @@ void vBoilAppletDisplay( void *pvParameters){
         }
 }
 
+struct GenericMessage xMessage1;
 
 int iBoilKey(int xx, int yy)
 {
-  struct GenericMessage * xMessage;
-  xMessage = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
+  static struct GenericMessage * xMessage;
+  xMessage = &xMessage1;
   xMessage->pvMessageContent = (void *)&diag_duty;
+  xMessage->ucFromTask = 0;
+  xMessage->uiStepNumber = 0;
+  xMessage->ucToTask = BOIL_TASK;
   static int zero = 0;
   static uint8_t w = 5,h = 5;
   static uint16_t last_window = 0;
@@ -425,7 +475,7 @@ int iBoilKey(int xx, int yy)
       diag_duty+=1;
 
       //printf("Duty Cycle is now %d\r\n", diag_duty);
-      if (boil_state == BOILING)
+      if (uiBoilState == BOILING)
         xQueueSendToBack(xBoilQueue, &xMessage, 0);
     }
   else if (xx > DUTY_DN_X1+1 && xx < DUTY_DN_X2-1 && yy > DUTY_DN_Y1+1 && yy < DUTY_DN_Y2-1)
@@ -435,7 +485,7 @@ int iBoilKey(int xx, int yy)
         diag_duty = 0;
       else diag_duty-=1;
       //printf("Duty Cycle is now %d\r\n", diag_duty);
-      if (boil_state == BOILING)
+      if (uiBoilState == BOILING)
         xQueueSendToBack(xBoilQueue, &xMessage, 0);
     }
   else if (xx > STOP_HEATING_X1+1 && xx < STOP_HEATING_X2-1 && yy > STOP_HEATING_Y1+1 && yy < STOP_HEATING_Y2-1)

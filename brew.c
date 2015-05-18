@@ -250,6 +250,10 @@ unsigned char ucGetBrewStep()
 
 }
 
+unsigned char ucGetBrewState()
+{
+  return BrewState.ucRunningState;
+}
 
 
 //----------------------------------------------------------------------------------------------------------------------------

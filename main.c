@@ -141,7 +141,7 @@ brew step elapsed seconds 02BA9C74C1384C069ECB648C3CEFFCBA
 boil duty F066509116CA43F7B6845C8E2EBA69FA
 chiller pump state 461F715060F5468883F6F8500CEAA4BC
 boil valve state 60140A1EB194439B8C9A198355FD93AA
-FB46F7E5DF914AF1816035EC02DEE0DC
+brew state FB46F7E5DF914AF1816035EC02DEE0DC
 3AEE6966D7664AA4BE05BBBBF48E2836
 B9118BEE3E5948C9806A71439478177E
 49DA95B5F4A94FA4AB1630C8B451BEEB
@@ -151,17 +151,18 @@ void vCheckTask(void *pvParameters)
 {
   char buf[50];
   char pcBrewElapsedTime[50], pcStepElapsedTime[50];
-  char pcBrewElapsedHours[45], pcBrewElapsedMinutes[45], pcBrewElapsedSeconds[45], pcBrewStep[45];
-  char pcBrewStepElapsedHours[45], pcBrewStepElapsedMinutes[45], pcBrewStepElapsedSeconds[45], pcMashTemp[45], pcHLTTemp[45];
-  char pcChillerPumpState[45], pcBoilState[45], pcHeapRemaining[45];
+  char pcBrewElapsedHours[50], pcBrewElapsedMinutes[50], pcBrewElapsedSeconds[50], pcBrewStep[50];
+  char pcBrewStepElapsedHours[50], pcBrewStepElapsedMinutes[50], pcBrewStepElapsedSeconds[50], pcMashTemp[50], pcHLTTemp[50];
+  char pcChillerPumpState[50], pcBoilState[50], pcHeapRemaining[50], pcBrewState[50];
   int ii = 0;
   char upper_limit = 255, lower_limit = 255;
   unsigned int touch, hops, ds1820, timer, litres, check, low_level = 90, heap, print, serial, serialcontrol;
   unsigned int display_applet, stats_applet, res_applet, graph_applet, brew_task;
+  static char cBuf[80];
   for (;;){
 
       touch = uxTaskGetStackHighWaterMark(xTouchTaskHandle);
-      static char cBuf[80];
+
       ds1820 =  uxTaskGetStackHighWaterMark(xDS1820TaskHandle);
       timer = uxTaskGetStackHighWaterMark(xTimerSetupHandle);
       litres = uxTaskGetStackHighWaterMark(xLitresToBoilHandle);
@@ -171,7 +172,6 @@ void vCheckTask(void *pvParameters)
       serial = uxTaskGetStackHighWaterMark(xSerialHandlerTaskHandle);
       serialcontrol = uxTaskGetStackHighWaterMark(xSerialControlTaskHandle);
       heap = xPortGetFreeHeapSize();
-
       display_applet =  uiGetBrewAppletDisplayHWM();
       res_applet =  uiGetBrewResAppletHWM();
       stats_applet =  uiGetBrewStatsAppletHWM();
@@ -210,21 +210,18 @@ void vCheckTask(void *pvParameters)
       sprintf(pcBoilState, "60140A1EB194439B8C9A198355FD93AA:%02u\r\n\0", ucGetBoilState());
       vConsolePrint(pcBoilState);
       vTaskDelay(50);
-
-
-
+      sprintf(pcBrewState, "FB46F7E5DF914AF1816035EC02DEE0DC:%02u\r\n\0", ucGetBrewState());
+      vConsolePrint(pcBrewState);
+      vTaskDelay(50);
 
       lower_limit = cI2cGetInput(CRANE_LOWER_LIMIT_PORT, CRANE_LOWER_LIMIT_PIN);
       upper_limit = cI2cGetInput(CRANE_UPPER_LIMIT_PORT, CRANE_UPPER_LIMIT_PIN);
 
       sprintf(buf, "BD52AA172CAE4F58A11EC35872EFEB99:%d \r \n", ii++%1024);
       sprintf(pcHeapRemaining, "*Heap:%u*low=%d,up=%d\r\n\0", heap, lower_limit, upper_limit);
-            vConsolePrint(pcHeapRemaining);
-            vTaskDelay(50);
-
-
-       vConsolePrint(buf);
-
+      vConsolePrint(pcHeapRemaining);
+      vTaskDelay(50);
+      vConsolePrint(buf);
 
        if (touch < low_level ||
            timer < low_level ||
@@ -236,7 +233,7 @@ void vCheckTask(void *pvParameters)
            res_applet < low_level ||
            stats_applet < low_level ||
            graph_applet < low_level ||
-           brew_task < low_level || TRUE)
+           brew_task < low_level)
 
 
         {
@@ -246,7 +243,6 @@ void vCheckTask(void *pvParameters)
           vConsolePrint(cBuf);
           vTaskDelay(50);
           sprintf(cBuf, "touchwm = %d\r\n", touch);
-
           vConsolePrint(cBuf);
           vTaskDelay(50);
           sprintf(cBuf, "DS1820wm = %d\r\n", ds1820);
@@ -270,7 +266,6 @@ void vCheckTask(void *pvParameters)
           sprintf(cBuf, "serialcontrol = %d\r\n", serialcontrol);
           vConsolePrint(cBuf);
           vTaskDelay(50);
-
           sprintf(cBuf, "brewtask = %d\r\n", brew_task);
           vConsolePrint(cBuf);
           vTaskDelay(50);
@@ -286,8 +281,6 @@ void vCheckTask(void *pvParameters)
           sprintf(cBuf, "brew_display = %d\r\n", display_applet);
           vConsolePrint(cBuf);
           vTaskDelay(50);
-
-
           sprintf(cBuf, "print = %d\r\n", print);
           vConsolePrint(cBuf);
           vConsolePrint("=============================\r\n");
@@ -295,13 +288,9 @@ void vCheckTask(void *pvParameters)
           vTaskDelay(500);
 
         }
-
       vTaskDelay(500);
       taskYIELD();
   }
-
-
-
 }
 
 struct menu diag_menu[] =
@@ -354,181 +343,168 @@ struct menu main_menu[] =
  */ 
 int main( void )
 {
-    prvSetupHardware();// set up peripherals etc 
+  prvSetupHardware();// set up peripherals etc
 
   USARTInit(USART_PARAMS1);
 
+  //  printf("Usart up and running!\r\n");
+  xPrintQueue = xQueueCreate(150, sizeof(char *));
+  if (xPrintQueue == NULL)
+    {
+      printf("Failed to make print queue\r\n");
+      for (;;);
+    }
+
+  vParametersInit();
+
+  lcd_init();
+
+  menu_set_root(main_menu);
+
+  vLEDInit();
+
+  vI2C_Init();
+
+  vMillInit();
+
+  vMashPumpInit();
+
+  vValvesInit();
+
+  vDiagTempsInit();
+
+  vHopsInit();
+
+  vBoilInit();
+
+  vStirInit();
+
+  vCraneInit();
+
+  hlt_init();
+
+  vFlow1Init();
+
+  vDiagPWMInit();
+
+  vChillerPumpInit();
+
+  vBoilValveInit();
+
+  xTaskCreate( vSerialHandlerTask,
+      ( signed portCHAR * ) "SerialTask",
+      configMINIMAL_STACK_SIZE,
+      NULL,
+      tskIDLE_PRIORITY +4,
+      &xSerialHandlerTaskHandle );
 
 
-    //  printf("Usart up and running!\r\n");
-    xPrintQueue = xQueueCreate(150, sizeof(char *));
-    if (xPrintQueue == NULL)
-      {
-        printf("Failed to make print queue\r\n");
-        for (;;);
-      }
+  xTaskCreate( vSerialControlCentreTask,
+      ( signed portCHAR * ) "SerialctrlTask",
+      configMINIMAL_STACK_SIZE + 100,
+      NULL,
+      tskIDLE_PRIORITY +2,
+      &xSerialControlTaskHandle );
+
+  xTaskCreate( vConsolePrintTask,
+      ( signed portCHAR * ) "PrintTask",
+      configMINIMAL_STACK_SIZE,
+      NULL,
+      tskIDLE_PRIORITY,
+      &xPrintTaskHandle );
+
+  xTaskCreate( vTouchTask,
+      ( signed portCHAR * ) "touch    ",
+      configMINIMAL_STACK_SIZE +300,
+      NULL,
+      tskIDLE_PRIORITY,
+      &xTouchTaskHandle );
+
+  // Create your application tasks if needed here
+  xTaskCreate( vTaskDS1820Convert,
+      ( signed portCHAR * ) "TempSensors",
+      configMINIMAL_STACK_SIZE + 100,
+      NULL,
+      tskIDLE_PRIORITY,
+      &xDS1820TaskHandle );
+
+  xTaskCreate( vTaskLitresToBoil,
+      ( signed portCHAR * ) "boil_litres",
+      configMINIMAL_STACK_SIZE,
+      NULL,
+      tskIDLE_PRIORITY ,
+      &xLitresToBoilHandle );
+
+  xTaskCreate( vTaskLitresToMash,
+      ( signed portCHAR * ) "mash_litres",
+      configMINIMAL_STACK_SIZE,
+      NULL,
+      tskIDLE_PRIORITY ,
+      &xLitresToMashHandle );
+
+  xTaskCreate( vTaskHops,
+      ( signed portCHAR * ) "hops    ",
+      configMINIMAL_STACK_SIZE,
+      NULL,
+      tskIDLE_PRIORITY,
+      &xHopsTaskHandle );
+
+  xTaskCreate( vCheckTask,
+      ( signed portCHAR * ) "check     ",
+      configMINIMAL_STACK_SIZE +400,
+      NULL,
+      tskIDLE_PRIORITY,
+      &xCheckTaskHandle );
+
+  xTaskCreate( vTaskCrane,
+      ( signed portCHAR * ) "Crane    ",
+      configMINIMAL_STACK_SIZE + 200 ,
+      NULL,
+      tskIDLE_PRIORITY+1,
+      &xCraneTaskHandle );
+
+  xTaskCreate( vTaskBoilValve,
+      ( signed portCHAR * ) "boilvalve",
+      configMINIMAL_STACK_SIZE +200,
+      NULL,
+      tskIDLE_PRIORITY+1,
+      &xBoilValveTaskHandle );
 
 
+  //      xTaskCreate( vI2C_TestTask,
+  //          ( signed portCHAR * ) "i2c_test",
+  //          configMINIMAL_STACK_SIZE +400,
+  //          NULL,
+  //          tskIDLE_PRIORITY,
+  //          &xI2C_TestHandle );
 
-
-
-
-    vParametersInit();
-
-    lcd_init();
-    //lcd_init();
-    //lcd_init();
-
-    menu_set_root(main_menu);
-
-
-    vLEDInit();
-
-    vI2C_Init();
-
-    vMillInit();
-
-    vMashPumpInit();
-
-    vValvesInit();
-
-    vDiagTempsInit();
-
-    vHopsInit();
-
-    vBoilInit();
-
-    vStirInit();
-
-    vCraneInit();
-
-    hlt_init();
-
-    vFlow1Init();
-
-    vDiagPWMInit();
-
-    vChillerPumpInit();
-
-    vBoilValveInit();
-
-
-    //vRunTimeTimerSetup(); // set up the runtime timer
-
-    xTaskCreate( vSerialHandlerTask,
-            ( signed portCHAR * ) "SerialTask",
-            configMINIMAL_STACK_SIZE,
-            NULL,
-            tskIDLE_PRIORITY +4,
-            &xSerialHandlerTaskHandle );
-
-
-      xTaskCreate( vSerialControlCentreTask,
-                  ( signed portCHAR * ) "SerialctrlTask",
-                  configMINIMAL_STACK_SIZE + 100,
-                  NULL,
-                  tskIDLE_PRIORITY +2,
-                  &xSerialControlTaskHandle );
-
-    xTaskCreate( vConsolePrintTask,
-        ( signed portCHAR * ) "PrintTask",
-        configMINIMAL_STACK_SIZE,
-        NULL,
-        tskIDLE_PRIORITY,
-        &xPrintTaskHandle );
-
-    xTaskCreate( vTouchTask, 
-        ( signed portCHAR * ) "touch    ",
-        configMINIMAL_STACK_SIZE +300,
-        NULL,
-        tskIDLE_PRIORITY,
-        &xTouchTaskHandle );
-
-    // Create your application tasks if needed here
-    xTaskCreate( vTaskDS1820Convert,
-        ( signed portCHAR * ) "TempSensors",
-        configMINIMAL_STACK_SIZE + 100,
-        NULL,
-        tskIDLE_PRIORITY,
-        &xDS1820TaskHandle );
-
-    xTaskCreate( vTaskLitresToBoil,
-        ( signed portCHAR * ) "boil_litres",
-        configMINIMAL_STACK_SIZE,
-        NULL,
-        tskIDLE_PRIORITY ,
-        &xLitresToBoilHandle );
-
-    xTaskCreate( vTaskLitresToMash,
-            ( signed portCHAR * ) "mash_litres",
-            configMINIMAL_STACK_SIZE,
-            NULL,
-            tskIDLE_PRIORITY ,
-            &xLitresToMashHandle );
-
-    xTaskCreate( vTaskHops,
-           ( signed portCHAR * ) "hops    ",
-           configMINIMAL_STACK_SIZE,
-           NULL,
-           tskIDLE_PRIORITY,
-           &xHopsTaskHandle );
-
-    xTaskCreate( vCheckTask,
-        ( signed portCHAR * ) "check     ",
-        configMINIMAL_STACK_SIZE +400,
-        NULL,
-        tskIDLE_PRIORITY,
-        &xCheckTaskHandle );
-
-    xTaskCreate( vTaskCrane,
-        ( signed portCHAR * ) "Crane    ",
-        configMINIMAL_STACK_SIZE + 200 ,
-        NULL,
-        tskIDLE_PRIORITY+1,
-        &xCraneTaskHandle );
-
-    xTaskCreate( vTaskBoilValve,
-        ( signed portCHAR * ) "boilvalve",
-        configMINIMAL_STACK_SIZE +200,
-        NULL,
-        tskIDLE_PRIORITY+1,
-        &xBoilValveTaskHandle );
-
-
-//      xTaskCreate( vI2C_TestTask,
-//          ( signed portCHAR * ) "i2c_test",
-//          configMINIMAL_STACK_SIZE +400,
-//          NULL,
-//          tskIDLE_PRIORITY,
-//          &xI2C_TestHandle );
-
-    xTaskCreate(  vTaskHLTLevelChecker,
-                 ( signed portCHAR * ) "hlt_level",
-                 configMINIMAL_STACK_SIZE +100,
-                 NULL,
-                 tskIDLE_PRIORITY,
-                 & xTaskHLTLevelCheckerTaskHandle );
+  xTaskCreate(  vTaskHLTLevelChecker,
+      ( signed portCHAR * ) "hlt_level",
+      configMINIMAL_STACK_SIZE +100,
+      NULL,
+      tskIDLE_PRIORITY,
+      & xTaskHLTLevelCheckerTaskHandle );
 
 
 
-    xTaskCreate(  vI2C_SendTask,
-              ( signed portCHAR * ) "i2c_send",
-              configMINIMAL_STACK_SIZE +500,
-              NULL,
-              tskIDLE_PRIORITY+2,
-              & xI2C_SendHandle );
+  xTaskCreate(  vI2C_SendTask,
+      ( signed portCHAR * ) "i2c_send",
+      configMINIMAL_STACK_SIZE +500,
+      NULL,
+      tskIDLE_PRIORITY+2,
+      & xI2C_SendHandle );
 
 
-    /* Start the scheduler. */
-           vTaskStartScheduler();
+  /* Start the scheduler. */
+  vTaskStartScheduler();
 
-    
 
-    printf("FAIL\r\n");
 
-    /* Will only get here if there was insufficient memory to create the idle
+  printf("FAIL\r\n");
+
+  /* Will only get here if there was insufficient memory to create the idle
        task. */
-    return 0;
+  return 0;
 }
 
 

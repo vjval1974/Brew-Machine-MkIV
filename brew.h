@@ -140,6 +140,7 @@ void vTaskBrew(void * pvParameters);
 void vBrewApplet(int init);
 int iBrewKey(int xx, int yy);
 void vBrewRemoteStart();
+unsigned char ucGetBrewState();
 
 extern const int STEP_COMPLETE;
 extern const int STEP_FAILED;

@@ -8,7 +8,7 @@
 #ifndef MAIN_H_
 #define MAIN_H_
 
-#define TESTING
+//#define TESTING
 
 
 #endif /* MAIN_H_ */

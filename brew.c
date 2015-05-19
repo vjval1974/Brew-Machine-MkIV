@@ -294,6 +294,12 @@ void vTaskBrew(void * pvParameters)
 
   for(;;)
     {
+      if (xMessage == NULL)
+        {
+          vConsolePrint("BREW:xMessage = NULL\r\n");
+          while(1);
+        }
+
       if(xQueueReceive(xBrewTaskStateQueue, &uMsg, 0) == pdPASS)
         {
           BrewState.ucRunningState = uMsg;
@@ -415,14 +421,20 @@ void vTaskBrew(void * pvParameters)
 //----------------------------------------------------------------------------------------------------------------------------
 // BREW PAUSE
 //----------------------------------------------------------------------------------------------------------------------------
+static struct GenericMessage xMessage20;
+const int iCommand1 = 0; // changed to see if its more stable
 void vBrewReset(void){
-  static struct GenericMessage * xMessage = NULL;
-  const int iCommand = 0; // changed to see if its more stable
+  static struct GenericMessage * xMessage;
+  xMessage = &xMessage20;
+
   if (xMessage == NULL)
-    xMessage = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
+    {
+      vConsolePrint("BREW_RESET: xMessage = NULL!\r\n");
+      while(1);
+    }
   xMessage->ucFromTask = BREW_TASK_RESET;
   xMessage->ucToTask = BOIL_TASK;
-  xMessage->pvMessageContent = (void *)&iCommand;
+  xMessage->pvMessageContent = (void *)&iCommand1;
   if (xBoilQueue != NULL)
     xQueueSendToBack(xBoilQueue, &xMessage, 0);
   vChillerPump(STOP);
@@ -443,8 +455,13 @@ void vBrewNextStep(void){
   static char buf[50], buf1[50];
   static int iCount = 0;
   iCount++;
-  if (xMessage11 ==  NULL)
-    xMessage11 = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
+  if (xMessage11 == NULL)
+    {
+      vConsolePrint("BrewNextStep: xMessage = null\r\n");
+      while(1);
+    }
+
+ // xMessage11 = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
   xMessage11->ucFromTask = BREW_TASK;
   xMessage11->ucToTask = BREW_TASK;
   xMessage11->pvMessageContent = (void *)&iCommand;
@@ -508,15 +525,17 @@ void vBrewRunStep(void){
 #define NO_MASH_OUT 3
 #define CLEAN 4
 
+static struct HLTMsg  Content1;
+struct GenericMessage Message1;
 //===================================================================================================================================================
 void vBrewHLTSetupFunction(int piParameters[5]){
-  static struct HLTMsg  * Content =  NULL;
-  struct GenericMessage * Message = NULL;
+  static struct HLTMsg  * Content =  &Content1;
+  struct GenericMessage * Message = &Message1;
 
-  if (Content == NULL)
-    Content = (struct HLTMsg *)pvPortMalloc(sizeof(struct HLTMsg));
-  if (Message == NULL)
-    Message = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
+  if (Content == NULL || Message == NULL)
+    {
+      vConsolePrint("BREW_HLT_SETUP: content or message null!\r\n");
+    }
 
   switch( piParameters[0] )
   {
@@ -638,13 +657,17 @@ void vBrewValvesSetupFunction (int piParameters[5])
   vBrewNextStep();
 }
 
+static struct GenericMessage xMessage30;
 void vBrewBoilValveSetupFunction (int piParameters[5])
 {
-  static struct GenericMessage * xMessage = NULL;
+  static struct GenericMessage * xMessage = &xMessage30;
   static int * iCommand;
   iCommand = &piParameters[0];
   if (xMessage == NULL)
-    xMessage = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
+    {
+      vConsolePrint("BoilValve setup: xMessage = null\r\n");
+      while(1);
+    }
   xMessage->ucFromTask = BREW_TASK;
   xMessage->ucToTask = BOIL_VALVE_TASK;
   xMessage->uiStepNumber = BrewState.ucStep;
@@ -654,13 +677,18 @@ void vBrewBoilValveSetupFunction (int piParameters[5])
   vBrewNextStep();
 }
 
+static struct GenericMessage xMessage31;
 void vBrewCraneSetupFunction(int piParameters[5])
 {
-  static struct GenericMessage * xMessage = NULL;
+  static struct GenericMessage * xMessage = &xMessage31;
   static int * iCommand;
   iCommand = &piParameters[0];
+
   if (xMessage == NULL)
-    xMessage = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
+    {
+      vConsolePrint("Cranesetup: xMessage = null\r\n");
+      while(1);
+    }
   xMessage->ucFromTask = BREW_TASK;
   xMessage->ucToTask = CRANE_TASK;
   xMessage->uiStepNumber = BrewState.ucStep;
@@ -1163,34 +1191,40 @@ void vBrewPumpToBoilPollFunction(int  piParameters[5])
 #define BOIL_6 6
 #define BOIL_7 7
 static int iBoilState = BOIL_0;
+const int i100 = 100;
+static struct GenericMessage xBoilMessage1;
 static struct GenericMessage * xBoilMessage = NULL;
+static struct TextMsg xBoilTextMessage1;
 static struct TextMsg * xBoilTextMessage = NULL;
 void vBrewBoilSetupFunction(int piParameters[5])
 {
-  const int i100 = 100;
-  if (xBoilMessage == NULL)
-    xBoilMessage = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
-  if (xBoilTextMessage == NULL)
-    xBoilTextMessage = (struct TextMsg *)pvPortMalloc(sizeof(struct TextMsg));
-
+  xBoilMessage = &xBoilMessage1;
+  xBoilTextMessage = &xBoilTextMessage1;
+  char buf[50];
 
   if (piParameters[2] == 1)
     {
+      vTaskDelay(1000);
       iBoilState = BOIL_0;
       xBoilMessage->pvMessageContent = (void *)&piParameters[1];
       xBoilMessage->ucFromTask = BREW_TASK;
       xBoilTextMessage->pcMsgText = "BOIL";
       xBoilTextMessage->ucLine = 5;
+      sprintf(buf, "B2B: sending %d\r\n State = %d\r\n", *(int*)xBoilMessage->pvMessageContent);
+                      vConsolePrint(buf);
+
       xQueueSendToBack(xBrewAppletTextQueue, &xBoilTextMessage, 0);
       vValveActuate(MASH_VALVE, CLOSE); // Runs water through the other side of the chiller.
     }
   else
     {
-      xBoilMessage->pvMessageContent = (void *)100;
-      xBoilTextMessage->pcMsgText = "Bring To Boil";
+      xBoilMessage->pvMessageContent =  (void *)&piParameters[1];
       xBoilMessage->ucFromTask = BREW_TASK_BRING_TO_BOIL;
-           xBoilTextMessage->ucLine = 5;
-           xQueueSendToBack(xBrewAppletTextQueue, &xBoilTextMessage, 0);
+
+      xBoilTextMessage->pcMsgText = "Bring To Boil";
+      xBoilTextMessage->ucLine = 5;
+
+      xQueueSendToBack(xBrewAppletTextQueue, &xBoilTextMessage, 0);
       iBoilState = BOIL_7;
     }
 
@@ -1199,7 +1233,7 @@ void vBrewBoilSetupFunction(int piParameters[5])
   xBoilMessage->ucToTask = BOIL_TASK;
   xBoilMessage->uiStepNumber = BrewState.ucStep;
   vConsolePrint("Boil Setup Function called\r\n");
-  xQueueSendToBack(xBoilQueue, &xBoilMessage, 5000);
+  xQueueSendToBack(xBoilQueue, &xBoilMessage, 50);
 
 }
 
@@ -1233,14 +1267,14 @@ void vBrewBoilPollFunction(int piParameters[5])
       xBoilMessage = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
       vConsolePrint("Had to allocate memory for xBoilMessage!!!\r\n");
     }
-  if (iBoilState != BOIL_7)
-    {
-      xBoilMessage->pvMessageContent = (void *)&piParameters[1];
-      xBoilMessage->ucFromTask = BREW_TASK;
-      xBoilMessage->ucToTask = BOIL_TASK;
-      xBoilMessage->uiStepNumber = BrewState.ucStep;
-      xQueueSendToBack(xBoilQueue, &xBoilMessage, 0);
-    }
+//  if (iBoilState != BOIL_7)
+//    {
+//      xBoilMessage->pvMessageContent = (void *)&piParameters[1];
+//      xBoilMessage->ucFromTask = BREW_TASK;
+//      xBoilMessage->ucToTask = BOIL_TASK;
+//      xBoilMessage->uiStepNumber = BrewState.ucStep;
+//      xQueueSendToBack(xBoilQueue, &xBoilMessage, 0);
+//    }
   //===================================================================================
 
 

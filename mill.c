@@ -29,8 +29,15 @@ xTaskHandle xMillTaskHandle = NULL, xMillAppletDisplayHandle = NULL;
 xSemaphoreHandle xAppletRunningSemaphore;
 
 
-
 volatile MillState xMillState = MILL_STOPPED;
+
+
+unsigned char ucGetMillState()
+{
+  return xMillState;
+}
+
+
 
 void vMillInit(void){
 

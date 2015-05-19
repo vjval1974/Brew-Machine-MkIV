@@ -12,6 +12,7 @@ void vBoilInit(void);
 void vBoilApplet(int init);
 int iBoilKey(int xx, int yy);
 unsigned char ucGetBoilState();
+unsigned int uiGetBoilDuty();
 extern xQueueHandle xBoilQueue;
 
 

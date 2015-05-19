@@ -140,7 +140,7 @@ brew step elapsed minutes 35C22A915227449C8F2A740F2C26B344
 brew step elapsed seconds 02BA9C74C1384C069ECB648C3CEFFCBA
 boil duty F066509116CA43F7B6845C8E2EBA69FA
 chiller pump state 461F715060F5468883F6F8500CEAA4BC
-boil valve state 60140A1EB194439B8C9A198355FD93AA
+boil state 60140A1EB194439B8C9A198355FD93AA
 brew state FB46F7E5DF914AF1816035EC02DEE0DC
 3AEE6966D7664AA4BE05BBBBF48E2836
 B9118BEE3E5948C9806A71439478177E
@@ -153,7 +153,7 @@ void vCheckTask(void *pvParameters)
   char pcBrewElapsedTime[50], pcStepElapsedTime[50];
   char pcBrewElapsedHours[50], pcBrewElapsedMinutes[50], pcBrewElapsedSeconds[50], pcBrewStep[50];
   char pcBrewStepElapsedHours[50], pcBrewStepElapsedMinutes[50], pcBrewStepElapsedSeconds[50], pcMashTemp[50], pcHLTTemp[50];
-  char pcChillerPumpState[50], pcBoilState[50], pcHeapRemaining[50], pcBrewState[50];
+  char pcChillerPumpState[50], pcBoilState[50], pcHeapRemaining[50], pcBrewState[50], pcBoilDuty[50];
   int ii = 0;
   char upper_limit = 255, lower_limit = 255;
   unsigned int touch, hops, ds1820, timer, litres, check, low_level = 90, heap, print, serial, serialcontrol;
@@ -182,22 +182,22 @@ void vCheckTask(void *pvParameters)
 
       sprintf(pcBrewElapsedHours, "4D51E338F02649DFA173631622024A90:%02u\r\n\0", ucGetBrewHoursElapsed());
       vConsolePrint(pcBrewElapsedHours);
-      vTaskDelay(50);
+      vTaskDelay(80);
       sprintf(pcBrewElapsedMinutes, "99A2038A62BF47E7BFB1922A43C0825C:%02u\r\n\0", ucGetBrewMinutesElapsed());
       vConsolePrint(pcBrewElapsedMinutes);
-      vTaskDelay(50);
+      vTaskDelay(80);
       sprintf(pcBrewElapsedSeconds, "E9C4FDDEDEBC41D7AC3A3F4C636759A2:%02u\r\n\0", ucGetBrewSecondsElapsed());
       vConsolePrint(pcBrewElapsedSeconds);
-      vTaskDelay(50);
+      vTaskDelay(80);
       sprintf(pcBrewStep, "1308CA31CAEE4A9A8AC5B353F5ACB594:%02u\r\n\0", ucGetBrewStep());
       vConsolePrint(pcBrewStep);
-      vTaskDelay(50);
+      vTaskDelay(80);
       sprintf(pcBrewStepElapsedSeconds, "02BA9C74C1384C069ECB648C3CEFFCBA:%02u\r\n\0", ucGetBrewStepSecondsElapsed());
       vConsolePrint(pcBrewStepElapsedSeconds);
-      vTaskDelay(50);
+      vTaskDelay(80);
       sprintf(pcBrewStepElapsedMinutes, "35C22A915227449C8F2A740F2C26B344:%02u\r\n\0", ucGetBrewStepMinutesElapsed());
       vConsolePrint(pcBrewStepElapsedMinutes);
-      vTaskDelay(50);
+      vTaskDelay(80);
       sprintf(pcMashTemp, "E21DFC36AFB24226A323D7931B6A1F30:%02u\r\n\0", (unsigned int)floor(ds1820_get_temp(MASH)));
       vConsolePrint(pcMashTemp);
       vTaskDelay(50);
@@ -206,13 +206,17 @@ void vCheckTask(void *pvParameters)
       vTaskDelay(50);
       sprintf(pcChillerPumpState, "461F715060F5468883F6F8500CEAA4BC:%02u\r\n\0", ucGetChillerPumpState());
       vConsolePrint(pcChillerPumpState);
-      vTaskDelay(50);
+      vTaskDelay(80);
       sprintf(pcBoilState, "60140A1EB194439B8C9A198355FD93AA:%02u\r\n\0", ucGetBoilState());
       vConsolePrint(pcBoilState);
-      vTaskDelay(50);
+      vTaskDelay(80);
       sprintf(pcBrewState, "FB46F7E5DF914AF1816035EC02DEE0DC:%02u\r\n\0", ucGetBrewState());
       vConsolePrint(pcBrewState);
-      vTaskDelay(50);
+      vTaskDelay(80);
+      sprintf(pcBoilDuty, "FB46F7E5DF914AF1816035EC02DEE0DC:%02u\r\n\0", uiGetBoilDuty());
+      vConsolePrint(pcBoilDuty);
+      vTaskDelay(80);
+
 
       lower_limit = cI2cGetInput(CRANE_LOWER_LIMIT_PORT, CRANE_LOWER_LIMIT_PIN);
       upper_limit = cI2cGetInput(CRANE_UPPER_LIMIT_PORT, CRANE_UPPER_LIMIT_PIN);
@@ -220,7 +224,7 @@ void vCheckTask(void *pvParameters)
       sprintf(buf, "BD52AA172CAE4F58A11EC35872EFEB99:%d \r \n", ii++%1024);
       sprintf(pcHeapRemaining, "*Heap:%u*low=%d,up=%d\r\n\0", heap, lower_limit, upper_limit);
       vConsolePrint(pcHeapRemaining);
-      vTaskDelay(50);
+      vTaskDelay(80);
       vConsolePrint(buf);
 
        if (touch < low_level ||
@@ -241,54 +245,54 @@ void vCheckTask(void *pvParameters)
           vConsolePrint("=============================\r\n");
           sprintf(cBuf,"check task: idle ticks = %d\r\n", ulIdleCycleCount);
           vConsolePrint(cBuf);
-          vTaskDelay(50);
+          vTaskDelay(80);
           sprintf(cBuf, "touchwm = %d\r\n", touch);
           vConsolePrint(cBuf);
-          vTaskDelay(50);
+          vTaskDelay(80);
           sprintf(cBuf, "DS1820wm = %d\r\n", ds1820);
           vConsolePrint(cBuf);
-          vTaskDelay(50);
+          vTaskDelay(80);
           sprintf(cBuf, "TimerSetupwm = %d\r\n", timer);
           vConsolePrint(cBuf);
-          vTaskDelay(50);
+          vTaskDelay(80);
           sprintf(cBuf, "litreswm = %d\r\n", litres);
           vConsolePrint(cBuf);
-          vTaskDelay(50);
+          vTaskDelay(80);
           sprintf(cBuf, "hopswm = %d\r\n", hops);
           vConsolePrint(cBuf);
-          vTaskDelay(50);
+          vTaskDelay(80);
           sprintf(cBuf, "check = %d\r\n", check);
           vConsolePrint(cBuf);
-          vTaskDelay(50);
+          vTaskDelay(80);
           sprintf(cBuf, "serial = %d\r\n", serial);
           vConsolePrint(cBuf);
-          vTaskDelay(50);
+          vTaskDelay(80);
           sprintf(cBuf, "serialcontrol = %d\r\n", serialcontrol);
           vConsolePrint(cBuf);
-          vTaskDelay(50);
+          vTaskDelay(80);
           sprintf(cBuf, "brewtask = %d\r\n", brew_task);
           vConsolePrint(cBuf);
-          vTaskDelay(50);
+          vTaskDelay(80);
           sprintf(cBuf, "stats = %d\r\n", stats_applet);
           vConsolePrint(cBuf);
-          vTaskDelay(50);
+          vTaskDelay(80);
           sprintf(cBuf, "res = %d\r\n", res_applet);
           vConsolePrint(cBuf);
-          vTaskDelay(50);
+          vTaskDelay(80);
           sprintf(cBuf, "graph = %d\r\n", graph_applet);
           vConsolePrint(cBuf);
-          vTaskDelay(50);
+          vTaskDelay(80);
           sprintf(cBuf, "brew_display = %d\r\n", display_applet);
           vConsolePrint(cBuf);
-          vTaskDelay(50);
+          vTaskDelay(80);
           sprintf(cBuf, "print = %d\r\n", print);
           vConsolePrint(cBuf);
           vConsolePrint("=============================\r\n");
           //xTaskResumeAll();
-          vTaskDelay(500);
+          vTaskDelay(800);
 
         }
-      vTaskDelay(500);
+      vTaskDelay(800);
       taskYIELD();
   }
 }
@@ -347,7 +351,6 @@ int main( void )
 
   USARTInit(USART_PARAMS1);
 
-  //  printf("Usart up and running!\r\n");
   xPrintQueue = xQueueCreate(150, sizeof(char *));
   if (xPrintQueue == NULL)
     {
@@ -356,9 +359,7 @@ int main( void )
     }
 
   vParametersInit();
-
   lcd_init();
-
   menu_set_root(main_menu);
 
   vLEDInit();

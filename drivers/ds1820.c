@@ -16,7 +16,7 @@
 #include "queue.h"
 #include "lcd.h"
 #include "console.h"
-
+#include "mill.h"
 
 // ROM COMMANDS
 #define MATCH_ROM	0x55
@@ -200,8 +200,10 @@ void vTaskDS1820Convert( void *pvParameters ){
 ////////////////////////////////////////////////////////////////////////////
 
 float ds1820_get_temp(unsigned char sensor){
-    
-    return temps[sensor];
+    if (ucGetMillState() == MILL_DRIVING){
+        return 13.55;
+    }
+    else return temps[sensor];
 }
 ////////////////////////////////////////////////////////////////////////////
 

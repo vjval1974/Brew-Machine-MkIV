@@ -20,6 +20,7 @@
 #include "message.h"
 #include "valves.h"
 #include "brew.h"
+#include "mill.h"
 #include "console.h"
 #include "Flow1.h"
 #include "main.h"

@@ -44,7 +44,7 @@ xQueueHandle xBoilQueue = NULL;
 
 
 #define TIM_ARR_TOP 10000
-
+static unsigned int uiBoilDuty = 0; // for user interface ONLY
 int diag_duty = 50;
 volatile uint8_t uiBoilState = WAITING_FOR_COMMAND;
 
@@ -213,6 +213,7 @@ static unsigned int uiTimerCompareController(unsigned char ucMessageSource, int 
     else iDuty = uiADCDuty;
 
     uiTimerCompareValue = uiTimerCompare(iDuty); // set the timer value to the duty cycle %
+    uiBoilDuty = iDuty;  // for UserInterface
     break;
   }
   case BREW_TASK_RESET:
@@ -220,11 +221,13 @@ static unsigned int uiTimerCompareController(unsigned char ucMessageSource, int 
       sprintf(buf, "Boil: Received duty cycle of %d, from ID #%d\r\n", iDefaultDuty, ucMessageSource);
       vConsolePrint(buf);
       uiTimerCompareValue = 0;
+      uiBoilDuty = 0;  // for UserInterface
       break;
     }
   case BREW_TASK_BRING_TO_BOIL:
     {
       uiTimerCompareValue = uiTimerCompare(100);
+      uiBoilDuty = 100;  // for UserInterface
       if (uiLastTimerCompareValue != uiTimerCompareValue)
         {
           vConsolePrint("Message from B2B, setting 100\r\n");
@@ -283,7 +286,7 @@ char buf[50];
 }
 struct GenericMessage xMessage2;
 volatile  struct GenericMessage * xMessage;
-unsigned int uiBoilDuty = 0; // for user interface ONLY
+
 void vTaskBoil( void * pvParameters)
 {
   // Generic message struct for message storage.

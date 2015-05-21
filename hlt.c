@@ -73,6 +73,12 @@ void hlt_init()
 
 }
 
+static unsigned int uiActualLitresDelivered  = 0;
+unsigned int uiGetActualLitresDelivered(void)
+{
+  return uiActualLitresDelivered;
+}
+
 //=================================================================================================================================================================
 void vTaskBrewHLT(void * pvParameters)
 {
@@ -275,6 +281,7 @@ void vTaskBrewHLT(void * pvParameters)
             }
           vValveActuate(HLT_VALVE, OPEN);
           fActualLitresDelivered = fGetBoilFlowLitres();
+
           if(((int)(fActualLitresDelivered * 1000) % 100) < 10)
             {
               sprintf(buf, "ml delivered = %d\r\n", (int)(fActualLitresDelivered*1000));
@@ -284,6 +291,7 @@ void vTaskBrewHLT(void * pvParameters)
 #ifdef TESTING
           fActualLitresDelivered = fLitresToDrain + 1;
 #endif
+
           if (fActualLitresDelivered >= fLitresToDrain)
             {
               vValveActuate(HLT_VALVE, CLOSE);
@@ -294,7 +302,7 @@ void vTaskBrewHLT(void * pvParameters)
               xQueueSendToBack(xBrewTaskReceiveQueue, &xMessage, 0);
               vConsolePrint("HLT is DRAINED\r\n");
               uRcvdState = HLT_STATE_IDLE;
-
+              uiActualLitresDelivered += (unsigned int)(fActualLitresDelivered*1000);
             }
 
           //sprintf(buf, "Draining!\r\n");

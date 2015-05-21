@@ -46,6 +46,7 @@ void hlt_init(void);
 void vHLTAppletCallback (int in_out);
 void vTaskBrewHLT(void * pvParameters);
 void vTaskHLTLevelChecker( void * pvParameters);
+unsigned int uiGetActualLitresDelivered(void);
 
 extern xTaskHandle xHeatHLTTaskHandle, xHLTAppletDisplayHandle;
 extern xTaskHandle xBrewHLTTaskHandle;

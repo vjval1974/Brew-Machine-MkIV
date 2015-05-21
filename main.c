@@ -142,7 +142,7 @@ boil duty F066509116CA43F7B6845C8E2EBA69FA
 chiller pump state 461F715060F5468883F6F8500CEAA4BC
 boil state 60140A1EB194439B8C9A198355FD93AA
 brew state FB46F7E5DF914AF1816035EC02DEE0DC
-3AEE6966D7664AA4BE05BBBBF48E2836
+HLT litres delivered 3AEE6966D7664AA4BE05BBBBF48E2836
 B9118BEE3E5948C9806A71439478177E
 49DA95B5F4A94FA4AB1630C8B451BEEB
      */
@@ -153,7 +153,7 @@ void vCheckTask(void *pvParameters)
   char pcBrewElapsedTime[50], pcStepElapsedTime[50];
   char pcBrewElapsedHours[50], pcBrewElapsedMinutes[50], pcBrewElapsedSeconds[50], pcBrewStep[50];
   char pcBrewStepElapsedHours[50], pcBrewStepElapsedMinutes[50], pcBrewStepElapsedSeconds[50], pcMashTemp[50], pcHLTTemp[50];
-  char pcChillerPumpState[50], pcBoilState[50], pcHeapRemaining[50], pcBrewState[50], pcBoilDuty[50];
+  char pcChillerPumpState[50], pcBoilState[50], pcHeapRemaining[50], pcBrewState[50], pcBoilDuty[50], pcLitresDelivered[50];
   int ii = 0;
   char upper_limit = 255, lower_limit = 255;
   unsigned int touch, hops, ds1820, timer, litres, check, low_level = 90, heap, print, serial, serialcontrol;
@@ -213,9 +213,14 @@ void vCheckTask(void *pvParameters)
       sprintf(pcBrewState, "FB46F7E5DF914AF1816035EC02DEE0DC:%02u\r\n\0", ucGetBrewState());
       vConsolePrint(pcBrewState);
       vTaskDelay(80);
-      sprintf(pcBoilDuty, "FB46F7E5DF914AF1816035EC02DEE0DC:%02u\r\n\0", uiGetBoilDuty());
+      sprintf(pcBoilDuty, "F066509116CA43F7B6845C8E2EBA69FA:%02u\r\n\0", uiGetBoilDuty());
       vConsolePrint(pcBoilDuty);
       vTaskDelay(80);
+      sprintf(pcLitresDelivered, "3AEE6966D7664AA4BE05BBBBF48E2836:%02u\r\n\0", uiGetActualLitresDelivered());
+            vConsolePrint(pcLitresDelivered);
+            vTaskDelay(80);
+
+
 
 
       lower_limit = cI2cGetInput(CRANE_LOWER_LIMIT_PORT, CRANE_LOWER_LIMIT_PIN);

@@ -416,7 +416,7 @@ int main( void )
 
   xTaskCreate( vTouchTask,
       ( signed portCHAR * ) "touch    ",
-      configMINIMAL_STACK_SIZE +300,
+      configMINIMAL_STACK_SIZE +400,
       NULL,
       tskIDLE_PRIORITY,
       &xTouchTaskHandle );

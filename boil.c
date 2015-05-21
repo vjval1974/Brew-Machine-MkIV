@@ -187,16 +187,24 @@ static unsigned int uiTimerCompareController(unsigned char ucMessageSource, int 
 {
   static char buf[50];
   unsigned int uiADCDuty = 0;
+  static unsigned int uiLastADCDuty = 0;
   int iDuty = 0;
   unsigned int uiTimerCompareValue = 0;
+  static unsigned int uiLastTimerCompareValue = 0;
   switch (ucMessageSource)
   {
   case BREW_TASK:
   {
-    vConsolePrint("Boil: Msg rcvd from BREW TASK\r\n");
     uiADCDuty = uiGetADCBoilDuty();
-    sprintf(buf, "BrewBoil:ADC %d \r\n", uiADCDuty);
-         vConsolePrint(buf);
+    // Only print if there is a change
+    if (uiLastADCDuty != uiADCDuty)
+      {
+        vConsolePrint("Boil: Msg rcvd from BREW TASK\r\n");
+        sprintf(buf, "BrewBoil:ADC %d \r\n", uiADCDuty);
+        vConsolePrint(buf);
+      }
+    uiLastADCDuty = uiADCDuty;
+
     // determine which duty cycle to accept
     if (uiADCDuty <= 20)
       {
@@ -210,23 +218,29 @@ static unsigned int uiTimerCompareController(unsigned char ucMessageSource, int 
   case BREW_TASK_RESET:
     {
       sprintf(buf, "Boil: Received duty cycle of %d, from ID #%d\r\n", iDefaultDuty, ucMessageSource);
-           vConsolePrint(buf);
+      vConsolePrint(buf);
       uiTimerCompareValue = 0;
       break;
     }
   case BREW_TASK_BRING_TO_BOIL:
     {
       uiTimerCompareValue = uiTimerCompare(100);
+      if (uiLastTimerCompareValue != uiTimerCompareValue)
+        {
+          vConsolePrint("Message from B2B, setting 100\r\n");
+        }
+      uiLastTimerCompareValue = uiTimerCompareValue;
       break;
     }
   default:
     {
       uiTimerCompareValue = uiTimerCompare(iDefaultDuty); // set the timer value to the duty cycle %
-      vConsolePrint("Boil: Message received\r\n");
+      vConsolePrint("DEFAULT!Boil:\r\n");
       sprintf(buf, "Boil: Received duty cycle of %d, from ID #%d\r\n", iDefaultDuty, ucMessageSource);
       vConsolePrint(buf);
       break;
     }
+
   }
  return uiTimerCompareValue;
 }
@@ -237,31 +251,25 @@ void vBoilStateController(unsigned int uiTimerCompareValue, unsigned int * uiBoi
 char buf[50];
   switch (*uiBoilState)
        {
-       case BOILING || AUTO_BOILING:
+       case BOILING:
          {
            //if the boil level is low, ensure the elements are off and leave.
            if (!boil_level)
              {
                *uiBoilState = OFF;
-               vConsolePrint("Boil level too low..Boil off. message ignored\r\n");
+               vConsolePrint("Boil level too low..Boil off.\r\n");
              }
            else
              {
                vStartBoilPWM(uiTimerCompareValue);
                //*uiBoilState = WAITING_FOR_COMMAND;
              }
-
            break;
          }
        case OFF:
          {
            vStopBoilPWM();
-           *uiBoilState = WAITING_FOR_COMMAND;
-           break;
-         }
-       case WAITING_FOR_COMMAND:
-         {
-           vConsolePrint("BoilWaitingForCommand\r\n");
+           *uiBoilState = OFF;
            break;
          }
        default:
@@ -269,7 +277,7 @@ char buf[50];
            sprintf(buf, "DEFAULT CASE, BOILSTATE=%d\r\n", *uiBoilState);
            vConsolePrint(buf);
            vStopBoilPWM();
-           *uiBoilState = WAITING_FOR_COMMAND;
+           *uiBoilState = OFF;
          }
        }
 }
@@ -296,17 +304,9 @@ void vTaskBoil( void * pvParameters)
         {
           //Validate the message contents
           iDefaultDuty = uiValidateIntegerPct(*(int *)xMessage->pvMessageContent);
-
-          // Work out what to do with the duty cycle passed in based on the source of the message
-          uiTimerCompareValue = uiTimerCompareController(xMessage->ucFromTask, iDefaultDuty);
-          sprintf(buf, "msg, duty = %d, tm = %d\r\n", *(int *)xMessage->pvMessageContent, uiTimerCompareValue);
+          sprintf(buf, "MSG, duty = %d, st=%d tsk = %d\r\n", iDefaultDuty, xMessage->uiStepNumber, xMessage->ucFromTask);
                    vConsolePrint(buf);
-          // If the compare value is above zero, change state to boiling
-          if (uiTimerCompareValue > 0 && xMessage->ucFromTask == BREW_TASK)
-            {
-              uiBoilState = AUTO_BOILING;
-            }
-          else if(uiTimerCompareValue > 0)
+          if (iDefaultDuty > 0)
             {
               uiBoilState = BOILING;
             }
@@ -314,22 +314,27 @@ void vTaskBoil( void * pvParameters)
             {
               uiBoilState = OFF;
             }
+          // Work out what to do with the duty cycle passed in based on the source of the message
+//          uiTimerCompareValue = uiTimerCompareController(xMessage->ucFromTask, iDefaultDuty);
+//          sprintf(buf, "msg, duty = %d, tm = %d\r\n", *(int *)xMessage->pvMessageContent, uiTimerCompareValue);
+//                   vConsolePrint(buf);
+          // If the compare value is above zero, change state to boiling
+
         }
-      else //no message received
+      else //no message received (polls continually)
         {
 
-          if  (uiBoilState == AUTO_BOILING)
+          if  (uiBoilState == BOILING)
             {
-              vBoilStateController(uiTimerCompareController(BREW_TASK, iDefaultDuty), &uiBoilState);
+              uiTimerCompareValue = uiTimerCompareController(xMessage->ucFromTask, iDefaultDuty);
+              vBoilStateController(uiTimerCompareValue, &uiBoilState);
             }
           else
             {
-              vBoilStateController(uiTimerCompareValue, &uiBoilState);
+              vBoilStateController(0, &uiBoilState);
             }
 
-          uiBoilDuty = uiTimerCompareValue/10000;
-          sprintf(buf, "NO msg, duty = %d, tm = %d, st=%d\r\n", iDefaultDuty, uiTimerCompareValue, uiBoilState);
-          vConsolePrint(buf);
+
         }
 
       vTaskDelay(1000);

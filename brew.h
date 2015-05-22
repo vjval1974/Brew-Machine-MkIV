@@ -141,7 +141,9 @@ void vBrewApplet(int init);
 int iBrewKey(int xx, int yy);
 void vBrewRemoteStart();
 unsigned char ucGetBrewState();
-
+float fGetNominalMashTemp();
+float fGetNominalSpargeTemp();
+float fGetNominalMashOutTemp();
 extern const int STEP_COMPLETE;
 extern const int STEP_FAILED;
 extern const int STEP_WAIT;

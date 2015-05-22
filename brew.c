@@ -13,7 +13,7 @@
 //-------------------------------------------------------------------------
 #include <stdint.h>
 #include <stdio.h>
-
+#include <string.h>
 #include <math.h>
 #include "stm32f10x.h"
 #include "FreeRTOS.h"
@@ -43,6 +43,10 @@
 #include "main.h"
 
 #define MAX_BREW_STEPS iMaxBrewSteps()
+static float fMashTemp = 0.0;
+static float fSpargeTemp = 0.0;
+static float fMashOutTemp = 0.0;
+
 
 // Applet States
 #define MAIN 0
@@ -107,6 +111,18 @@ void vBrewApplet(int init);
 void vBrewRunStep(void);
 void vBrewNextStep(void);
 
+float fGetNominalMashTemp()
+{
+  return fMashTemp;
+}
+float fGetNominalSpargeTemp()
+{
+  return fSpargeTemp;
+}
+float fGetNominalMashOutTemp()
+{
+  return fMashOutTemp;
+}
 xTaskHandle xBrewTaskHandle = NULL,
     xBrewAppletDisplayHandle = NULL,
     xBrewGraphAppletDisplayHandle = NULL,
@@ -1013,8 +1029,25 @@ void vBrewSpargeSetupFunction(int piParameters[5])
         vValveActuate(MASH_VALVE, CLOSED);
         vTaskDelay(4000);
       }
+
   }
 
+
+  static void vRecordNominalTemps(void)
+  {
+    if ((Brew[BrewState.ucStep].uElapsedTime == 30*60) && strcmp(Brew[BrewState.ucStep].pcStepName, "Mash") == 0)
+      {
+        fMashTemp = ds1820_get_temp(MASH);
+      }
+    else if ((Brew[BrewState.ucStep].uElapsedTime == 5*60) && strcmp(Brew[BrewState.ucStep].pcStepName, "Sparge") == 0)
+      {
+        fSpargeTemp = ds1820_get_temp(MASH);
+      }
+    else if ((Brew[BrewState.ucStep].uElapsedTime == 5*60) && strcmp(Brew[BrewState.ucStep].pcStepName, "MashOut") == 0)
+      {
+        fMashOutTemp = ds1820_get_temp(MASH);
+      }
+  }
 
 void vBrewMashPollFunction(int piParameters[5])
 {
@@ -1025,12 +1058,14 @@ void vBrewMashPollFunction(int piParameters[5])
   static char buf[50];
   static int flag = 0;
   iTimeRemaining = iMashTime - Brew[BrewState.ucStep].uElapsedTime;
+
  // Brew[BrewState.ucStep].uTimeRemaining = iTimeRemaining;
   if (flag == 0){
       sprintf(buf, "Remaining: %d, Elapsed: %d, p1: %d, p2: %d, s1 %d, s2 %d\r\n", iTimeRemaining/60, Brew[BrewState.ucStep].uElapsedTime/60, iPumpTime1/60, iPumpTime2/60, iStirTime1/60, iStirTime2/60);
       vConsolePrint(buf);
       flag = 1;
   }
+  vRecordNominalTemps(); // save the temp so it can be given to the UI.
   switch (iPumpState)
   {
   case MASH_STAGE_1:
@@ -2202,7 +2237,7 @@ static struct BrewStep Brew[] = {
     {"Mash",                 (void *)vBrewMashSetupFunction,      (void *)vBrewMashPollFunction,     {0,0,0,0,0},                       60*60,  0,      0, 0, 0},
     {"DrainForMashOut",      (void *)vBrewHLTSetupFunction,       NULL,                              {HLT_STATE_DRAIN,MASH_OUT,0,0,0},     5*60,   0,      0, 0, 1},
     {"Fill+Heat:Sparge",     (void *)vBrewHLTSetupFunction,       NULL,                              {HLT_STATE_FILL_HEAT,SPARGE,0,0,0},   40*60,  0,      0, 0, 1},
-    {"Mash out",             (void *)vBrewMashOutSetupFunction,   (void *)vBrewMashPollFunction,     {0,0,0,0,0},                         10*60,  0,      0, 0, 0},
+    {"MashOut",             (void *)vBrewMashOutSetupFunction,   (void *)vBrewMashPollFunction,     {0,0,0,0,0},                         10*60,  0,      0, 0, 0},
     {"MOPumpToBoil",         (void *)vBrewPumpToBoilSetupFunction,(void *)vBrewPumpToBoilPollFunction,{0,7*60,0,0,0},                      11*60,  0,      0, 0, 0},
     {"DrainForSparge",       (void *)vBrewHLTSetupFunction,       NULL,                              {HLT_STATE_DRAIN,SPARGE,0,0,0},       10*60,  0,      0, 0, 1},
     {"Sparge",               (void *)vBrewSpargeSetupFunction,    (void *)vBrewMashPollFunction,     {0,0,0,0,0},                          5*60,   0,      0, 0, 1},

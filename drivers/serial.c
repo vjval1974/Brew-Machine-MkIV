@@ -281,8 +281,8 @@ static char brewStarted = FALSE;
         {
           printf("Command to start brew!\r\n");
           if (!brewStarted){
-          menu_command(4);
-          menu_command(-1);
+          menu_command(4); //select Brew menu
+          menu_command(-1); // release touch
           printf("Brew Applet entered\r\n");
           vBrewRemoteStart();
           brewStarted = TRUE;
@@ -290,7 +290,14 @@ static char brewStarted = FALSE;
           else {
               printf("Already Started\r\n");
           }
+
         }
+      else if (strcmp(input, "STOP\r\0") == 0)
+        {
+          vConsolePrint("STOP command from UI");
+          //code here!
+        }
+
       portEXIT_CRITICAL();
       vTaskDelay(100);
     }

@@ -143,8 +143,22 @@ chiller pump state 461F715060F5468883F6F8500CEAA4BC
 boil state 60140A1EB194439B8C9A198355FD93AA
 brew state FB46F7E5DF914AF1816035EC02DEE0DC
 HLT litres delivered 3AEE6966D7664AA4BE05BBBBF48E2836
-B9118BEE3E5948C9806A71439478177E
-49DA95B5F4A94FA4AB1630C8B451BEEB
+Nominal Mash Temp B9118BEE3E5948C9806A71439478177E
+Nominal Mash Out Temp 49DA95B5F4A94FA4AB1630C8B451BEEB
+Nominal Sparge Temp f248107493574d2499521469c5bd6e60
+13bc096ac29f4c79a884d2138cbcb5e5
+642ae282b7b14167825ea0ef854b74d6
+f0f5139fbee44ede8280109f4ab68b9d
+3845dc46d51a41c4a21ce46f6a42f444
+c8cfc1c409e144f48e180600e42df643
+144aebd8dbfa4bfbaaf17e335b044405
+e60d5cc288bc4d48b28bb7a33aedfa94
+b204d4c35ec84de59b80de85e9221da5
+4ae55d488afb49ae9dd48fa1f151e39b
+
+
+
+
      */
 
 void vCheckTask(void *pvParameters)
@@ -154,6 +168,8 @@ void vCheckTask(void *pvParameters)
   char pcBrewElapsedHours[50], pcBrewElapsedMinutes[50], pcBrewElapsedSeconds[50], pcBrewStep[50];
   char pcBrewStepElapsedHours[50], pcBrewStepElapsedMinutes[50], pcBrewStepElapsedSeconds[50], pcMashTemp[50], pcHLTTemp[50];
   char pcChillerPumpState[50], pcBoilState[50], pcHeapRemaining[50], pcBrewState[50], pcBoilDuty[50], pcLitresDelivered[50];
+  char pcNominalMashTemp[50], pcNominalMashOutTemp[50], pcNominalSpargeTemp[50];
+
   int ii = 0;
   char upper_limit = 255, lower_limit = 255;
   unsigned int touch, hops, ds1820, timer, litres, check, low_level = 90, heap, print, serial, serialcontrol;
@@ -217,11 +233,17 @@ void vCheckTask(void *pvParameters)
       vConsolePrint(pcBoilDuty);
       vTaskDelay(80);
       sprintf(pcLitresDelivered, "3AEE6966D7664AA4BE05BBBBF48E2836:%02u\r\n\0", uiGetActualLitresDelivered());
-            vConsolePrint(pcLitresDelivered);
-            vTaskDelay(80);
-
-
-
+      vConsolePrint(pcLitresDelivered);
+      vTaskDelay(80);
+      sprintf(pcNominalMashTemp, "B9118BEE3E5948C9806A71439478177E:%02u\r\n\0", fGetNominalMashTemp());
+      vConsolePrint(pcNominalMashTemp);
+      vTaskDelay(80);
+      sprintf(pcNominalMashOutTemp, "49DA95B5F4A94FA4AB1630C8B451BEEB:%02u\r\n\0", fGetNominalMashOutTemp());
+      vConsolePrint(pcNominalMashOutTemp);
+      vTaskDelay(80);
+      sprintf(pcNominalSpargeTemp, "f248107493574d2499521469c5bd6e60:%02u\r\n\0", fGetNominalSpargeTemp());
+      vConsolePrint(pcNominalSpargeTemp);
+      vTaskDelay(80);
 
       lower_limit = cI2cGetInput(CRANE_LOWER_LIMIT_PORT, CRANE_LOWER_LIMIT_PIN);
       upper_limit = cI2cGetInput(CRANE_UPPER_LIMIT_PORT, CRANE_UPPER_LIMIT_PIN);

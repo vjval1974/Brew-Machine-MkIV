@@ -235,12 +235,12 @@ void vSerialHandlerTask ( void * pvParameters)
           if (c == '\r' || c == '\n' || index >= BUFFER_SIZE){
               buf[index] = '\0';
               strcpy(line, buf);
-              printf("%s\r\n", buf);
-              fflush(stdout);
+             // printf("%s\r\n", buf);
+             // fflush(stdout);
               for (index = 0; index < BUFFER_SIZE; index++)
                 buf[index] = 0;
               index = 0;
-              printf("Contents of 'line':%s\r\n", line);
+              //printf("Contents of 'line':%s\r\n", line);
               xQueueSend(xCommandQueue, line, portMAX_DELAY);
           }
           portEXIT_CRITICAL();
@@ -271,7 +271,7 @@ static char brewStarted = FALSE;
       char * input = (char *)pvPortMalloc(strlen(buf)+1);
       strcpy (input, buf);
       result = (strcmp(input, "command\r\0"));
-      vConsolePrint("got something\r\n");
+    //  vConsolePrint("got something\r\n");
       if (result == 0)
         {
           printf("command received\r\n");
@@ -279,18 +279,19 @@ static char brewStarted = FALSE;
         }
       if(strcmp(input, "sb\r\0") == 0)
         {
-          printf("Command to start brew!\r\n");
-          if (!brewStarted){
-          menu_command(4); //select Brew menu
-          menu_command(-1); // release touch
-          printf("Brew Applet entered\r\n");
-          vBrewRemoteStart();
-          brewStarted = TRUE;
-          }
-          else {
-              printf("Already Started\r\n");
-          }
-
+      //    printf("Command to start brew!\r\n");
+          if (!brewStarted)
+            {
+              menu_command(4); //select Brew menu
+              menu_command(-1); // release touch
+        //      printf("Brew Applet entered\r\n");
+              vBrewRemoteStart();
+              brewStarted = TRUE;
+            }
+          else
+            {
+        //      printf("Already Started\r\n");
+            }
         }
       else if (strcmp(input, "STOP\r\0") == 0)
         {

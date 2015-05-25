@@ -200,7 +200,7 @@ void vTaskDS1820Convert( void *pvParameters ){
 ////////////////////////////////////////////////////////////////////////////
 
 float ds1820_get_temp(unsigned char sensor){
-    if (ucGetMillState() == MILL_DRIVING){
+    if (ucGetGrainMillState() == MILL_DRIVING){
         return 13.55;
     }
     else return temps[sensor];

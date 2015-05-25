@@ -34,7 +34,7 @@ xSemaphoreHandle xAppletRunningSemaphore;
 volatile int uMashPumpState = STOPPED;
 
 
-unsigned char ucGetMashPumpState{
+unsigned char ucGetMashPumpState(){
 	return uMashPumpState;
 }
 

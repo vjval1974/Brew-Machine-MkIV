@@ -36,6 +36,9 @@ void vValvesApplet(int init);
 int iValvesKey(int xx, int yy);
 void vValveActuate(unsigned char valve, unsigned char state);
 
-
+unsigned char ucGetHltValveState();
+unsigned char ucGetMashValveState();
+unsigned char ucGetInletValveState();
+unsigned char ucGetChillerValveState();
 
 #endif /* VALVES_H_ */

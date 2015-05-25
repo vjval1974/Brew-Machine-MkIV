@@ -29,6 +29,34 @@ xTaskHandle xValvesTaskHandle = NULL, xValvesAppletDisplayHandle = NULL;
 // semaphore that stops the returning from the applet to the menu system until the applet goes into the blocked state.
 xSemaphoreHandle xValvesAppletRunningSemaphore;
 
+static unsigned char ucHLTValveState = CLOSED;
+static unsigned char ucMashValveState = CLOSED;
+static unsigned char ucInletValveState = CLOSED;
+static unsigned char ucChillerValveState = CLOSED;
+
+unsigned char ucGetHltValveState()
+{
+	return GPIO_ReadInputDataBit(HLT_VALVE_PORT, HLT_VALVE_PIN);
+}
+
+unsigned char ucGetMashValveState()
+{
+	return GPIO_ReadInputDataBit(MASH_VALVE_PORT, MASH_VALVE_PIN);
+}
+
+unsigned char ucGetInletValveState()
+{
+	  GPIO_ReadInputDataBit(INLET_VALVE_PORT, INLET_VALVE_PIN);
+}
+
+unsigned char ucGetChillerValveState()
+{
+	GPIO_ReadInputDataBit(CHILLER_VALVE_PORT, CHILLER_VALVE_PIN);
+}
+
+
+
+
 void vValvesInit(void){
 
 
@@ -72,7 +100,7 @@ void vValveActuate( unsigned char valve, unsigned char state )
     {
       if (state == TOGGLE)
         {
-          current = GPIO_ReadInputDataBit(HLT_VALVE_PORT, HLT_VALVE_PIN);
+          current = ucGetHltValveState();
           GPIO_WriteBit(HLT_VALVE_PORT, HLT_VALVE_PIN, current ^ 1);
 
         }
@@ -83,29 +111,18 @@ void vValveActuate( unsigned char valve, unsigned char state )
     {
       if (state == TOGGLE)
         {
-          current = GPIO_ReadInputDataBit(MASH_VALVE_PORT, MASH_VALVE_PIN);
+          current = ucGetMashValveState();
           GPIO_WriteBit(MASH_VALVE_PORT, MASH_VALVE_PIN, current ^ 1);
 
         }
       else GPIO_WriteBit(MASH_VALVE_PORT, MASH_VALVE_PIN, !state);
       break;
     }
-  case BOIL_VALVE:
-    {
-      if (state == TOGGLE)
-        {
- //         current = GPIO_ReadInputDataBit(BOIL_VALVE_PORT, BOIL_VALVE_PIN);
- //         GPIO_WriteBit(BOIL_VALVE_PORT, BOIL_VALVE_PIN, current ^ 1);
-        }
- //     else GPIO_WriteBit(BOIL_VALVE_PORT, BOIL_VALVE_PIN, state);
-
-      break;
-    }
   case INLET_VALVE:
     {
       if (state == TOGGLE)
         {
-          current = GPIO_ReadInputDataBit(INLET_VALVE_PORT, INLET_VALVE_PIN);
+          current = ucGetInletValveState();
           GPIO_WriteBit(INLET_VALVE_PORT, INLET_VALVE_PIN, current ^ 1);
         }
       else GPIO_WriteBit(INLET_VALVE_PORT, INLET_VALVE_PIN, !state);
@@ -115,7 +132,7 @@ void vValveActuate( unsigned char valve, unsigned char state )
      {
        if (state == TOGGLE)
          {
-           current = GPIO_ReadInputDataBit(CHILLER_VALVE_PORT, CHILLER_VALVE_PIN);
+           current = ucGetChillerValveState();
            GPIO_WriteBit(CHILLER_VALVE_PORT, CHILLER_VALVE_PIN, current ^ 1);
          }
        else GPIO_WriteBit(CHILLER_VALVE_PORT, CHILLER_VALVE_PIN, !state);
@@ -176,22 +193,18 @@ void vValveActuate( unsigned char valve, unsigned char state )
 #define BK_W (BK_X2-BK_X1)
 #define BK_H (BK_Y2-BK_Y1)
 
+
 void vValvesApplet(int init){
-  uint8_t uHLTValveState = CLOSED;
-  uint8_t uMashValveState = CLOSED;
-  uint8_t uBoilValveState = CLOSED;
-  uint8_t uInletValveState = CLOSED;
-  uint8_t uChillerValveState = CLOSED;
-  uHLTValveState = GPIO_ReadInputDataBit(HLT_VALVE_PORT, HLT_VALVE_PIN);
-  uMashValveState = GPIO_ReadInputDataBit(MASH_VALVE_PORT, MASH_VALVE_PIN);
- // uBoilValveState = GPIO_ReadInputDataBit(BOIL_VALVE_PORT, BOIL_VALVE_PIN);
-  uInletValveState = GPIO_ReadInputDataBit(INLET_VALVE_PORT, INLET_VALVE_PIN);
-  uChillerValveState = GPIO_ReadInputDataBit(CHILLER_VALVE_PORT, CHILLER_VALVE_PIN);
+ 
+  ucHLTValveState = ucGetChillerValveState();
+  ucMashValveState = ucGetMashValveState();
+  ucInletValveState = ucGetInletValveState();
+  ucChillerValveState = ucGetChillerValveState();
 
   if (init)
     {
 
-      if (uHLTValveState)
+      if (ucHLTValveState)
         {
           lcd_DrawRect(TOGGLE_HLT_VALVE_X1, TOGGLE_HLT_VALVE_Y1, TOGGLE_HLT_VALVE_X2, TOGGLE_HLT_VALVE_Y2, Blue);
           lcd_fill(TOGGLE_HLT_VALVE_X1+1, TOGGLE_HLT_VALVE_Y1+1, TOGGLE_HLT_VALVE_W, TOGGLE_HLT_VALVE_H, Red);
@@ -205,7 +218,7 @@ void vValvesApplet(int init){
           lcd_printf(0,4,13,"HLT->HLT");
         }
 
-      if (uMashValveState)
+      if (ucMashValveState)
         {
           lcd_DrawRect(TOGGLE_MASH_VALVE_X1, TOGGLE_MASH_VALVE_Y1, TOGGLE_MASH_VALVE_X2, TOGGLE_MASH_VALVE_Y2, Blue);
           lcd_fill(TOGGLE_MASH_VALVE_X1+1, TOGGLE_MASH_VALVE_Y1+1, TOGGLE_MASH_VALVE_W, TOGGLE_MASH_VALVE_H, Red);
@@ -220,20 +233,7 @@ void vValvesApplet(int init){
         }
 
 
-      if (uBoilValveState)
-        {
-          lcd_DrawRect(TOGGLE_BOIL_VALVE_X1, TOGGLE_BOIL_VALVE_Y1, TOGGLE_BOIL_VALVE_X2, TOGGLE_BOIL_VALVE_Y2, Blue);
-          lcd_fill(TOGGLE_BOIL_VALVE_X1+1, TOGGLE_BOIL_VALVE_Y1+1, TOGGLE_BOIL_VALVE_W, TOGGLE_BOIL_VALVE_H, Red);
-          lcd_printf(24,4,13, "BOIL OPENED");
-        }
-      else
-        {
-          lcd_DrawRect(TOGGLE_BOIL_VALVE_X1, TOGGLE_BOIL_VALVE_Y1, TOGGLE_BOIL_VALVE_X2, TOGGLE_BOIL_VALVE_Y2, Cyan);
-          lcd_fill(TOGGLE_BOIL_VALVE_X1+1, TOGGLE_BOIL_VALVE_Y1+1, TOGGLE_BOIL_VALVE_W, TOGGLE_BOIL_VALVE_H, Green);
-          lcd_printf(24,4,13, "BOIL CLOSED");
-        }
-
-      if (uInletValveState)
+      if (ucInletValveState)
         {
           lcd_DrawRect(TOGGLE_INLET_VALVE_X1, TOGGLE_INLET_VALVE_Y1, TOGGLE_INLET_VALVE_X2, TOGGLE_INLET_VALVE_Y2, Blue);
           lcd_fill(TOGGLE_INLET_VALVE_X1+1, TOGGLE_INLET_VALVE_Y1+1, TOGGLE_INLET_VALVE_W, TOGGLE_INLET_VALVE_H, Red);
@@ -247,7 +247,7 @@ void vValvesApplet(int init){
           lcd_printf(0,8,13, "INLET CLOSED");
         }
 
-      if (uChillerValveState)
+      if (ucChillerValveState)
              {
                lcd_DrawRect(TOGGLE_CHILLER_VALVE_X1, TOGGLE_CHILLER_VALVE_Y1, TOGGLE_CHILLER_VALVE_X2, TOGGLE_CHILLER_VALVE_Y2, Blue);
                lcd_fill(TOGGLE_CHILLER_VALVE_X1+1, TOGGLE_CHILLER_VALVE_Y1+1, TOGGLE_CHILLER_VALVE_W, TOGGLE_CHILLER_VALVE_H, Red);
@@ -261,27 +261,6 @@ void vValvesApplet(int init){
                lcd_printf(12,8,13, "CHILLER CLOSED");
              }
 
-
-      //                lcd_DrawRect(TOGGLE_HLT_VALVE_X1, TOGGLE_HLT_VALVE_Y1, TOGGLE_HLT_VALVE_X2, TOGGLE_HLT_VALVE_Y2, Cyan);
-          //                lcd_fill(TOGGLE_HLT_VALVE_X1+1, TOGGLE_HLT_VALVE_Y1+1, TOGGLE_HLT_VALVE_W, TOGGLE_HLT_VALVE_H, Green);
-          //                lcd_DrawRect(TOGGLE_MASH_VALVE_X1, TOGGLE_MASH_VALVE_Y1, TOGGLE_MASH_VALVE_X2, TOGGLE_MASH_VALVE_Y2, Cyan);
-          //                lcd_fill(TOGGLE_MASH_VALVE_X1+1, TOGGLE_MASH_VALVE_Y1+1, TOGGLE_MASH_VALVE_W, TOGGLE_MASH_VALVE_H, Green);
-          //                lcd_DrawRect(TOGGLE_BOIL_VALVE_X1, TOGGLE_BOIL_VALVE_Y1, TOGGLE_BOIL_VALVE_X2, TOGGLE_BOIL_VALVE_Y2, Cyan);
-          //                lcd_fill(TOGGLE_BOIL_VALVE_X1+1, TOGGLE_BOIL_VALVE_Y1+1, TOGGLE_BOIL_VALVE_W, TOGGLE_BOIL_VALVE_H, Green);
-          //                lcd_DrawRect(TOGGLE_INLET_VALVE_X1, TOGGLE_INLET_VALVE_Y1, TOGGLE_INLET_VALVE_X2, TOGGLE_INLET_VALVE_Y2, Cyan);
-          //                lcd_fill(TOGGLE_INLET_VALVE_X1+1, TOGGLE_INLET_VALVE_Y1+1, TOGGLE_INLET_VALVE_W, TOGGLE_INLET_VALVE_H, Green);
-          //                lcd_DrawRect(BK_X1, BK_Y1, BK_X2, BK_Y2, Cyan);
-          //                lcd_fill(BK_X1+1, BK_Y1+1, BK_W, BK_H, Magenta);
-//          lcd_printf(10,1,18,  "MANUAL VALVE APPLET");
-//          lcd_printf(0,4,13, "HLT_VALVE");
-//          lcd_printf(12,4,13, "MASH VALVE");
-//          lcd_printf(24,4,13, "BOIL VALVE");
-//          lcd_printf(0,8,13, "INLET VALVE");
-//          lcd_printf(30, 13, 4, "Back");
-//          //vTaskDelay(2000);
-          //adc_init();
-          //adc_init();
-          //create a dynamic display task
 
       xTaskCreate( vValvesAppletDisplay,
           ( signed portCHAR * ) "V_disp",
@@ -297,11 +276,7 @@ void vValvesApplet(int init){
 void vValvesAppletDisplay( void *pvParameters){
         static char tog = 0; //toggles each loop
 
-        uint8_t uHLTValveState = CLOSED;
-        uint8_t uMashValveState = CLOSED;
-        uint8_t uBoilValveState = CLOSED;
-        uint8_t uInletValveState = CLOSED;
-        uint8_t uChillerValveState = CLOSED;
+       
         unsigned int uiDecimalPlaces = 3;
         float fHLTTemp = 0, fMashTemp = 0;
         float fNumber = 54.3211;
@@ -318,18 +293,17 @@ void vValvesAppletDisplay( void *pvParameters){
             fHLTTemp = ds1820_get_temp(HLT);
             fMashTemp = ds1820_get_temp(MASH);
 
-            uHLTValveState = GPIO_ReadInputDataBit(HLT_VALVE_PORT, HLT_VALVE_PIN);
-            uMashValveState = GPIO_ReadInputDataBit(MASH_VALVE_PORT, MASH_VALVE_PIN);
- //           uBoilValveState = GPIO_ReadInputDataBit(BOIL_VALVE_PORT, BOIL_VALVE_PIN);
-            uInletValveState = GPIO_ReadInputDataBit(INLET_VALVE_PORT, INLET_VALVE_PIN);
-            uChillerValveState = GPIO_ReadInputDataBit(CHILLER_VALVE_PORT, CHILLER_VALVE_PIN);
-            if (uHLTValveState != hlt_last ||
+            ucHLTValveState = ucGetChillerValveState();
+			ucMashValveState = ucGetMashValveState();
+			ucInletValveState = ucGetInletValveState();
+			ucChillerValveState = ucGetChillerValveState();
+            if (ucHLTValveState != hlt_last ||
                 uBoilValveState != boil_last ||
-                uMashValveState != mash_last ||
-                uInletValveState != inlet_last ||
-                uChillerValveState != chiller_last
+                ucMashValveState != mash_last ||
+                ucInletValveState != inlet_last ||
+                ucChillerValveState != chiller_last
             ){
-                if (uHLTValveState)
+                if (ucHLTValveState)
                   {
                     lcd_DrawRect(TOGGLE_HLT_VALVE_X1, TOGGLE_HLT_VALVE_Y1, TOGGLE_HLT_VALVE_X2, TOGGLE_HLT_VALVE_Y2, Blue);
                     lcd_fill(TOGGLE_HLT_VALVE_X1+1, TOGGLE_HLT_VALVE_Y1+1, TOGGLE_HLT_VALVE_W, TOGGLE_HLT_VALVE_H, Red);
@@ -343,7 +317,7 @@ void vValvesAppletDisplay( void *pvParameters){
                     lcd_printf(0,4,13,"HLT->HLT");
                   }
 
-                if (uMashValveState)
+                if (ucMashValveState)
                   {
                     lcd_DrawRect(TOGGLE_MASH_VALVE_X1, TOGGLE_MASH_VALVE_Y1, TOGGLE_MASH_VALVE_X2, TOGGLE_MASH_VALVE_Y2, Blue);
                     lcd_fill(TOGGLE_MASH_VALVE_X1+1, TOGGLE_MASH_VALVE_Y1+1, TOGGLE_MASH_VALVE_W, TOGGLE_MASH_VALVE_H, Red);
@@ -357,21 +331,7 @@ void vValvesAppletDisplay( void *pvParameters){
                     lcd_printf(12,4,13, "MASH->MASH");
                   }
 
-
-                if (uBoilValveState)
-                  {
-                    lcd_DrawRect(TOGGLE_BOIL_VALVE_X1, TOGGLE_BOIL_VALVE_Y1, TOGGLE_BOIL_VALVE_X2, TOGGLE_BOIL_VALVE_Y2, Blue);
-                    lcd_fill(TOGGLE_BOIL_VALVE_X1+1, TOGGLE_BOIL_VALVE_Y1+1, TOGGLE_BOIL_VALVE_W, TOGGLE_BOIL_VALVE_H, Red);
-                    lcd_printf(24,4,13, "BOIL OPENED");
-                  }
-                else
-                  {
-                    lcd_DrawRect(TOGGLE_BOIL_VALVE_X1, TOGGLE_BOIL_VALVE_Y1, TOGGLE_BOIL_VALVE_X2, TOGGLE_BOIL_VALVE_Y2, Cyan);
-                    lcd_fill(TOGGLE_BOIL_VALVE_X1+1, TOGGLE_BOIL_VALVE_Y1+1, TOGGLE_BOIL_VALVE_W, TOGGLE_BOIL_VALVE_H, Green);
-                    lcd_printf(24,4,13, "BOIL CLOSED");
-                  }
-
-                if (uInletValveState)
+                if (ucInletValveState)
                   {
                     lcd_DrawRect(TOGGLE_INLET_VALVE_X1, TOGGLE_INLET_VALVE_Y1, TOGGLE_INLET_VALVE_X2, TOGGLE_INLET_VALVE_Y2, Blue);
                     lcd_fill(TOGGLE_INLET_VALVE_X1+1, TOGGLE_INLET_VALVE_Y1+1, TOGGLE_INLET_VALVE_W, TOGGLE_INLET_VALVE_H, Red);
@@ -385,7 +345,7 @@ void vValvesAppletDisplay( void *pvParameters){
                     lcd_printf(0,8,13, "INLET CLOSED");
                   }
 
-                if (uChillerValveState)
+                if (ucChillerValveState)
                   {
                     lcd_DrawRect(TOGGLE_CHILLER_VALVE_X1, TOGGLE_CHILLER_VALVE_Y1, TOGGLE_CHILLER_VALVE_X2, TOGGLE_CHILLER_VALVE_Y2, Blue);
                     lcd_fill(TOGGLE_CHILLER_VALVE_X1+1, TOGGLE_CHILLER_VALVE_Y1+1, TOGGLE_CHILLER_VALVE_W, TOGGLE_CHILLER_VALVE_H, Red);
@@ -399,11 +359,11 @@ void vValvesAppletDisplay( void *pvParameters){
                     lcd_printf(12,8,13, "CHILLER CLOSED");
                   }
 
-                hlt_last = uHLTValveState;
+                hlt_last = ucHLTValveState;
                 boil_last = uBoilValveState;
-                mash_last = uMashValveState;
-                inlet_last = uInletValveState;
-                chiller_last = uChillerValveState;
+                mash_last = ucMashValveState;
+                inlet_last = ucInletValveState;
+                chiller_last = ucChillerValveState;
             }
 
             if(tog)
@@ -444,10 +404,6 @@ int iValvesKey(int xx, int yy)
       vValveActuate(MASH_VALVE, TOGGLE);
 
     }
-  else if (xx > TOGGLE_BOIL_VALVE_X1+1 && xx < TOGGLE_BOIL_VALVE_X2-1 && yy > TOGGLE_BOIL_VALVE_Y1+1 && yy < TOGGLE_BOIL_VALVE_Y2-1)
-     {
-      vValveActuate(BOIL_VALVE, TOGGLE);
-     }
   else if (xx > TOGGLE_INLET_VALVE_X1+1 && xx < TOGGLE_INLET_VALVE_X2-1 && yy > TOGGLE_INLET_VALVE_Y1+1 && yy < TOGGLE_INLET_VALVE_Y2-1)
      {
       vValveActuate(INLET_VALVE, TOGGLE);

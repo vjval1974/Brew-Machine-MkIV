@@ -46,12 +46,12 @@ unsigned char ucGetMashValveState()
 
 unsigned char ucGetInletValveState()
 {
-	  GPIO_ReadInputDataBit(INLET_VALVE_PORT, INLET_VALVE_PIN);
+	 return GPIO_ReadInputDataBit(INLET_VALVE_PORT, INLET_VALVE_PIN);
 }
 
 unsigned char ucGetChillerValveState()
 {
-	GPIO_ReadInputDataBit(CHILLER_VALVE_PORT, CHILLER_VALVE_PIN);
+	return GPIO_ReadInputDataBit(CHILLER_VALVE_PORT, CHILLER_VALVE_PIN);
 }
 
 
@@ -294,9 +294,9 @@ void vValvesAppletDisplay( void *pvParameters){
             fMashTemp = ds1820_get_temp(MASH);
 
             ucHLTValveState = ucGetChillerValveState();
-			ucMashValveState = ucGetMashValveState();
-			ucInletValveState = ucGetInletValveState();
-			ucChillerValveState = ucGetChillerValveState();
+            ucMashValveState = ucGetMashValveState();
+            ucInletValveState = ucGetInletValveState();
+            ucChillerValveState = ucGetChillerValveState();
             if (ucHLTValveState != hlt_last ||
                 ucMashValveState != mash_last ||
                 ucInletValveState != inlet_last ||

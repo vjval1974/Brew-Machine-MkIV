@@ -298,7 +298,6 @@ void vValvesAppletDisplay( void *pvParameters){
 			ucInletValveState = ucGetInletValveState();
 			ucChillerValveState = ucGetChillerValveState();
             if (ucHLTValveState != hlt_last ||
-                uBoilValveState != boil_last ||
                 ucMashValveState != mash_last ||
                 ucInletValveState != inlet_last ||
                 ucChillerValveState != chiller_last

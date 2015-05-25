@@ -149,7 +149,7 @@ Nominal Sparge Temp f248107493574d2499521469c5bd6e60
 boil valve state 13bc096ac29f4c79a884d2138cbcb5e5
 mash valve state 642ae282b7b14167825ea0ef854b74d6
 hlt valve state f0f5139fbee44ede8280109f4ab68b9d
-dump valve state 3845dc46d51a41c4a21ce46f6a42f444
+Chiller valve state 3845dc46d51a41c4a21ce46f6a42f444
 grain mill state c8cfc1c409e144f48e180600e42df643
 mash pump state 144aebd8dbfa4bfbaaf17e335b044405
 chiller pump state e60d5cc288bc4d48b28bb7a33aedfa94
@@ -169,7 +169,7 @@ void vCheckTask(void *pvParameters)
   char pcBrewStepElapsedHours[14], pcBrewStepElapsedMinutes[14], pcBrewStepElapsedSeconds[14], pcMashTemp[14], pcHLTTemp[14];
   char pcChillerPumpState[14], pcBoilState[14], pcHeapRemaining[14], pcBrewState[14], pcBoilDuty[14], pcLitresDelivered[14];
   char pcNominalMashTemp[14], pcNominalMashOutTemp[14], pcNominalSpargeTemp[14];
-  char pcBoilValveState[14], pcMashValveState[14], pcHltValveState[14], pcDumpValveState[14], pcGrainMillState[14], pcMashPumpState[14], pcInletValveState[14], pcCranePosition[14];
+  char pcBoilValveState[14], pcMashValveState[14], pcHltValveState[14], pcChillerValveState[14], pcGrainMillState[14], pcMashPumpState[14], pcInletValveState[14], pcCranePosition[14];
 
   int ii = 0;
   char upper_limit = 255, lower_limit = 255;
@@ -216,7 +216,7 @@ void vCheckTask(void *pvParameters)
       sprintf(pcBoilValveState, "13bc096a:%02u\r\n\0", ucGetBoilValveState());vConsolePrint(pcBoilValveState);vTaskDelay(25);
 	  sprintf(pcMashValveState, "642ae282:%02u\r\n\0", ucGetMashValveState());vConsolePrint(pcMashValveState);vTaskDelay(25); 
 	  sprintf(pcHltValveState, "f0f5139f:%02u\r\n\0", ucGetHltValveState());vConsolePrint(pcHltValveState);vTaskDelay(25);
-	  sprintf(pcDumpValveState, "3845dc46:%02u\r\n\0", ucGetDumpValveState());vConsolePrint(pcDumpValveState);vTaskDelay(25);
+	  sprintf(pcChillerValveState, "3845dc46:%02u\r\n\0", ucGetChillerValveState());vConsolePrint(pcChillerValveState);vTaskDelay(25);
 	  sprintf(pcGrainMillState, "c8cfc1c4:%02u\r\n\0", ucGetGrainMillState());vConsolePrint(pcGrainMillState);vTaskDelay(25);
 	  sprintf(pcMashPumpState, "144aebd8:%02u\r\n\0", ucGetMashPumpState());vConsolePrint(pcMashPumpState);vTaskDelay(25);
 	  sprintf(pcInletValveState, "b204d4c3:%02u\r\n\0", ucGetInletValveState());vConsolePrint(pcInletValveState);vTaskDelay(25);

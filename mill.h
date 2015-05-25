@@ -21,7 +21,7 @@ void vMillInit(void);
 void vMillApplet(int init);
 int iMillKey(int xx, int yy);
 void vMill( MillState state );
-
+unsigned char ucGetGrainMillState();
 
 
 

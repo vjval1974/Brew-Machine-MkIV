@@ -33,6 +33,11 @@ xSemaphoreHandle xAppletRunningSemaphore;
 
 volatile int uMashPumpState = STOPPED;
 
+
+unsigned char ucGetMashPumpState{
+	return uMashPumpState;
+}
+
 void vMashPumpInit(void){
 
   GPIO_InitTypeDef GPIO_InitStructure;

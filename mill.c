@@ -32,7 +32,7 @@ xSemaphoreHandle xAppletRunningSemaphore;
 volatile MillState xMillState = MILL_STOPPED;
 
 
-unsigned char ucGetMillState()
+unsigned char ucGetGrainMillState()
 {
   return xMillState;
 }

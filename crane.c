@@ -40,6 +40,10 @@
 volatile int8_t cs = STOPPED;
 int8_t iCraneState = STOPPED;
 
+unsigned char ucGetCranePosition()
+{
+return iCraneState;	
+}
 //static const int STEP_COMPLETE = BREW_STEP_COMPLETE;
 //static const int STEP_FAILED = BREW_STEP_FAILED;
 //static const int STEP_TIMEOUT = BREW_STEP_TIMEOUT;

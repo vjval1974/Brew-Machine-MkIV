@@ -19,4 +19,6 @@ void vMashPumpInit(void);
 void vMashPumpApplet(int init);
 int iMashPumpKey(int xx, int yy);
 void vMashPump(uint8_t state);
+unsigned char ucGetMashPumpState();
+
 #endif /* MASH_PUMP_H_ */

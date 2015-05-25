@@ -45,7 +45,7 @@ void vTaskCrane(void * pvParameters);
 void vCraneApplet(int init);
 int iCraneKey(int x, int y);
 int8_t vGetCraneState(void);
-
+unsigned char ucGetCranePosition();
 
 // Directions
 #define UP 10

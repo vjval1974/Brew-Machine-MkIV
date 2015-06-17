@@ -1223,6 +1223,10 @@ void vBrewPumpToBoilPollFunction(int  piParameters[5])
   //Brew[BrewState.ucStep].uTimeRemaining = (piParameters[1]*60) - Brew[BrewState.ucStep].uElapsedTime;
   if (Brew[BrewState.ucStep].uElapsedTime >= iPumpToBoilTime)
     {
+      //-------------------------------------------------------------------------------------------
+      //SHOULD CHECK THE BOIL LEVEL LIMIT HERE SO THAT WE CAN ASSUME THAT THERE WAS NO STUCK SPARGE
+      //-------------------------------------------------------------------------------------------
+
       Brew[BrewState.ucStep].ucComplete = 1;
       vMashPump(STOPPED);
       vValveActuate(MASH_VALVE, CLOSE);

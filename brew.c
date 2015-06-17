@@ -42,6 +42,8 @@
 #include "hop_dropper.h"
 #include "main.h"
 
+#define ARRAY_LENGTH( x ) ( sizeof(x)/sizeof(x[0]) ) // not as yet implemented
+
 #define MAX_BREW_STEPS iMaxBrewSteps()
 static float fMashTemp = 0.0;
 static float fSpargeTemp = 0.0;
@@ -199,6 +201,9 @@ static int iBrewStepMonitor(int iWaiting)
 
 }
 
+// Initial runtime version of getting the number of brew steps so the macro doesnt need updating
+// Should check the ARRAY_LENGTH(x) macro as it could be a better example.
+
 static int iMaxBrewSteps(void)
 {
 
@@ -207,8 +212,6 @@ static int iMaxBrewSteps(void)
     {
       i++;
     }
-  //sprintf(buf, "Sizeof Brew[] = %d\r\n", i);
-  //vConsolePrint(buf);
   return i;
 }
 

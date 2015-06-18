@@ -32,7 +32,7 @@ xSemaphoreHandle xValvesAppletRunningSemaphore;
 static unsigned char ucHLTValveState = CLOSED;
 static unsigned char ucMashValveState = CLOSED;
 static unsigned char ucInletValveState = CLOSED;
-static unsigned char ucChillerValveState = CLOSED;
+ValveState ucChillerValveState = VALVE_CLOSED;
 
 unsigned char ucGetHltValveState()
 {
@@ -49,7 +49,7 @@ unsigned char ucGetInletValveState()
 	 return GPIO_ReadInputDataBit(INLET_VALVE_PORT, INLET_VALVE_PIN);
 }
 
-unsigned char ucGetChillerValveState()
+ValveState ucGetChillerValveState()
 {
 	return GPIO_ReadInputDataBit(CHILLER_VALVE_PORT, CHILLER_VALVE_PIN);
 }
@@ -132,7 +132,7 @@ void vValveActuate( unsigned char valve, unsigned char state )
      {
        if (state == TOGGLE)
          {
-           current = ucGetChillerValveState();
+           current = GPIO_ReadInputDataBit(CHILLER_VALVE_PORT, CHILLER_VALVE_PIN);
            GPIO_WriteBit(CHILLER_VALVE_PORT, CHILLER_VALVE_PIN, current ^ 1);
          }
        else GPIO_WriteBit(CHILLER_VALVE_PORT, CHILLER_VALVE_PIN, !state);
@@ -196,7 +196,7 @@ void vValveActuate( unsigned char valve, unsigned char state )
 
 void vValvesApplet(int init){
  
-  ucHLTValveState = ucGetChillerValveState();
+  ucHLTValveState = ucGetHltValveState();
   ucMashValveState = ucGetMashValveState();
   ucInletValveState = ucGetInletValveState();
   ucChillerValveState = ucGetChillerValveState();
@@ -247,19 +247,18 @@ void vValvesApplet(int init){
           lcd_printf(0,8,13, "INLET CLOSED");
         }
 
-      if (ucChillerValveState)
-             {
-               lcd_DrawRect(TOGGLE_CHILLER_VALVE_X1, TOGGLE_CHILLER_VALVE_Y1, TOGGLE_CHILLER_VALVE_X2, TOGGLE_CHILLER_VALVE_Y2, Blue);
-               lcd_fill(TOGGLE_CHILLER_VALVE_X1+1, TOGGLE_CHILLER_VALVE_Y1+1, TOGGLE_CHILLER_VALVE_W, TOGGLE_CHILLER_VALVE_H, Red);
-               lcd_printf(12,8,13, "CHILLER OPENED");
-             }
-
-           else
-             {
-               lcd_DrawRect(TOGGLE_CHILLER_VALVE_X1, TOGGLE_CHILLER_VALVE_Y1, TOGGLE_CHILLER_VALVE_X2, TOGGLE_CHILLER_VALVE_Y2, Cyan);
-               lcd_fill(TOGGLE_CHILLER_VALVE_X1+1, TOGGLE_CHILLER_VALVE_Y1+1, TOGGLE_CHILLER_VALVE_W, TOGGLE_CHILLER_VALVE_H, Green);
-               lcd_printf(12,8,13, "CHILLER CLOSED");
-             }
+      if (ucChillerValveState == VALVE_OPENED)
+         {
+           lcd_DrawRect(TOGGLE_CHILLER_VALVE_X1, TOGGLE_CHILLER_VALVE_Y1, TOGGLE_CHILLER_VALVE_X2, TOGGLE_CHILLER_VALVE_Y2, Blue);
+           lcd_fill(TOGGLE_CHILLER_VALVE_X1+1, TOGGLE_CHILLER_VALVE_Y1+1, TOGGLE_CHILLER_VALVE_W, TOGGLE_CHILLER_VALVE_H, Red);
+           lcd_printf(12,8,13, "CHILLER OPENED");
+         }
+       else
+         {
+           lcd_DrawRect(TOGGLE_CHILLER_VALVE_X1, TOGGLE_CHILLER_VALVE_Y1, TOGGLE_CHILLER_VALVE_X2, TOGGLE_CHILLER_VALVE_Y2, Cyan);
+           lcd_fill(TOGGLE_CHILLER_VALVE_X1+1, TOGGLE_CHILLER_VALVE_Y1+1, TOGGLE_CHILLER_VALVE_W, TOGGLE_CHILLER_VALVE_H, Green);
+           lcd_printf(12,8,13, "CHILLER CLOSED");
+         }
 
 
       xTaskCreate( vValvesAppletDisplay,
@@ -283,7 +282,8 @@ void vValvesAppletDisplay( void *pvParameters){
         //TEMPLATE
 //        printf("***********whole = %d.%d \n\r", (unsigned int)floor(fNumber), (unsigned int)((fNumber-floor(fNumber))*pow(10, uiDecimalPlaces)));
 
-        static uint8_t hlt_last = 0, mash_last = 0, boil_last = 0, inlet_last = 0, chiller_last = 0;
+        static uint8_t hlt_last = 0, mash_last = 0, boil_last = 0, inlet_last = 0;
+        static ValveState chiller_last = 0;
         for(;;)
           {
 
@@ -293,7 +293,7 @@ void vValvesAppletDisplay( void *pvParameters){
             fHLTTemp = ds1820_get_temp(HLT);
             fMashTemp = ds1820_get_temp(MASH);
 
-            ucHLTValveState = ucGetChillerValveState();
+            ucHLTValveState = ucGetHltValveState();
             ucMashValveState = ucGetMashValveState();
             ucInletValveState = ucGetInletValveState();
             ucChillerValveState = ucGetChillerValveState();
@@ -344,7 +344,7 @@ void vValvesAppletDisplay( void *pvParameters){
                     lcd_printf(0,8,13, "INLET CLOSED");
                   }
 
-                if (ucChillerValveState)
+                if (ucChillerValveState == VALVE_OPENED)
                   {
                     lcd_DrawRect(TOGGLE_CHILLER_VALVE_X1, TOGGLE_CHILLER_VALVE_Y1, TOGGLE_CHILLER_VALVE_X2, TOGGLE_CHILLER_VALVE_Y2, Blue);
                     lcd_fill(TOGGLE_CHILLER_VALVE_X1+1, TOGGLE_CHILLER_VALVE_Y1+1, TOGGLE_CHILLER_VALVE_W, TOGGLE_CHILLER_VALVE_H, Red);

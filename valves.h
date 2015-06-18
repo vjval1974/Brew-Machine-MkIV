@@ -20,6 +20,14 @@
 #define CLOSE 1
 
 
+typedef enum
+{
+    NOT_DEFINED,
+    VALVE_OPENED,
+    VALVE_CLOSED,
+} ValveState;
+
+
 #define HLT_VALVE_PORT GPIOB
 #define MASH_VALVE_PORT GPIOB
 #define INLET_VALVE_PORT GPIOB

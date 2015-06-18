@@ -214,14 +214,14 @@ void vCheckTask(void *pvParameters)
       sprintf(pcNominalMashOutTemp, "49DA95B5:%02u\r\n\0", fGetNominalMashOutTemp());vConsolePrint(pcNominalMashOutTemp);vTaskDelay(25);
       sprintf(pcNominalSpargeTemp, "f2481074:%02u\r\n\0", fGetNominalSpargeTemp());vConsolePrint(pcNominalSpargeTemp);vTaskDelay(25);
       sprintf(pcBoilValveState, "13bc096a:%02u\r\n\0", ucGetBoilValveState());vConsolePrint(pcBoilValveState);vTaskDelay(25);
-	  sprintf(pcMashValveState, "642ae282:%02u\r\n\0", ucGetMashValveState());vConsolePrint(pcMashValveState);vTaskDelay(25); 
-	  sprintf(pcHltValveState, "f0f5139f:%02u\r\n\0", ucGetHltValveState());vConsolePrint(pcHltValveState);vTaskDelay(25);
-	  sprintf(pcChillerValveState, "3845dc46:%02u\r\n\0", ucGetChillerValveState());vConsolePrint(pcChillerValveState);vTaskDelay(25);
-	  sprintf(pcGrainMillState, "c8cfc1c4:%02u\r\n\0", ucGetGrainMillState());vConsolePrint(pcGrainMillState);vTaskDelay(25);
-	  sprintf(pcMashPumpState, "144aebd8:%02u\r\n\0", ucGetMashPumpState());vConsolePrint(pcMashPumpState);vTaskDelay(25);
-	  sprintf(pcInletValveState, "b204d4c3:%02u\r\n\0", ucGetInletValveState());vConsolePrint(pcInletValveState);vTaskDelay(25);
-	  sprintf(pcCranePosition, "4ae55d48:%02u\r\n\0", ucGetCranePosition());vConsolePrint(pcCranePosition);vTaskDelay(25);
-	    
+      sprintf(pcMashValveState, "642ae282:%02u\r\n\0", ucGetMashValveState());vConsolePrint(pcMashValveState);vTaskDelay(25);
+      sprintf(pcHltValveState, "f0f5139f:%02u\r\n\0", ucGetHltValveState());vConsolePrint(pcHltValveState);vTaskDelay(25);
+      sprintf(pcChillerValveState, "3845dc46:%02u\r\n\0", ucGetChillerValveState());vConsolePrint(pcChillerValveState);vTaskDelay(25);
+      sprintf(pcGrainMillState, "c8cfc1c4:%02u\r\n\0", ucGetGrainMillState());vConsolePrint(pcGrainMillState);vTaskDelay(25);
+      sprintf(pcMashPumpState, "144aebd8:%02u\r\n\0", ucGetMashPumpState());vConsolePrint(pcMashPumpState);vTaskDelay(25);
+      sprintf(pcInletValveState, "b204d4c3:%02u\r\n\0", ucGetInletValveState());vConsolePrint(pcInletValveState);vTaskDelay(25);
+      sprintf(pcCranePosition, "4ae55d48:%02u\r\n\0", ucGetCranePosition());vConsolePrint(pcCranePosition);vTaskDelay(25);
+
      // lower_limit = cI2cGetInput(CRANE_LOWER_LIMIT_PORT, CRANE_LOWER_LIMIT_PIN);
      // upper_limit = cI2cGetInput(CRANE_UPPER_LIMIT_PORT, CRANE_UPPER_LIMIT_PIN);
 

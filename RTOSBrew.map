@@ -1466,12 +1466,11 @@ END GROUP
                 0x0000b8e8       0xec Debug/valves.o
                 0x0000b8e8                vValvesInit
  .text.vValveActuate
-                0x0000b9d4      0x144 Debug/valves.o
+                0x0000b9d4      0x148 Debug/valves.o
                 0x0000b9d4                vValveActuate
  .text.vValvesApplet
-                0x0000bb18      0x304 Debug/valves.o
-                0x0000bb18                vValvesApplet
- *fill*         0x0000be1c        0x4 00
+                0x0000bb1c      0x304 Debug/valves.o
+                0x0000bb1c                vValvesApplet
  .text.vValvesAppletDisplay
                 0x0000be20      0x5a0 Debug/valves.o
                 0x0000be20                vValvesAppletDisplay
@@ -5138,9 +5137,9 @@ END GROUP
  .data.HLT_LEVELS
                 0x20000228        0xc Debug/hlt.o
                 0x20000228                HLT_LEVELS
- .data.h.8012   0x20000234        0x1 Debug/hlt.o
- .data.w.8011   0x20000235        0x1 Debug/hlt.o
- .data.uRcvdState.7944
+ .data.h.8017   0x20000234        0x1 Debug/hlt.o
+ .data.w.8016   0x20000235        0x1 Debug/hlt.o
+ .data.uRcvdState.7949
                 0x20000236        0x1 Debug/hlt.o
  .data          0x20000237        0x0 Debug/mash_pump.o
  *fill*         0x20000237        0x1 00
@@ -5182,8 +5181,9 @@ END GROUP
                 0x20000256        0x1 Debug/valves.o
  .data.ucChillerValveState
                 0x20000257        0x1 Debug/valves.o
- .data.h.7459   0x20000258        0x1 Debug/valves.o
- .data.w.7458   0x20000259        0x1 Debug/valves.o
+                0x20000257                ucChillerValveState
+ .data.h.7464   0x20000258        0x1 Debug/valves.o
+ .data.w.7463   0x20000259        0x1 Debug/valves.o
  .data          0x2000025a        0x0 Debug/diag_temps.o
  .data          0x2000025a        0x0 Debug/crane.o
  .data.cs       0x2000025a        0x1 Debug/crane.o
@@ -5252,20 +5252,20 @@ END GROUP
  .data.iPumpState
                 0x200002f4        0x4 Debug/brew.o
  .data.Brew     0x200002f8      0x478 Debug/brew.o
- .data.h.8134   0x20000770        0x1 Debug/brew.o
- .data.w.8133   0x20000771        0x1 Debug/brew.o
- .data.ucLastStep.8115
+ .data.h.8139   0x20000770        0x1 Debug/brew.o
+ .data.w.8138   0x20000771        0x1 Debug/brew.o
+ .data.ucLastStep.8120
                 0x20000772        0x1 Debug/brew.o
- .data.ucLastState.8116
+ .data.ucLastState.8121
                 0x20000773        0x1 Debug/brew.o
- .data.ucLastHLTLevel.8117
+ .data.ucLastHLTLevel.8122
                 0x20000774        0x1 Debug/brew.o
  *fill*         0x20000775        0x3 00
- .data.xMessage.7954
+ .data.xMessage.7959
                 0x20000778        0x4 Debug/brew.o
- .data.xMessage.7947
+ .data.xMessage.7952
                 0x2000077c        0x4 Debug/brew.o
- .data.Content.7920
+ .data.Content.7925
                 0x20000780        0x4 Debug/brew.o
  .data          0x20000784        0x0 Debug/parameters.o
  .data.UserParametersList
@@ -5393,7 +5393,7 @@ END GROUP
  .bss.ulIdleCycleCount
                 0x20000a38        0x4 Debug/main.o
                 0x20000a38                ulIdleCycleCount
- .bss.cBuf.8496
+ .bss.cBuf.8501
                 0x20000a3c       0x50 Debug/main.o
  .bss           0x20000a8c        0x0 Debug/lcd.o
  .bss.deviceid  0x20000a8c        0x2 Debug/lcd.o
@@ -5431,22 +5431,22 @@ END GROUP
                 0x20000aac                xTaskHLTLevelCheckerTaskHandle
  .bss.uiActualLitresDelivered
                 0x20000ab0        0x4 Debug/hlt.o
- .bss.last_window.8013
+ .bss.last_window.8018
                 0x20000ab4        0x2 Debug/hlt.o
- .bss.tog.7992  0x20000ab6        0x1 Debug/hlt.o
+ .bss.tog.7997  0x20000ab6        0x1 Debug/hlt.o
  *fill*         0x20000ab7        0x1 00
- .bss.cBuffer.7974
+ .bss.cBuffer.7979
                 0x20000ab8      0x3e8 Debug/hlt.o
- .bss.ucStep.7958
+ .bss.ucStep.7963
                 0x20000ea0        0x1 Debug/hlt.o
- .bss.uFirst.7948
+ .bss.uFirst.7953
                 0x20000ea1        0x1 Debug/hlt.o
- .bss.ucHeatAndFillMessageSent.7959
+ .bss.ucHeatAndFillMessageSent.7964
                 0x20000ea2        0x1 Debug/hlt.o
  *fill*         0x20000ea3        0x1 00
- .bss.fLitresToDrain.7950
+ .bss.fLitresToDrain.7955
                 0x20000ea4        0x4 Debug/hlt.o
- .bss.fDrainLitres.7946
+ .bss.fDrainLitres.7951
                 0x20000ea8        0x4 Debug/hlt.o
  .bss           0x20000eac        0x0 Debug/mash_pump.o
  .bss.xMASHPumpTaskHandle
@@ -5551,18 +5551,18 @@ END GROUP
  .bss.xValvesAppletDisplayHandle
                 0x20000ff4        0x4 Debug/valves.o
                 0x20000ff4                xValvesAppletDisplayHandle
- .bss.last_window.7460
+ .bss.last_window.7465
                 0x20000ff8        0x2 Debug/valves.o
- .bss.hlt_last.7447
+ .bss.hlt_last.7452
                 0x20000ffa        0x1 Debug/valves.o
- .bss.mash_last.7448
+ .bss.mash_last.7453
                 0x20000ffb        0x1 Debug/valves.o
- .bss.inlet_last.7450
+ .bss.inlet_last.7455
                 0x20000ffc        0x1 Debug/valves.o
- .bss.chiller_last.7451
+ .bss.chiller_last.7456
                 0x20000ffd        0x1 Debug/valves.o
- .bss.tog.7442  0x20000ffe        0x1 Debug/valves.o
- .bss.boil_last.7449
+ .bss.tog.7447  0x20000ffe        0x1 Debug/valves.o
+ .bss.boil_last.7454
                 0x20000fff        0x1 Debug/valves.o
  .bss           0x20001000        0x0 Debug/diag_temps.o
  .bss.count.7368
@@ -5738,61 +5738,61 @@ END GROUP
                 0x20001264        0x8 Debug/brew.o
  .bss.xBoilTextMessage
                 0x2000126c        0x4 Debug/brew.o
- .bss.ucPause.8142
+ .bss.ucPause.8147
                 0x20001270        0x1 Debug/brew.o
- .bss.iOneShot.8141
+ .bss.iOneShot.8146
                 0x20001271        0x1 Debug/brew.o
- .bss.last_window.8135
+ .bss.last_window.8140
                 0x20001272        0x2 Debug/brew.o
- .bss.buf.8110  0x20001274      0x140 Debug/brew.o
- .bss.tog.8101  0x200013b4        0x1 Debug/brew.o
+ .bss.buf.8115  0x20001274      0x140 Debug/brew.o
+ .bss.tog.8106  0x200013b4        0x1 Debug/brew.o
  *fill*         0x200013b5        0x3 00
- .bss.a.8112    0x200013b8       0x28 Debug/brew.o
- .bss.j.8118    0x200013e0        0x4 Debug/brew.o
- .bss.b.8111    0x200013e4       0x28 Debug/brew.o
- .bss.ucLastStep.8086
+ .bss.a.8117    0x200013b8       0x28 Debug/brew.o
+ .bss.j.8123    0x200013e0        0x4 Debug/brew.o
+ .bss.b.8116    0x200013e4       0x28 Debug/brew.o
+ .bss.ucLastStep.8091
                 0x2000140c        0x1 Debug/brew.o
  *fill*         0x2000140d        0x3 00
- .bss.iLastTime.8059
+ .bss.iLastTime.8064
                 0x20001410        0x4 Debug/brew.o
- .bss.buf.8060  0x20001414       0x34 Debug/brew.o
- .bss.flag.8019
+ .bss.buf.8065  0x20001414       0x34 Debug/brew.o
+ .bss.flag.8024
                 0x20001448        0x4 Debug/brew.o
- .bss.buf.8018  0x2000144c       0x34 Debug/brew.o
- .bss.iCommand.7955
+ .bss.buf.8023  0x2000144c       0x34 Debug/brew.o
+ .bss.iCommand.7960
                 0x20001480        0x4 Debug/brew.o
- .bss.iCommand.7948
+ .bss.iCommand.7953
                 0x20001484        0x4 Debug/brew.o
- .bss.buf.7914  0x20001488       0x34 Debug/brew.o
- .bss.iCount.7908
+ .bss.buf.7919  0x20001488       0x34 Debug/brew.o
+ .bss.iCount.7913
                 0x200014bc        0x4 Debug/brew.o
- .bss.iCommand.7905
+ .bss.iCommand.7910
                 0x200014c0        0x4 Debug/brew.o
- .bss.buf.7906  0x200014c4       0x34 Debug/brew.o
- .bss.buf1.7907
+ .bss.buf.7911  0x200014c4       0x34 Debug/brew.o
+ .bss.buf1.7912
                 0x200014f8       0x34 Debug/brew.o
- .bss.xMessage.7898
+ .bss.xMessage.7903
                 0x2000152c        0x4 Debug/brew.o
- .bss.uMsg.7877
+ .bss.uMsg.7882
                 0x20001530        0x1 Debug/brew.o
  *fill*         0x20001531        0x3 00
- .bss.iContent.7879
+ .bss.iContent.7884
                 0x20001534        0x4 Debug/brew.o
- .bss.buf.7882  0x20001538       0x34 Debug/brew.o
- .bss.buf1.7883
+ .bss.buf.7887  0x20001538       0x34 Debug/brew.o
+ .bss.buf1.7888
                 0x2000156c       0x34 Debug/brew.o
- .bss.iWaiting.7880
+ .bss.iWaiting.7885
                 0x200015a0        0x4 Debug/brew.o
- .bss.iStepsToComplete.7881
+ .bss.iStepsToComplete.7886
                 0x200015a4        0x4 Debug/brew.o
- .bss.uBrewHoursElapsed.7876
+ .bss.uBrewHoursElapsed.7881
                 0x200015a8        0x2 Debug/brew.o
- .bss.uBrewMinutesElapsed.7875
+ .bss.uBrewMinutesElapsed.7880
                 0x200015aa        0x2 Debug/brew.o
- .bss.uBrewSecondsElapsed.7874
+ .bss.uBrewSecondsElapsed.7879
                 0x200015ac        0x2 Debug/brew.o
  *fill*         0x200015ae        0x2 00
- .bss.buf.7825  0x200015b0       0x48 Debug/brew.o
+ .bss.buf.7830  0x200015b0       0x48 Debug/brew.o
  .bss           0x200015f8        0x0 Debug/parameters.o
  .bss.xParametersAppletDisplayHandle
                 0x200015f8        0x4 Debug/parameters.o
@@ -6128,7 +6128,7 @@ OUTPUT(RTOSBrew.axf elf32-littlearm)
  .debug_abbrev  0x000075e1      0x15e Debug/heap_2.o
  .debug_abbrev  0x0000773f       0xe6 Debug/startup_stm32f10x.o
 
-.debug_info     0x00000000    0x3884e
+.debug_info     0x00000000    0x38882
  .debug_info    0x00000000     0x1776 Debug/main.o
  .debug_info    0x00001776     0x18c5 Debug/lcd.o
  .debug_info    0x0000303b      0x3b5 Debug/printf-stdarg.o
@@ -6145,44 +6145,44 @@ OUTPUT(RTOSBrew.axf elf32-littlearm)
  .debug_info    0x0000e9fd      0xd7e Debug/stir.o
  .debug_info    0x0000f77b      0xe17 Debug/stirApplet.o
  .debug_info    0x00010592      0x4d5 Debug/menu.o
- .debug_info    0x00010a67     0x10e8 Debug/valves.o
- .debug_info    0x00011b4f      0xe1c Debug/diag_temps.o
- .debug_info    0x0001296b     0x1254 Debug/crane.o
- .debug_info    0x00013bbf      0xed4 Debug/speaker.o
- .debug_info    0x00014a93     0x127b Debug/timer.o
- .debug_info    0x00015d0e     0x169a Debug/ds1820.o
- .debug_info    0x000173a8     0x1491 Debug/Flow1.o
- .debug_info    0x00018839     0x1237 Debug/diag_pwm.o
- .debug_info    0x00019a70     0x1b4b Debug/I2C-IO.o
- .debug_info    0x0001b5bb      0xfaa Debug/chiller_pump.o
- .debug_info    0x0001c565     0x15a8 Debug/console.o
- .debug_info    0x0001db0d     0x253f Debug/brew.o
- .debug_info    0x0002004c     0x1123 Debug/parameters.o
- .debug_info    0x0002116f     0x11aa Debug/boil_valve.o
- .debug_info    0x00022319     0x1cfc Debug/stf_syscalls_minimal.o
- .debug_info    0x00024015     0x11ba Debug/io_util.o
- .debug_info    0x000251cf      0x54c Debug/core_cm3.o
- .debug_info    0x0002571b      0xef9 Debug/system_stm32f10x.o
- .debug_info    0x00026614      0xd9d Debug/stm32f10x_it.o
- .debug_info    0x000273b1     0x1743 Debug/stm32f10x_i2c.o
- .debug_info    0x00028af4      0xe22 Debug/misc.o
- .debug_info    0x00029916     0x14ee Debug/stm32f10x_rcc.o
- .debug_info    0x0002ae04     0x130c Debug/stm32f10x_gpio.o
- .debug_info    0x0002c110     0x155e Debug/stm32f10x_spi.o
- .debug_info    0x0002d66e     0x29fa Debug/stm32f10x_tim.o
- .debug_info    0x00030068     0x1659 Debug/stm32f10x_usart.o
- .debug_info    0x000316c1     0x1573 Debug/stm32f10x_fsmc.o
- .debug_info    0x00032c34     0x1330 Debug/stm32f10x_flash.o
- .debug_info    0x00033f64     0x17fb Debug/stm32f10x_adc.o
- .debug_info    0x0003575f      0xf64 Debug/stm32f10x_exti.o
- .debug_info    0x000366c3      0x2aa Debug/list.o
- .debug_info    0x0003696d      0x7da Debug/queue.o
- .debug_info    0x00037147     0x10ad Debug/tasks.o
- .debug_info    0x000381f4      0x1dc Debug/port.o
- .debug_info    0x000383d0      0x2b7 Debug/heap_2.o
- .debug_info    0x00038687      0x1c7 Debug/startup_stm32f10x.o
+ .debug_info    0x00010a67     0x111c Debug/valves.o
+ .debug_info    0x00011b83      0xe1c Debug/diag_temps.o
+ .debug_info    0x0001299f     0x1254 Debug/crane.o
+ .debug_info    0x00013bf3      0xed4 Debug/speaker.o
+ .debug_info    0x00014ac7     0x127b Debug/timer.o
+ .debug_info    0x00015d42     0x169a Debug/ds1820.o
+ .debug_info    0x000173dc     0x1491 Debug/Flow1.o
+ .debug_info    0x0001886d     0x1237 Debug/diag_pwm.o
+ .debug_info    0x00019aa4     0x1b4b Debug/I2C-IO.o
+ .debug_info    0x0001b5ef      0xfaa Debug/chiller_pump.o
+ .debug_info    0x0001c599     0x15a8 Debug/console.o
+ .debug_info    0x0001db41     0x253f Debug/brew.o
+ .debug_info    0x00020080     0x1123 Debug/parameters.o
+ .debug_info    0x000211a3     0x11aa Debug/boil_valve.o
+ .debug_info    0x0002234d     0x1cfc Debug/stf_syscalls_minimal.o
+ .debug_info    0x00024049     0x11ba Debug/io_util.o
+ .debug_info    0x00025203      0x54c Debug/core_cm3.o
+ .debug_info    0x0002574f      0xef9 Debug/system_stm32f10x.o
+ .debug_info    0x00026648      0xd9d Debug/stm32f10x_it.o
+ .debug_info    0x000273e5     0x1743 Debug/stm32f10x_i2c.o
+ .debug_info    0x00028b28      0xe22 Debug/misc.o
+ .debug_info    0x0002994a     0x14ee Debug/stm32f10x_rcc.o
+ .debug_info    0x0002ae38     0x130c Debug/stm32f10x_gpio.o
+ .debug_info    0x0002c144     0x155e Debug/stm32f10x_spi.o
+ .debug_info    0x0002d6a2     0x29fa Debug/stm32f10x_tim.o
+ .debug_info    0x0003009c     0x1659 Debug/stm32f10x_usart.o
+ .debug_info    0x000316f5     0x1573 Debug/stm32f10x_fsmc.o
+ .debug_info    0x00032c68     0x1330 Debug/stm32f10x_flash.o
+ .debug_info    0x00033f98     0x17fb Debug/stm32f10x_adc.o
+ .debug_info    0x00035793      0xf64 Debug/stm32f10x_exti.o
+ .debug_info    0x000366f7      0x2aa Debug/list.o
+ .debug_info    0x000369a1      0x7da Debug/queue.o
+ .debug_info    0x0003717b     0x10ad Debug/tasks.o
+ .debug_info    0x00038228      0x1dc Debug/port.o
+ .debug_info    0x00038404      0x2b7 Debug/heap_2.o
+ .debug_info    0x000386bb      0x1c7 Debug/startup_stm32f10x.o
 
-.debug_line     0x00000000    0x14847
+.debug_line     0x00000000    0x14855
  .debug_line    0x00000000      0x5e5 Debug/main.o
  .debug_line    0x000005e5      0x922 Debug/lcd.o
  .debug_line    0x00000f07      0x217 Debug/printf-stdarg.o
@@ -6199,42 +6199,42 @@ OUTPUT(RTOSBrew.axf elf32-littlearm)
  .debug_line    0x000044e9      0x42e Debug/stir.o
  .debug_line    0x00004917      0x479 Debug/stirApplet.o
  .debug_line    0x00004d90      0x26e Debug/menu.o
- .debug_line    0x00004ffe      0x58d Debug/valves.o
- .debug_line    0x0000558b      0x4bd Debug/diag_temps.o
- .debug_line    0x00005a48      0x65b Debug/crane.o
- .debug_line    0x000060a3      0x473 Debug/speaker.o
- .debug_line    0x00006516      0x3f9 Debug/timer.o
- .debug_line    0x0000690f      0x6eb Debug/ds1820.o
- .debug_line    0x00006ffa      0x5cc Debug/Flow1.o
- .debug_line    0x000075c6      0x51a Debug/diag_pwm.o
- .debug_line    0x00007ae0      0x6d4 Debug/I2C-IO.o
- .debug_line    0x000081b4      0x4dd Debug/chiller_pump.o
- .debug_line    0x00008691      0x4ec Debug/console.o
- .debug_line    0x00008b7d      0xd89 Debug/brew.o
- .debug_line    0x00009906      0x5ad Debug/parameters.o
- .debug_line    0x00009eb3      0x5e9 Debug/boil_valve.o
- .debug_line    0x0000a49c      0x66c Debug/stf_syscalls_minimal.o
- .debug_line    0x0000ab08      0x3d4 Debug/io_util.o
- .debug_line    0x0000aedc      0x248 Debug/core_cm3.o
- .debug_line    0x0000b124      0x41f Debug/system_stm32f10x.o
- .debug_line    0x0000b543      0x3e8 Debug/stm32f10x_it.o
- .debug_line    0x0000b92b      0xaf5 Debug/stm32f10x_i2c.o
- .debug_line    0x0000c420      0x47d Debug/misc.o
- .debug_line    0x0000c89d      0x963 Debug/stm32f10x_rcc.o
- .debug_line    0x0000d200      0xa4e Debug/stm32f10x_gpio.o
- .debug_line    0x0000dc4e      0x99a Debug/stm32f10x_spi.o
- .debug_line    0x0000e5e8     0x2302 Debug/stm32f10x_tim.o
- .debug_line    0x000108ea      0xbd2 Debug/stm32f10x_usart.o
- .debug_line    0x000114bc      0x9c3 Debug/stm32f10x_fsmc.o
- .debug_line    0x00011e7f      0x713 Debug/stm32f10x_flash.o
- .debug_line    0x00012592      0xd52 Debug/stm32f10x_adc.o
- .debug_line    0x000132e4      0x597 Debug/stm32f10x_exti.o
- .debug_line    0x0001387b      0x129 Debug/list.o
- .debug_line    0x000139a4      0x36b Debug/queue.o
- .debug_line    0x00013d0f      0x7c5 Debug/tasks.o
- .debug_line    0x000144d4      0x199 Debug/port.o
- .debug_line    0x0001466d      0x140 Debug/heap_2.o
- .debug_line    0x000147ad       0x9a Debug/startup_stm32f10x.o
+ .debug_line    0x00004ffe      0x59b Debug/valves.o
+ .debug_line    0x00005599      0x4bd Debug/diag_temps.o
+ .debug_line    0x00005a56      0x65b Debug/crane.o
+ .debug_line    0x000060b1      0x473 Debug/speaker.o
+ .debug_line    0x00006524      0x3f9 Debug/timer.o
+ .debug_line    0x0000691d      0x6eb Debug/ds1820.o
+ .debug_line    0x00007008      0x5cc Debug/Flow1.o
+ .debug_line    0x000075d4      0x51a Debug/diag_pwm.o
+ .debug_line    0x00007aee      0x6d4 Debug/I2C-IO.o
+ .debug_line    0x000081c2      0x4dd Debug/chiller_pump.o
+ .debug_line    0x0000869f      0x4ec Debug/console.o
+ .debug_line    0x00008b8b      0xd89 Debug/brew.o
+ .debug_line    0x00009914      0x5ad Debug/parameters.o
+ .debug_line    0x00009ec1      0x5e9 Debug/boil_valve.o
+ .debug_line    0x0000a4aa      0x66c Debug/stf_syscalls_minimal.o
+ .debug_line    0x0000ab16      0x3d4 Debug/io_util.o
+ .debug_line    0x0000aeea      0x248 Debug/core_cm3.o
+ .debug_line    0x0000b132      0x41f Debug/system_stm32f10x.o
+ .debug_line    0x0000b551      0x3e8 Debug/stm32f10x_it.o
+ .debug_line    0x0000b939      0xaf5 Debug/stm32f10x_i2c.o
+ .debug_line    0x0000c42e      0x47d Debug/misc.o
+ .debug_line    0x0000c8ab      0x963 Debug/stm32f10x_rcc.o
+ .debug_line    0x0000d20e      0xa4e Debug/stm32f10x_gpio.o
+ .debug_line    0x0000dc5c      0x99a Debug/stm32f10x_spi.o
+ .debug_line    0x0000e5f6     0x2302 Debug/stm32f10x_tim.o
+ .debug_line    0x000108f8      0xbd2 Debug/stm32f10x_usart.o
+ .debug_line    0x000114ca      0x9c3 Debug/stm32f10x_fsmc.o
+ .debug_line    0x00011e8d      0x713 Debug/stm32f10x_flash.o
+ .debug_line    0x000125a0      0xd52 Debug/stm32f10x_adc.o
+ .debug_line    0x000132f2      0x597 Debug/stm32f10x_exti.o
+ .debug_line    0x00013889      0x129 Debug/list.o
+ .debug_line    0x000139b2      0x36b Debug/queue.o
+ .debug_line    0x00013d1d      0x7c5 Debug/tasks.o
+ .debug_line    0x000144e2      0x199 Debug/port.o
+ .debug_line    0x0001467b      0x140 Debug/heap_2.o
+ .debug_line    0x000147bb       0x9a Debug/startup_stm32f10x.o
 
 .debug_loc      0x00000000    0x18e2f
  .debug_loc     0x00000000      0x7ea Debug/main.o
@@ -6291,7 +6291,7 @@ OUTPUT(RTOSBrew.axf elf32-littlearm)
  .debug_loc     0x00018dd6       0x59 Debug/startup_stm32f10x.o
 
 .debug_pubnames
-                0x00000000     0x481b
+                0x00000000     0x4833
  .debug_pubnames
                 0x00000000      0x2cb Debug/main.o
  .debug_pubnames
@@ -6325,80 +6325,80 @@ OUTPUT(RTOSBrew.axf elf32-littlearm)
  .debug_pubnames
                 0x00000daf       0x53 Debug/menu.o
  .debug_pubnames
-                0x00000e02      0x128 Debug/valves.o
+                0x00000e02      0x140 Debug/valves.o
  .debug_pubnames
-                0x00000f2a       0xa7 Debug/diag_temps.o
+                0x00000f42       0xa7 Debug/diag_temps.o
  .debug_pubnames
-                0x00000fd1      0x178 Debug/crane.o
+                0x00000fe9      0x178 Debug/crane.o
  .debug_pubnames
-                0x00001149       0x40 Debug/speaker.o
+                0x00001161       0x40 Debug/speaker.o
  .debug_pubnames
-                0x00001189       0x66 Debug/timer.o
+                0x000011a1       0x66 Debug/timer.o
  .debug_pubnames
-                0x000011ef       0xc5 Debug/ds1820.o
+                0x00001207       0xc5 Debug/ds1820.o
  .debug_pubnames
-                0x000012b4      0x2a7 Debug/Flow1.o
+                0x000012cc      0x2a7 Debug/Flow1.o
  .debug_pubnames
-                0x0000155b       0xc8 Debug/diag_pwm.o
+                0x00001573       0xc8 Debug/diag_pwm.o
  .debug_pubnames
-                0x00001623       0x8c Debug/I2C-IO.o
+                0x0000163b       0x8c Debug/I2C-IO.o
  .debug_pubnames
-                0x000016af      0x113 Debug/chiller_pump.o
+                0x000016c7      0x113 Debug/chiller_pump.o
  .debug_pubnames
-                0x000017c2       0x52 Debug/console.o
+                0x000017da       0x52 Debug/console.o
  .debug_pubnames
-                0x00001814      0x728 Debug/brew.o
+                0x0000182c      0x728 Debug/brew.o
  .debug_pubnames
-                0x00001f3c       0xdf Debug/parameters.o
+                0x00001f54       0xdf Debug/parameters.o
  .debug_pubnames
-                0x0000201b      0x126 Debug/boil_valve.o
+                0x00002033      0x126 Debug/boil_valve.o
  .debug_pubnames
-                0x00002141      0x12a Debug/stf_syscalls_minimal.o
+                0x00002159      0x12a Debug/stf_syscalls_minimal.o
  .debug_pubnames
-                0x0000226b       0x4a Debug/io_util.o
+                0x00002283       0x4a Debug/io_util.o
  .debug_pubnames
-                0x000022b5      0x159 Debug/core_cm3.o
+                0x000022cd      0x159 Debug/core_cm3.o
  .debug_pubnames
-                0x0000240e       0x61 Debug/system_stm32f10x.o
+                0x00002426       0x61 Debug/system_stm32f10x.o
  .debug_pubnames
-                0x0000246f       0x8f Debug/stm32f10x_it.o
+                0x00002487       0x8f Debug/stm32f10x_it.o
  .debug_pubnames
-                0x000024fe      0x2b0 Debug/stm32f10x_i2c.o
+                0x00002516      0x2b0 Debug/stm32f10x_i2c.o
  .debug_pubnames
-                0x000027ae       0x89 Debug/misc.o
+                0x000027c6       0x89 Debug/misc.o
  .debug_pubnames
-                0x00002837      0x2c4 Debug/stm32f10x_rcc.o
+                0x0000284f      0x2c4 Debug/stm32f10x_rcc.o
  .debug_pubnames
-                0x00002afb      0x19d Debug/stm32f10x_gpio.o
+                0x00002b13      0x19d Debug/stm32f10x_gpio.o
  .debug_pubnames
-                0x00002c98      0x1f6 Debug/stm32f10x_spi.o
+                0x00002cb0      0x1f6 Debug/stm32f10x_spi.o
  .debug_pubnames
-                0x00002e8e      0x7b0 Debug/stm32f10x_tim.o
+                0x00002ea6      0x7b0 Debug/stm32f10x_tim.o
  .debug_pubnames
-                0x0000363e      0x294 Debug/stm32f10x_usart.o
+                0x00003656      0x294 Debug/stm32f10x_usart.o
  .debug_pubnames
-                0x000038d2      0x1a3 Debug/stm32f10x_fsmc.o
+                0x000038ea      0x1a3 Debug/stm32f10x_fsmc.o
  .debug_pubnames
-                0x00003a75      0x26e Debug/stm32f10x_flash.o
+                0x00003a8d      0x26e Debug/stm32f10x_flash.o
  .debug_pubnames
-                0x00003ce3      0x401 Debug/stm32f10x_adc.o
+                0x00003cfb      0x401 Debug/stm32f10x_adc.o
  .debug_pubnames
-                0x000040e4       0xbb Debug/stm32f10x_exti.o
+                0x000040fc       0xbb Debug/stm32f10x_exti.o
  .debug_pubnames
-                0x0000419f       0x71 Debug/list.o
+                0x000041b7       0x71 Debug/list.o
  .debug_pubnames
-                0x00004210      0x161 Debug/queue.o
+                0x00004228      0x161 Debug/queue.o
  .debug_pubnames
-                0x00004371      0x2dd Debug/tasks.o
+                0x00004389      0x2dd Debug/tasks.o
  .debug_pubnames
-                0x0000464e      0x101 Debug/port.o
+                0x00004666      0x101 Debug/port.o
  .debug_pubnames
-                0x0000474f       0x64 Debug/heap_2.o
+                0x00004767       0x64 Debug/heap_2.o
  .debug_pubnames
-                0x000047b3       0x68 Debug/startup_stm32f10x.o
+                0x000047cb       0x68 Debug/startup_stm32f10x.o
 
 .debug_pubtypes
-                0x00000000     0x38b6
+                0x00000000     0x38c5
  .debug_pubtypes
                 0x00000000      0x128 Debug/main.o
  .debug_pubtypes
@@ -6432,77 +6432,77 @@ OUTPUT(RTOSBrew.axf elf32-littlearm)
  .debug_pubtypes
                 0x000011b5       0x28 Debug/menu.o
  .debug_pubtypes
-                0x000011dd      0x133 Debug/valves.o
+                0x000011dd      0x142 Debug/valves.o
  .debug_pubtypes
-                0x00001310       0xe2 Debug/diag_temps.o
+                0x0000131f       0xe2 Debug/diag_temps.o
  .debug_pubtypes
-                0x000013f2      0x140 Debug/crane.o
+                0x00001401      0x140 Debug/crane.o
  .debug_pubtypes
-                0x00001532      0x10e Debug/speaker.o
+                0x00001541      0x10e Debug/speaker.o
  .debug_pubtypes
-                0x00001640      0x157 Debug/timer.o
+                0x0000164f      0x157 Debug/timer.o
  .debug_pubtypes
-                0x00001797      0x145 Debug/ds1820.o
+                0x000017a6      0x145 Debug/ds1820.o
  .debug_pubtypes
-                0x000018dc      0x1af Debug/Flow1.o
+                0x000018eb      0x1af Debug/Flow1.o
  .debug_pubtypes
-                0x00001a8b      0x124 Debug/diag_pwm.o
+                0x00001a9a      0x124 Debug/diag_pwm.o
  .debug_pubtypes
-                0x00001baf      0x218 Debug/I2C-IO.o
+                0x00001bbe      0x218 Debug/I2C-IO.o
  .debug_pubtypes
-                0x00001dc7      0x133 Debug/chiller_pump.o
+                0x00001dd6      0x133 Debug/chiller_pump.o
  .debug_pubtypes
-                0x00001efa      0x1a3 Debug/console.o
+                0x00001f09      0x1a3 Debug/console.o
  .debug_pubtypes
-                0x0000209d      0x143 Debug/brew.o
+                0x000020ac      0x143 Debug/brew.o
  .debug_pubtypes
-                0x000021e0      0x104 Debug/parameters.o
+                0x000021ef      0x104 Debug/parameters.o
  .debug_pubtypes
-                0x000022e4      0x146 Debug/boil_valve.o
+                0x000022f3      0x146 Debug/boil_valve.o
  .debug_pubtypes
-                0x0000242a      0x24b Debug/stf_syscalls_minimal.o
+                0x00002439      0x24b Debug/stf_syscalls_minimal.o
  .debug_pubtypes
-                0x00002675      0x141 Debug/io_util.o
+                0x00002684      0x141 Debug/io_util.o
  .debug_pubtypes
-                0x000027b6       0x50 Debug/core_cm3.o
+                0x000027c5       0x50 Debug/core_cm3.o
  .debug_pubtypes
-                0x00002806       0xbd Debug/system_stm32f10x.o
+                0x00002815       0xbd Debug/system_stm32f10x.o
  .debug_pubtypes
-                0x000028c3       0xac Debug/stm32f10x_it.o
+                0x000028d2       0xac Debug/stm32f10x_it.o
  .debug_pubtypes
-                0x0000296f      0x115 Debug/stm32f10x_i2c.o
+                0x0000297e      0x115 Debug/stm32f10x_i2c.o
  .debug_pubtypes
-                0x00002a84       0xc4 Debug/misc.o
+                0x00002a93       0xc4 Debug/misc.o
  .debug_pubtypes
-                0x00002b48      0x101 Debug/stm32f10x_rcc.o
+                0x00002b57      0x101 Debug/stm32f10x_rcc.o
  .debug_pubtypes
-                0x00002c49      0x12e Debug/stm32f10x_gpio.o
+                0x00002c58      0x12e Debug/stm32f10x_gpio.o
  .debug_pubtypes
-                0x00002d77      0x119 Debug/stm32f10x_spi.o
+                0x00002d86      0x119 Debug/stm32f10x_spi.o
  .debug_pubtypes
-                0x00002e90      0x13b Debug/stm32f10x_tim.o
+                0x00002e9f      0x13b Debug/stm32f10x_tim.o
  .debug_pubtypes
-                0x00002fcb      0x12c Debug/stm32f10x_usart.o
+                0x00002fda      0x12c Debug/stm32f10x_usart.o
  .debug_pubtypes
-                0x000030f7      0x1d7 Debug/stm32f10x_fsmc.o
+                0x00003106      0x1d7 Debug/stm32f10x_fsmc.o
  .debug_pubtypes
-                0x000032ce       0xf0 Debug/stm32f10x_flash.o
+                0x000032dd       0xf0 Debug/stm32f10x_flash.o
  .debug_pubtypes
-                0x000033be       0xef Debug/stm32f10x_adc.o
+                0x000033cd       0xef Debug/stm32f10x_adc.o
  .debug_pubtypes
-                0x000034ad      0x11e Debug/stm32f10x_exti.o
+                0x000034bc      0x11e Debug/stm32f10x_exti.o
  .debug_pubtypes
-                0x000035cb       0x7a Debug/list.o
+                0x000035da       0x7a Debug/list.o
  .debug_pubtypes
-                0x00003645       0xd4 Debug/queue.o
+                0x00003654       0xd4 Debug/queue.o
  .debug_pubtypes
-                0x00003719      0x10c Debug/tasks.o
+                0x00003728      0x10c Debug/tasks.o
  .debug_pubtypes
-                0x00003825       0x33 Debug/port.o
+                0x00003834       0x33 Debug/port.o
  .debug_pubtypes
-                0x00003858       0x4c Debug/heap_2.o
+                0x00003867       0x4c Debug/heap_2.o
  .debug_pubtypes
-                0x000038a4       0x12 Debug/startup_stm32f10x.o
+                0x000038b3       0x12 Debug/startup_stm32f10x.o
 
 .debug_aranges  0x00000000     0x42f8
  .debug_aranges
@@ -6664,7 +6664,7 @@ OUTPUT(RTOSBrew.axf elf32-littlearm)
  .debug_ranges  0x00003f70       0x28 Debug/heap_2.o
  .debug_ranges  0x00003f98       0x20 Debug/startup_stm32f10x.o
 
-.debug_str      0x00000000     0x7b1d
+.debug_str      0x00000000     0x7b43
  .debug_str     0x00000000      0xeb7 Debug/main.o
                                 0xf70 (size before relaxing)
  .debug_str     0x00000eb7      0x499 Debug/lcd.o
@@ -6697,77 +6697,77 @@ OUTPUT(RTOSBrew.axf elf32-littlearm)
                                 0x93b (size before relaxing)
  .debug_str     0x00002732      0x129 Debug/menu.o
                                 0x263 (size before relaxing)
- .debug_str     0x0000285b      0x1a4 Debug/valves.o
-                                0xb95 (size before relaxing)
- .debug_str     0x000029ff       0xaf Debug/diag_temps.o
+ .debug_str     0x0000285b      0x1ca Debug/valves.o
+                                0xbc6 (size before relaxing)
+ .debug_str     0x00002a25       0xaf Debug/diag_temps.o
                                 0x975 (size before relaxing)
- .debug_str     0x00002aae      0x14a Debug/crane.o
+ .debug_str     0x00002ad4      0x14a Debug/crane.o
                                 0xbd2 (size before relaxing)
- .debug_str     0x00002bf8       0x34 Debug/speaker.o
+ .debug_str     0x00002c1e       0x34 Debug/speaker.o
                                 0x9e9 (size before relaxing)
- .debug_str     0x00002c2c       0x52 Debug/timer.o
+ .debug_str     0x00002c52       0x52 Debug/timer.o
                                 0xc7f (size before relaxing)
- .debug_str     0x00002c7e      0x1b1 Debug/ds1820.o
+ .debug_str     0x00002ca4      0x1b1 Debug/ds1820.o
                                 0xd3c (size before relaxing)
- .debug_str     0x00002e2f      0x319 Debug/Flow1.o
+ .debug_str     0x00002e55      0x319 Debug/Flow1.o
                                 0xde0 (size before relaxing)
- .debug_str     0x00003148       0xb9 Debug/diag_pwm.o
+ .debug_str     0x0000316e       0xb9 Debug/diag_pwm.o
                                 0xb89 (size before relaxing)
- .debug_str     0x00003201      0x1b2 Debug/I2C-IO.o
+ .debug_str     0x00003227      0x1b2 Debug/I2C-IO.o
                                 0xf50 (size before relaxing)
- .debug_str     0x000033b3       0xe8 Debug/chiller_pump.o
+ .debug_str     0x000033d9       0xe8 Debug/chiller_pump.o
                                 0xac0 (size before relaxing)
- .debug_str     0x0000349b       0x49 Debug/console.o
+ .debug_str     0x000034c1       0x49 Debug/console.o
                                 0xc7c (size before relaxing)
- .debug_str     0x000034e4      0xa52 Debug/brew.o
+ .debug_str     0x0000350a      0xa52 Debug/brew.o
                                0x15e7 (size before relaxing)
- .debug_str     0x00003f36       0xbd Debug/parameters.o
+ .debug_str     0x00003f5c       0xbd Debug/parameters.o
                                 0xbb4 (size before relaxing)
- .debug_str     0x00003ff3       0xcb Debug/boil_valve.o
+ .debug_str     0x00004019       0xcb Debug/boil_valve.o
                                 0xbb9 (size before relaxing)
- .debug_str     0x000040be      0x21c Debug/stf_syscalls_minimal.o
+ .debug_str     0x000040e4      0x21c Debug/stf_syscalls_minimal.o
                                 0xea0 (size before relaxing)
- .debug_str     0x000042da       0x42 Debug/io_util.o
+ .debug_str     0x00004300       0x42 Debug/io_util.o
                                 0xbc2 (size before relaxing)
- .debug_str     0x0000431c      0x12e Debug/core_cm3.o
+ .debug_str     0x00004342      0x12e Debug/core_cm3.o
                                 0x243 (size before relaxing)
- .debug_str     0x0000444a       0xed Debug/system_stm32f10x.o
+ .debug_str     0x00004470       0xed Debug/system_stm32f10x.o
                                 0x94c (size before relaxing)
- .debug_str     0x00004537       0x78 Debug/stm32f10x_it.o
+ .debug_str     0x0000455d       0x78 Debug/stm32f10x_it.o
                                 0x8d0 (size before relaxing)
- .debug_str     0x000045af      0x377 Debug/stm32f10x_i2c.o
+ .debug_str     0x000045d5      0x377 Debug/stm32f10x_i2c.o
                                 0xccf (size before relaxing)
- .debug_str     0x00004926       0xea Debug/misc.o
+ .debug_str     0x0000494c       0xea Debug/misc.o
                                 0x9cb (size before relaxing)
- .debug_str     0x00004a10      0x351 Debug/stm32f10x_rcc.o
+ .debug_str     0x00004a36      0x351 Debug/stm32f10x_rcc.o
                                 0xce7 (size before relaxing)
- .debug_str     0x00004d61      0x23f Debug/stm32f10x_gpio.o
+ .debug_str     0x00004d87      0x23f Debug/stm32f10x_gpio.o
                                 0xbdc (size before relaxing)
- .debug_str     0x00004fa0      0x356 Debug/stm32f10x_spi.o
+ .debug_str     0x00004fc6      0x356 Debug/stm32f10x_spi.o
                                 0xc8e (size before relaxing)
- .debug_str     0x000052f6      0x9ac Debug/stm32f10x_tim.o
+ .debug_str     0x0000531c      0x9ac Debug/stm32f10x_tim.o
                                0x146e (size before relaxing)
- .debug_str     0x00005ca2      0x341 Debug/stm32f10x_usart.o
+ .debug_str     0x00005cc8      0x341 Debug/stm32f10x_usart.o
                                 0xd21 (size before relaxing)
- .debug_str     0x00005fe3      0x3cd Debug/stm32f10x_fsmc.o
+ .debug_str     0x00006009      0x3cd Debug/stm32f10x_fsmc.o
                                 0xe39 (size before relaxing)
- .debug_str     0x000063b0      0x36f Debug/stm32f10x_flash.o
+ .debug_str     0x000063d6      0x36f Debug/stm32f10x_flash.o
                                 0xc45 (size before relaxing)
- .debug_str     0x0000671f      0x43e Debug/stm32f10x_adc.o
+ .debug_str     0x00006745      0x43e Debug/stm32f10x_adc.o
                                 0xdc8 (size before relaxing)
- .debug_str     0x00006b5d       0xc1 Debug/stm32f10x_exti.o
+ .debug_str     0x00006b83       0xc1 Debug/stm32f10x_exti.o
                                 0xa3c (size before relaxing)
- .debug_str     0x00006c1e      0x135 Debug/list.o
+ .debug_str     0x00006c44      0x135 Debug/list.o
                                 0x21e (size before relaxing)
- .debug_str     0x00006d53      0x347 Debug/queue.o
+ .debug_str     0x00006d79      0x347 Debug/queue.o
                                 0x4ed (size before relaxing)
- .debug_str     0x0000709a      0x7ac Debug/tasks.o
+ .debug_str     0x000070c0      0x7ac Debug/tasks.o
                                 0x9e6 (size before relaxing)
- .debug_str     0x00007846      0x127 Debug/port.o
+ .debug_str     0x0000786c      0x127 Debug/port.o
                                 0x1ee (size before relaxing)
- .debug_str     0x0000796d      0x117 Debug/heap_2.o
+ .debug_str     0x00007993      0x117 Debug/heap_2.o
                                 0x249 (size before relaxing)
- .debug_str     0x00007a84       0x99 Debug/startup_stm32f10x.o
+ .debug_str     0x00007aaa       0x99 Debug/startup_stm32f10x.o
                                 0x17d (size before relaxing)
 
 .comment        0x00000000       0x2a

@@ -29,29 +29,45 @@ xTaskHandle xValvesTaskHandle = NULL, xValvesAppletDisplayHandle = NULL;
 // semaphore that stops the returning from the applet to the menu system until the applet goes into the blocked state.
 xSemaphoreHandle xValvesAppletRunningSemaphore;
 
-static unsigned char ucHLTValveState = CLOSED;
-static unsigned char ucMashValveState = CLOSED;
-static unsigned char ucInletValveState = CLOSED;
-ValveState ucChillerValveState = VALVE_CLOSED;
+static ValveState HLTValveState = VALVE_STATE_NOT_DEFINED;
+static ValveState MashValveState = VALVE_STATE_NOT_DEFINED;
+static ValveState InletValveState = VALVE_STATE_NOT_DEFINED;
+static ValveState ChillerValveState = VALVE_STATE_NOT_DEFINED;
 
-unsigned char ucGetHltValveState()
+ValveState ucGetHltValveState()
 {
-	return GPIO_ReadInputDataBit(HLT_VALVE_PORT, HLT_VALVE_PIN);
+  if(GPIO_ReadInputDataBit(HLT_VALVE_PORT, HLT_VALVE_PIN) == 0)
+    {
+      return VALVE_CLOSED;
+    }
+  else return VALVE_OPENED;
 }
 
-unsigned char ucGetMashValveState()
+ValveState ucGetMashValveState()
 {
-	return GPIO_ReadInputDataBit(MASH_VALVE_PORT, MASH_VALVE_PIN);
+  if (GPIO_ReadInputDataBit(MASH_VALVE_PORT, MASH_VALVE_PIN) == 0)
+    {
+      return VALVE_CLOSED;
+    }
+  else return VALVE_OPENED;
 }
 
-unsigned char ucGetInletValveState()
+ValveState ucGetInletValveState()
 {
-	 return GPIO_ReadInputDataBit(INLET_VALVE_PORT, INLET_VALVE_PIN);
+  if (GPIO_ReadInputDataBit(INLET_VALVE_PORT, INLET_VALVE_PIN) == 0)
+    {
+      return VALVE_CLOSED;
+    }
+  else return VALVE_OPENED;
 }
 
 ValveState ucGetChillerValveState()
 {
-	return GPIO_ReadInputDataBit(CHILLER_VALVE_PORT, CHILLER_VALVE_PIN);
+  if (GPIO_ReadInputDataBit(CHILLER_VALVE_PORT, CHILLER_VALVE_PIN) ==  0)
+    {
+      return VALVE_CLOSED;
+    }
+  else return VALVE_OPENED;
 }
 
 
@@ -66,31 +82,34 @@ void vValvesInit(void){
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;// Output - Push Pull
   GPIO_Init( HLT_VALVE_PORT, &GPIO_InitStructure );
   GPIO_ResetBits(HLT_VALVE_PORT, HLT_VALVE_PIN); //pull low
+  HLTValveState = VALVE_CLOSED;
 
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
   GPIO_InitStructure.GPIO_Pin =  MASH_VALVE_PIN;
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;// Output - Push Pull
   GPIO_Init( MASH_VALVE_PORT, &GPIO_InitStructure );
   GPIO_ResetBits(MASH_VALVE_PORT, MASH_VALVE_PIN); //pull low
+  MashValveState = VALVE_CLOSED;
 
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
   GPIO_InitStructure.GPIO_Pin =  INLET_VALVE_PIN;
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;// Output - Push Pull
   GPIO_Init( INLET_VALVE_PORT, &GPIO_InitStructure );
   GPIO_ResetBits(INLET_VALVE_PORT, INLET_VALVE_PIN); //pull low
+  InletValveState = VALVE_CLOSED;
 
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
   GPIO_InitStructure.GPIO_Pin =  CHILLER_VALVE_PIN;
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;// Output - Push Pull
   GPIO_Init( CHILLER_VALVE_PORT, &GPIO_InitStructure );
   GPIO_ResetBits(CHILLER_VALVE_PORT, CHILLER_VALVE_PIN); //pull low
-
+  ChillerValveState = VALVE_CLOSED;
 
   vSemaphoreCreateBinary(xValvesAppletRunningSemaphore);
 
 }
 
-void vValveActuate( unsigned char valve, unsigned char state )
+void vValveActuate( unsigned char valve, ValveCommand command )
 {
   uint8_t current = 0;
 
@@ -98,44 +117,72 @@ void vValveActuate( unsigned char valve, unsigned char state )
   {
   case HLT_VALVE:
     {
-      if (state == TOGGLE)
+      if (command == TOGGLE_VALVE)
         {
-          current = ucGetHltValveState();
+          current = GPIO_ReadInputDataBit(HLT_VALVE_PORT, HLT_VALVE_PIN);
           GPIO_WriteBit(HLT_VALVE_PORT, HLT_VALVE_PIN, current ^ 1);
 
         }
-      else GPIO_WriteBit(HLT_VALVE_PORT, HLT_VALVE_PIN, !state);
+      else if (command == OPEN_VALVE)
+        {
+          GPIO_WriteBit(HLT_VALVE_PORT, HLT_VALVE_PIN, 1);
+        }
+      else
+        {
+          GPIO_WriteBit(HLT_VALVE_PORT, HLT_VALVE_PIN, 0);
+        }
       break;
     }
   case MASH_VALVE:
     {
-      if (state == TOGGLE)
+      if (command == TOGGLE_VALVE)
         {
-          current = ucGetMashValveState();
+          current = GPIO_ReadInputDataBit(MASH_VALVE_PORT, MASH_VALVE_PIN);
           GPIO_WriteBit(MASH_VALVE_PORT, MASH_VALVE_PIN, current ^ 1);
 
         }
-      else GPIO_WriteBit(MASH_VALVE_PORT, MASH_VALVE_PIN, !state);
+      else if (command == OPEN_VALVE)
+        {
+          GPIO_WriteBit(MASH_VALVE_PORT, MASH_VALVE_PIN, 1);
+        }
+      else
+        {
+          GPIO_WriteBit(MASH_VALVE_PORT, MASH_VALVE_PIN, 0);
+        }
       break;
     }
   case INLET_VALVE:
     {
-      if (state == TOGGLE)
+      if (command == TOGGLE_VALVE)
         {
-          current = ucGetInletValveState();
+          current = GPIO_ReadInputDataBit(INLET_VALVE_PORT, INLET_VALVE_PIN);
           GPIO_WriteBit(INLET_VALVE_PORT, INLET_VALVE_PIN, current ^ 1);
         }
-      else GPIO_WriteBit(INLET_VALVE_PORT, INLET_VALVE_PIN, !state);
-      break;
+      else if (command == OPEN_VALVE)
+            {
+              GPIO_WriteBit(INLET_VALVE_PORT, INLET_VALVE_PIN, 1);
+            }
+          else
+            {
+              GPIO_WriteBit(INLET_VALVE_PORT, INLET_VALVE_PIN, 0);
+            }
+          break;
     }
   case CHILLER_VALVE:
      {
-       if (state == TOGGLE)
+       if (command == TOGGLE_VALVE)
          {
            current = GPIO_ReadInputDataBit(CHILLER_VALVE_PORT, CHILLER_VALVE_PIN);
            GPIO_WriteBit(CHILLER_VALVE_PORT, CHILLER_VALVE_PIN, current ^ 1);
          }
-       else GPIO_WriteBit(CHILLER_VALVE_PORT, CHILLER_VALVE_PIN, !state);
+       else if (command == OPEN_VALVE)
+         {
+           GPIO_WriteBit(CHILLER_VALVE_PORT, CHILLER_VALVE_PIN, 1);
+         }
+       else
+         {
+           GPIO_WriteBit(CHILLER_VALVE_PORT, CHILLER_VALVE_PIN, 0);
+         }
        break;
      }
 
@@ -196,15 +243,15 @@ void vValveActuate( unsigned char valve, unsigned char state )
 
 void vValvesApplet(int init){
  
-  ucHLTValveState = ucGetHltValveState();
-  ucMashValveState = ucGetMashValveState();
-  ucInletValveState = ucGetInletValveState();
-  ucChillerValveState = ucGetChillerValveState();
+  HLTValveState = ucGetHltValveState();
+  MashValveState = ucGetMashValveState();
+  InletValveState = ucGetInletValveState();
+  ChillerValveState = ucGetChillerValveState();
 
   if (init)
     {
 
-      if (ucHLTValveState)
+      if (HLTValveState == VALVE_OPENED)
         {
           lcd_DrawRect(TOGGLE_HLT_VALVE_X1, TOGGLE_HLT_VALVE_Y1, TOGGLE_HLT_VALVE_X2, TOGGLE_HLT_VALVE_Y2, Blue);
           lcd_fill(TOGGLE_HLT_VALVE_X1+1, TOGGLE_HLT_VALVE_Y1+1, TOGGLE_HLT_VALVE_W, TOGGLE_HLT_VALVE_H, Red);
@@ -218,7 +265,7 @@ void vValvesApplet(int init){
           lcd_printf(0,4,13,"HLT->HLT");
         }
 
-      if (ucMashValveState)
+      if (MashValveState == VALVE_OPENED)
         {
           lcd_DrawRect(TOGGLE_MASH_VALVE_X1, TOGGLE_MASH_VALVE_Y1, TOGGLE_MASH_VALVE_X2, TOGGLE_MASH_VALVE_Y2, Blue);
           lcd_fill(TOGGLE_MASH_VALVE_X1+1, TOGGLE_MASH_VALVE_Y1+1, TOGGLE_MASH_VALVE_W, TOGGLE_MASH_VALVE_H, Red);
@@ -233,7 +280,7 @@ void vValvesApplet(int init){
         }
 
 
-      if (ucInletValveState)
+      if (InletValveState == VALVE_OPENED)
         {
           lcd_DrawRect(TOGGLE_INLET_VALVE_X1, TOGGLE_INLET_VALVE_Y1, TOGGLE_INLET_VALVE_X2, TOGGLE_INLET_VALVE_Y2, Blue);
           lcd_fill(TOGGLE_INLET_VALVE_X1+1, TOGGLE_INLET_VALVE_Y1+1, TOGGLE_INLET_VALVE_W, TOGGLE_INLET_VALVE_H, Red);
@@ -247,7 +294,7 @@ void vValvesApplet(int init){
           lcd_printf(0,8,13, "INLET CLOSED");
         }
 
-      if (ucChillerValveState == VALVE_OPENED)
+      if (ChillerValveState == VALVE_OPENED)
          {
            lcd_DrawRect(TOGGLE_CHILLER_VALVE_X1, TOGGLE_CHILLER_VALVE_Y1, TOGGLE_CHILLER_VALVE_X2, TOGGLE_CHILLER_VALVE_Y2, Blue);
            lcd_fill(TOGGLE_CHILLER_VALVE_X1+1, TOGGLE_CHILLER_VALVE_Y1+1, TOGGLE_CHILLER_VALVE_W, TOGGLE_CHILLER_VALVE_H, Red);
@@ -282,7 +329,7 @@ void vValvesAppletDisplay( void *pvParameters){
         //TEMPLATE
 //        printf("***********whole = %d.%d \n\r", (unsigned int)floor(fNumber), (unsigned int)((fNumber-floor(fNumber))*pow(10, uiDecimalPlaces)));
 
-        static uint8_t hlt_last = 0, mash_last = 0, boil_last = 0, inlet_last = 0;
+        static ValveState hlt_last = 0, mash_last = 0, boil_last = 0, inlet_last = 0;
         static ValveState chiller_last = 0;
         for(;;)
           {
@@ -293,16 +340,16 @@ void vValvesAppletDisplay( void *pvParameters){
             fHLTTemp = ds1820_get_temp(HLT);
             fMashTemp = ds1820_get_temp(MASH);
 
-            ucHLTValveState = ucGetHltValveState();
-            ucMashValveState = ucGetMashValveState();
-            ucInletValveState = ucGetInletValveState();
-            ucChillerValveState = ucGetChillerValveState();
-            if (ucHLTValveState != hlt_last ||
-                ucMashValveState != mash_last ||
-                ucInletValveState != inlet_last ||
-                ucChillerValveState != chiller_last
+            HLTValveState = ucGetHltValveState();
+            MashValveState = ucGetMashValveState();
+            InletValveState = ucGetInletValveState();
+            ChillerValveState = ucGetChillerValveState();
+            if (HLTValveState != hlt_last ||
+                MashValveState != mash_last ||
+                InletValveState != inlet_last ||
+                ChillerValveState != chiller_last
             ){
-                if (ucHLTValveState)
+                if (HLTValveState)
                   {
                     lcd_DrawRect(TOGGLE_HLT_VALVE_X1, TOGGLE_HLT_VALVE_Y1, TOGGLE_HLT_VALVE_X2, TOGGLE_HLT_VALVE_Y2, Blue);
                     lcd_fill(TOGGLE_HLT_VALVE_X1+1, TOGGLE_HLT_VALVE_Y1+1, TOGGLE_HLT_VALVE_W, TOGGLE_HLT_VALVE_H, Red);
@@ -316,7 +363,7 @@ void vValvesAppletDisplay( void *pvParameters){
                     lcd_printf(0,4,13,"HLT->HLT");
                   }
 
-                if (ucMashValveState)
+                if (MashValveState)
                   {
                     lcd_DrawRect(TOGGLE_MASH_VALVE_X1, TOGGLE_MASH_VALVE_Y1, TOGGLE_MASH_VALVE_X2, TOGGLE_MASH_VALVE_Y2, Blue);
                     lcd_fill(TOGGLE_MASH_VALVE_X1+1, TOGGLE_MASH_VALVE_Y1+1, TOGGLE_MASH_VALVE_W, TOGGLE_MASH_VALVE_H, Red);
@@ -330,7 +377,7 @@ void vValvesAppletDisplay( void *pvParameters){
                     lcd_printf(12,4,13, "MASH->MASH");
                   }
 
-                if (ucInletValveState)
+                if (InletValveState)
                   {
                     lcd_DrawRect(TOGGLE_INLET_VALVE_X1, TOGGLE_INLET_VALVE_Y1, TOGGLE_INLET_VALVE_X2, TOGGLE_INLET_VALVE_Y2, Blue);
                     lcd_fill(TOGGLE_INLET_VALVE_X1+1, TOGGLE_INLET_VALVE_Y1+1, TOGGLE_INLET_VALVE_W, TOGGLE_INLET_VALVE_H, Red);
@@ -344,7 +391,7 @@ void vValvesAppletDisplay( void *pvParameters){
                     lcd_printf(0,8,13, "INLET CLOSED");
                   }
 
-                if (ucChillerValveState == VALVE_OPENED)
+                if (ChillerValveState == VALVE_OPENED)
                   {
                     lcd_DrawRect(TOGGLE_CHILLER_VALVE_X1, TOGGLE_CHILLER_VALVE_Y1, TOGGLE_CHILLER_VALVE_X2, TOGGLE_CHILLER_VALVE_Y2, Blue);
                     lcd_fill(TOGGLE_CHILLER_VALVE_X1+1, TOGGLE_CHILLER_VALVE_Y1+1, TOGGLE_CHILLER_VALVE_W, TOGGLE_CHILLER_VALVE_H, Red);
@@ -358,10 +405,10 @@ void vValvesAppletDisplay( void *pvParameters){
                     lcd_printf(12,8,13, "CHILLER CLOSED");
                   }
 
-                hlt_last = ucHLTValveState;
-                mash_last = ucMashValveState;
-                inlet_last = ucInletValveState;
-                chiller_last = ucChillerValveState;
+                hlt_last = HLTValveState;
+                mash_last = MashValveState;
+                inlet_last = InletValveState;
+                chiller_last = ChillerValveState;
             }
 
             if(tog)
@@ -394,21 +441,21 @@ int iValvesKey(int xx, int yy)
 
   if (xx > TOGGLE_HLT_VALVE_X1+1 && xx < TOGGLE_HLT_VALVE_X2-1 && yy > TOGGLE_HLT_VALVE_Y1+1 && yy < TOGGLE_HLT_VALVE_Y2-1)
     {
-      vValveActuate(HLT_VALVE, TOGGLE);
+      vValveActuate(HLT_VALVE, TOGGLE_VALVE);
 
     }
   else if (xx > TOGGLE_MASH_VALVE_X1+1 && xx < TOGGLE_MASH_VALVE_X2-1 && yy > TOGGLE_MASH_VALVE_Y1+1 && yy < TOGGLE_MASH_VALVE_Y2-1)
     {
-      vValveActuate(MASH_VALVE, TOGGLE);
+      vValveActuate(MASH_VALVE, TOGGLE_VALVE);
 
     }
   else if (xx > TOGGLE_INLET_VALVE_X1+1 && xx < TOGGLE_INLET_VALVE_X2-1 && yy > TOGGLE_INLET_VALVE_Y1+1 && yy < TOGGLE_INLET_VALVE_Y2-1)
      {
-      vValveActuate(INLET_VALVE, TOGGLE);
+      vValveActuate(INLET_VALVE, TOGGLE_VALVE);
      }
   else if (xx > TOGGLE_CHILLER_VALVE_X1+1 && xx < TOGGLE_CHILLER_VALVE_X2-1 && yy > TOGGLE_CHILLER_VALVE_Y1+1 && yy < TOGGLE_CHILLER_VALVE_Y2-1)
        {
-        vValveActuate(CHILLER_VALVE, TOGGLE);
+        vValveActuate(CHILLER_VALVE, TOGGLE_VALVE);
        }
   else if (xx > BK_X1 && yy > BK_Y1 && xx < BK_X2 && yy < BK_Y2)
     {

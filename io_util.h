@@ -17,6 +17,5 @@ void vRunTimeTimerSetup(void);
 #define OPEN 0
 #define CLOSE 1
 #define STOP -1
-#define TOGGLE 255
 
 #endif /* IO_UTIL_H_ */

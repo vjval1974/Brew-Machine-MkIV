@@ -137,8 +137,8 @@ void vTaskBrewHLT(void * pvParameters)
         {
           if (uFirst){
               vConsolePrint("HLT Entered IDLE State\r\n");
-              vValveActuate(INLET_VALVE, CLOSE);
-              vValveActuate(HLT_VALVE, CLOSE);
+              vValveActuate(INLET_VALVE, CLOSE_VALVE);
+              vValveActuate(HLT_VALVE, CLOSE_VALVE);
               GPIO_WriteBit(HLT_SSR_PORT, HLT_SSR_PIN, 0);
 
           }
@@ -164,17 +164,17 @@ void vTaskBrewHLT(void * pvParameters)
             }
 
           // make sure the HLT valve is closed
-          vValveActuate(HLT_VALVE, CLOSE);
+          vValveActuate(HLT_VALVE, CLOSE_VALVE);
 
 
           if (!GPIO_ReadInputDataBit(HLT_HIGH_LEVEL_PORT, HLT_HIGH_LEVEL_PIN)) // looking for zero volts
             {
               vTaskDelay(2000);
-              vValveActuate(INLET_VALVE, CLOSE);
+              vValveActuate(INLET_VALVE, CLOSE_VALVE);
               // vConsolePrint("HLT is FULL \r\n");
             }
           else
-            vValveActuate(INLET_VALVE, OPEN);
+            vValveActuate(INLET_VALVE, OPEN_VALVE);
 
           // ensure we have water above the elements
           if (!GPIO_ReadInputDataBit(HLT_LEVEL_CHECK_PORT, HLT_LEVEL_CHECK_PIN)) // looking for zero volts
@@ -225,12 +225,12 @@ void vTaskBrewHLT(void * pvParameters)
           if (ucHeatAndFillMessageSent == 0)
             {
               GPIO_WriteBit(HLT_SSR_PORT, HLT_SSR_PIN, 0);
-              vValveActuate(INLET_VALVE, OPEN);
+              vValveActuate(INLET_VALVE, OPEN_VALVE);
               vTaskDelay(1000);
-              vValveActuate(INLET_VALVE, CLOSE);
-              vValveActuate(HLT_VALVE, OPEN);
+              vValveActuate(INLET_VALVE, CLOSE_VALVE);
+              vValveActuate(HLT_VALVE, OPEN_VALVE);
               vTaskDelay(4000);
-              vValveActuate(HLT_VALVE, CLOSE);
+              vValveActuate(HLT_VALVE, CLOSE_VALVE);
               vTaskDelay(500);
 
               vConsolePrint("HLT: Temp and level reached, sending msg\r\n");
@@ -258,18 +258,18 @@ void vTaskBrewHLT(void * pvParameters)
               // Need to set up message to the Applet.
               LCD_FLOAT(10,10,1,fTempSetpoint);
               lcd_printf(1,10,10, "Setpoint:");
-              vValveActuate(HLT_VALVE, OPEN);
+              vValveActuate(HLT_VALVE, OPEN_VALVE);
               BrewState.ucHLTState = HLT_STATE_DRAIN;
 #ifdef TESTING
               GPIO_WriteBit(HLT_SSR_PORT, HLT_SSR_PIN, 0);
-              vValveActuate(INLET_VALVE, OPEN);
+              vValveActuate(INLET_VALVE, OPEN_VALVE);
               vTaskDelay(1000);
-              vValveActuate(INLET_VALVE, CLOSE);
-              vValveActuate(HLT_VALVE, OPEN);
+              vValveActuate(INLET_VALVE, CLOSE_VALVE);
+              vValveActuate(HLT_VALVE, OPEN_VALVE);
               vTaskDelay(4000);
-              vValveActuate(HLT_VALVE, CLOSE);
+              vValveActuate(HLT_VALVE, CLOSE_VALVE);
               vTaskDelay(500);
-              vValveActuate(HLT_VALVE, CLOSE);
+              vValveActuate(HLT_VALVE, CLOSE_VALVE);
               xMessage->ucFromTask = HLT_TASK;
               xMessage->ucToTask = BREW_TASK;
               xMessage->uiStepNumber = ucStep;
@@ -279,7 +279,7 @@ void vTaskBrewHLT(void * pvParameters)
               uRcvdState = HLT_STATE_IDLE;
 #endif
             }
-          vValveActuate(HLT_VALVE, OPEN);
+          vValveActuate(HLT_VALVE, OPEN_VALVE);
           fActualLitresDelivered = fGetBoilFlowLitres();
 
           if(((int)(fActualLitresDelivered * 1000) % 100) < 10)
@@ -294,7 +294,7 @@ void vTaskBrewHLT(void * pvParameters)
 
           if (fActualLitresDelivered >= fLitresToDrain)
             {
-              vValveActuate(HLT_VALVE, CLOSE);
+              vValveActuate(HLT_VALVE, CLOSE_VALVE);
               xMessage->ucFromTask = HLT_TASK;
               xMessage->ucToTask = BREW_TASK;
               xMessage->uiStepNumber = ucStep;
@@ -351,7 +351,7 @@ void vTaskHLTLevelChecker( void * pvParameters)
 
           if (hlt_level_high && GPIO_ReadInputDataBit(INLET_VALVE_PORT, INLET_VALVE_PIN))
             {
-              vValveActuate(INLET_VALVE, CLOSED);
+              vValveActuate(INLET_VALVE, CLOSE_VALVE);
               vConsolePrint("HLT Level Check Task: INTERVENED\r\n");
               vConsolePrint("INLET OPENED while level HIGH for >3s!\r\n");
               vTaskPrioritySet(NULL,  tskIDLE_PRIORITY + 5);

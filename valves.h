@@ -14,18 +14,26 @@
 #define INLET_VALVE 3
 #define CHILLER_VALVE 4
 
-#define CLOSED 11
-#define OPENED 10
-#define OPEN 0
-#define CLOSE 1
+//#define CLOSED 11
+//#define OPENED 10
+//#define OPEN 0
+//#define CLOSE 1
 
 
 typedef enum
 {
-    NOT_DEFINED,
+    VALVE_STATE_NOT_DEFINED,
     VALVE_OPENED,
     VALVE_CLOSED,
 } ValveState;
+
+typedef enum
+{
+  VALVE_COMMAND_NOT_DEFINED,
+  OPEN_VALVE,
+  CLOSE_VALVE,
+  TOGGLE_VALVE
+} ValveCommand;
 
 
 #define HLT_VALVE_PORT GPIOB
@@ -42,11 +50,11 @@ typedef enum
 void vValvesInit(void);
 void vValvesApplet(int init);
 int iValvesKey(int xx, int yy);
-void vValveActuate(unsigned char valve, unsigned char state);
+void vValveActuate(unsigned char valve, ValveCommand command);
 
-unsigned char ucGetHltValveState();
-unsigned char ucGetMashValveState();
-unsigned char ucGetInletValveState();
-unsigned char ucGetChillerValveState();
+ValveState ucGetHltValveState();
+ValveState ucGetMashValveState();
+ValveState ucGetInletValveState();
+ValveState ucGetChillerValveState();
 
 #endif /* VALVES_H_ */

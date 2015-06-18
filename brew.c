@@ -479,10 +479,10 @@ void vBrewReset(void){
   vChillerPump(STOP);
   vMashPump(STOP);
   vMill(MILL_STOPPED); // need to change state name.
-  vValveActuate(HLT_VALVE, CLOSE);
-  vValveActuate(INLET_VALVE, CLOSE);
-  vValveActuate(MASH_VALVE, CLOSE);
-  vValveActuate(CHILLER_VALVE, CLOSE);
+  vValveActuate(HLT_VALVE, CLOSE_VALVE);
+  vValveActuate(INLET_VALVE, CLOSE_VALVE);
+  vValveActuate(MASH_VALVE, CLOSE_VALVE);
+  vValveActuate(CHILLER_VALVE, CLOSE_VALVE);
 }
 
 static struct GenericMessage xMessage10;
@@ -686,9 +686,9 @@ void vBrewMillSetupFunction (int piParameters[5])
 
 void vBrewValvesSetupFunction (int piParameters[5])
 {
-  vValveActuate(HLT_VALVE, CLOSE);
-  vValveActuate(MASH_VALVE, CLOSE);
-  vValveActuate(INLET_VALVE, CLOSE);
+  vValveActuate(HLT_VALVE, CLOSE_VALVE);
+  vValveActuate(MASH_VALVE, CLOSE_VALVE);
+  vValveActuate(INLET_VALVE, CLOSE_VALVE);
   vConsolePrint("Valves Setup Func Called\r\n");
   vTaskDelay(50);
   //xQueueSendToBack(xBrewTaskReceiveQueue, &STEP_COMPLETE, 0);
@@ -812,7 +812,7 @@ void vBrewChillSetupFunction(int piParameters[5])
   xQueueSendToBack(xBoilValveQueue, &xMessage1, 1000); // open boil valve to direct wort through chiller
   vTaskDelay(50);
   vChillerPump(PUMPING); //Pump.
-  vValveActuate(CHILLER_VALVE, OPEN); // Runs water through the other side of the chiller.
+  vValveActuate(CHILLER_VALVE, OPEN_VALVE); // Runs water through the other side of the chiller.
 }
 
 // PRE-CHILL polling function
@@ -865,7 +865,7 @@ void vBrewChillPollFunction(int piParameters[5])
   if (Brew[BrewState.ucStep].uElapsedTime >= BrewParameters.uiChillTime*60)
     {
       vChillerPump(STOPPED);
-      vValveActuate(CHILLER_VALVE, CLOSE);
+      vValveActuate(CHILLER_VALVE, CLOSE_VALVE);
       Brew[BrewState.ucStep].ucComplete = 1;
         xMessage6->ucFromTask = CHILL_TASK;
         xMessage6->ucToTask = BOIL_VALVE_TASK;
@@ -880,7 +880,7 @@ void vBrewChillPollFunction(int piParameters[5])
 //  if (Brew[BrewState.ucStep].uElapsedTime >= 2)
 //      {
 //        vChillerPump(STOPPED);
-//        vValveActuate(CHILLER_VALVE, CLOSE);
+//        vValveActuate(CHILLER_VALVE, CLOSE_VALVE);
 //        Brew[BrewState.ucStep].ucComplete = 1;
 //        if (xMessage ==  NULL)
 //            xMessage = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
@@ -1027,9 +1027,9 @@ void vBrewSpargeSetupFunction(int piParameters[5])
     int ii;
     for (ii = 0; ii < iCycles; ii++)
       {
-        vValveActuate(MASH_VALVE, OPEN);
+        vValveActuate(MASH_VALVE, OPEN_VALVE);
         vTaskDelay(4000);
-        vValveActuate(MASH_VALVE, CLOSED);
+        vValveActuate(MASH_VALVE, CLOSE_VALVE);
         vTaskDelay(4000);
       }
 
@@ -1204,7 +1204,7 @@ void vBrewPumpToBoilSetupFunction(int piParameters[5])
 {
   //int iIterations = piParameters[0], ii;
   int ii = 0;
-  vValveActuate(MASH_VALVE, OPEN);
+  vValveActuate(MASH_VALVE, OPEN_VALVE);
 
   for (ii = 0; ii < BrewParameters.iPumpPrimingCycles; ii++)
     // try to prime, if not already primed
@@ -1222,7 +1222,7 @@ void vBrewPumpToBoilPollFunction(int  piParameters[5])
 {
   int iPumpToBoilTime = piParameters[1];
   vMashPump(PUMPING);
-  vValveActuate(MASH_VALVE, OPEN);
+  vValveActuate(MASH_VALVE, OPEN_VALVE);
   //Brew[BrewState.ucStep].uTimeRemaining = (piParameters[1]*60) - Brew[BrewState.ucStep].uElapsedTime;
   if (Brew[BrewState.ucStep].uElapsedTime >= iPumpToBoilTime)
     {
@@ -1232,7 +1232,7 @@ void vBrewPumpToBoilPollFunction(int  piParameters[5])
 
       Brew[BrewState.ucStep].ucComplete = 1;
       vMashPump(STOPPED);
-      vValveActuate(MASH_VALVE, CLOSE);
+      vValveActuate(MASH_VALVE, CLOSE_VALVE);
       vBrewNextStep();
     }
 #ifdef TESTING
@@ -1240,7 +1240,7 @@ void vBrewPumpToBoilPollFunction(int  piParameters[5])
       {
         Brew[BrewState.ucStep].ucComplete = 1;
         vMashPump(STOPPED);
-        vValveActuate(MASH_VALVE, CLOSE);
+        vValveActuate(MASH_VALVE, CLOSE_VALVE);
         vBrewNextStep();
       }
 #endif
@@ -1279,7 +1279,7 @@ void vBrewBoilSetupFunction(int piParameters[5])
 //                      vConsolePrint(buf);
 
       xQueueSendToBack(xBrewAppletTextQueue, &xBoilTextMessage, 0);
-      vValveActuate(MASH_VALVE, CLOSE); // Runs water through the other side of the chiller.
+      vValveActuate(MASH_VALVE, CLOSE_VALVE); // Runs water through the other side of the chiller.
     }
   else
     {

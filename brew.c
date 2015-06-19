@@ -476,7 +476,7 @@ void vBrewReset(void){
   xMessage->pvMessageContent = (void *)&iCommand1;
   if (xBoilQueue != NULL)
     xQueueSendToBack(xBoilQueue, &xMessage, 0);
-  vChillerPump(STOP);
+  vChillerPump(STOP_CHILLER_PUMP);
   vMashPump(STOP);
   vMill(MILL_STOPPED); // need to change state name.
   vValveActuate(HLT_VALVE, CLOSE_VALVE);
@@ -785,13 +785,13 @@ void vBrewPreChillSetupFunction(int piParameters[5])
   for (ii = 0; ii < BrewParameters.uiChillerPumpPrimingCycles; ii++)
     // try to prime, if not already primed
     {
-      vChillerPump(PUMPING);
+      vChillerPump(START_CHILLER_PUMP);
       vTaskDelay(BrewParameters.uiChillerPumpPrimingTime*1000);
-      vChillerPump(STOPPED);
+      vChillerPump(STOP_CHILLER_PUMP);
       vTaskDelay(BrewParameters.uiChillerPumpPrimingTime*1000);
     }
 
-  vChillerPump(PUMPING); //Pump.
+  vChillerPump(START_CHILLER_PUMP); //Pump.
 
 
 }
@@ -811,7 +811,7 @@ void vBrewChillSetupFunction(int piParameters[5])
   vConsolePrint("Chill Setup Function called\r\n");
   xQueueSendToBack(xBoilValveQueue, &xMessage1, 1000); // open boil valve to direct wort through chiller
   vTaskDelay(50);
-  vChillerPump(PUMPING); //Pump.
+  vChillerPump(START_CHILLER_PUMP); //Pump.
   vValveActuate(CHILLER_VALVE, OPEN_VALVE); // Runs water through the other side of the chiller.
 }
 
@@ -826,12 +826,12 @@ void vBrewPreChillPollFunction(int piParameters[5])
   //Brew[BrewState.ucStep].uTimeRemaining = (BrewParameters.uiSettlingTime*60) - Brew[BrewState.ucStep].uElapsedTime;
   if (Brew[BrewState.ucStep].uElapsedTime >= BrewParameters.uiSettlingRecircTime*60)
     {
-      vChillerPump(STOPPED);
+      vChillerPump(STOP_CHILLER_PUMP);
     }
 
   if (Brew[BrewState.ucStep].uElapsedTime >= BrewParameters.uiSettlingTime*60)
     {
-      vChillerPump(STOPPED); // just in case
+      vChillerPump(STOP_CHILLER_PUMP); // just in case
       Brew[BrewState.ucStep].ucComplete = 1;
       vBrewNextStep();
 
@@ -840,7 +840,7 @@ void vBrewPreChillPollFunction(int piParameters[5])
 //
 //  if (Brew[BrewState.ucStep].uElapsedTime >= 3)
 //    {
-//      vChillerPump(STOPPED); // just in case
+//      vChillerPump(STOP_CHILLER_PUMP); // just in case
 //      Brew[BrewState.ucStep].ucComplete = 1;
 //      vBrewNextStep();
 //
@@ -864,7 +864,7 @@ void vBrewChillPollFunction(int piParameters[5])
     //Brew[BrewState.ucStep].uTimeRemaining = (BrewParameters.uiChillTime*60) - Brew[BrewState.ucStep].uElapsedTime;
   if (Brew[BrewState.ucStep].uElapsedTime >= BrewParameters.uiChillTime*60)
     {
-      vChillerPump(STOPPED);
+      vChillerPump(STOP_CHILLER_PUMP);
       vValveActuate(CHILLER_VALVE, CLOSE_VALVE);
       Brew[BrewState.ucStep].ucComplete = 1;
         xMessage6->ucFromTask = CHILL_TASK;
@@ -879,7 +879,7 @@ void vBrewChillPollFunction(int piParameters[5])
 //#ifdef TESTING
 //  if (Brew[BrewState.ucStep].uElapsedTime >= 2)
 //      {
-//        vChillerPump(STOPPED);
+//        vChillerPump(STOP_CHILLER_PUMP);
 //        vValveActuate(CHILLER_VALVE, CLOSE_VALVE);
 //        Brew[BrewState.ucStep].ucComplete = 1;
 //        if (xMessage ==  NULL)

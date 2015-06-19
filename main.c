@@ -205,7 +205,7 @@ void vCheckTask(void *pvParameters)
       sprintf(pcBrewStepElapsedMinutes, "35C22A91:%02u\r\n\0", ucGetBrewStepMinutesElapsed());vConsolePrint(pcBrewStepElapsedMinutes);vTaskDelay(25);
       sprintf(pcMashTemp, "E21DFC36:%02u\r\n\0", (unsigned int)floor(ds1820_get_temp(MASH)));vConsolePrint(pcMashTemp);vTaskDelay(25);
       sprintf(pcHLTTemp, "81A73894:%02u\r\n\0", (unsigned int)floor(ds1820_get_temp(HLT)));vConsolePrint(pcHLTTemp);vTaskDelay(25);
-      sprintf(pcChillerPumpState, "461F7150:%02u\r\n\0", ucGetChillerPumpState());vConsolePrint(pcChillerPumpState);vTaskDelay(25);
+      sprintf(pcChillerPumpState, "461F7150:%02u\r\n\0", GetChillerPumpState());vConsolePrint(pcChillerPumpState);vTaskDelay(25);
       sprintf(pcBoilState, "60140A1E:%02u\r\n\0", ucGetBoilState());vConsolePrint(pcBoilState);vTaskDelay(25);
       sprintf(pcBrewState, "FB46F7E5:%02u\r\n\0", ucGetBrewState());vConsolePrint(pcBrewState);vTaskDelay(25);
       sprintf(pcBoilDuty, "F0665091:%02u\r\n\0", uiGetBoilDuty());vConsolePrint(pcBoilDuty);vTaskDelay(25);
@@ -218,7 +218,7 @@ void vCheckTask(void *pvParameters)
       sprintf(pcHltValveState, "f0f5139f:%02u\r\n\0", ucGetHltValveState());vConsolePrint(pcHltValveState);vTaskDelay(25);
       sprintf(pcChillerValveState, "3845dc46:%02u\r\n\0", ucGetChillerValveState());vConsolePrint(pcChillerValveState);vTaskDelay(25);
       sprintf(pcGrainMillState, "c8cfc1c4:%02u\r\n\0", ucGetGrainMillState());vConsolePrint(pcGrainMillState);vTaskDelay(25);
-      sprintf(pcMashPumpState, "144aebd8:%02u\r\n\0", ucGetMashPumpState());vConsolePrint(pcMashPumpState);vTaskDelay(25);
+      sprintf(pcMashPumpState, "144aebd8:%02u\r\n\0", GetMashPumpState());vConsolePrint(pcMashPumpState);vTaskDelay(25);
       sprintf(pcInletValveState, "b204d4c3:%02u\r\n\0", ucGetInletValveState());vConsolePrint(pcInletValveState);vTaskDelay(25);
       sprintf(pcCranePosition, "4ae55d48:%02u\r\n\0", ucGetCranePosition());vConsolePrint(pcCranePosition);vTaskDelay(25);
 

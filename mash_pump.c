@@ -27,15 +27,11 @@ xTaskHandle xMASHPumpTaskHandle = NULL, xMASHPumpAppletDisplayHandle = NULL;
 // semaphore that stops the returning from the applet to the menu system until the applet goes into the blocked state.
 xSemaphoreHandle xAppletRunningSemaphore;
 
-
-#define PUMPING 1
-#define STOPPED -1
-
-volatile int uMashPumpState = STOPPED;
+MashPumpState_t MashPumpState = MASH_PUMP_STOPPED;
 
 
-unsigned char ucGetMashPumpState(){
-	return uMashPumpState;
+MashPumpState_t GetMashPumpState(){
+	return MashPumpState;
 }
 
 void vMashPumpInit(void){
@@ -47,21 +43,21 @@ void vMashPumpInit(void){
   GPIO_Init( MASH_PUMP_PORT, &GPIO_InitStructure );
   GPIO_ResetBits(MASH_PUMP_PORT, MASH_PUMP_PIN); //pull low
   vSemaphoreCreateBinary(xAppletRunningSemaphore);
-
-
 }
 
-void vMashPump( uint8_t state )
+void vMashPump(MashPumpCommand command )
 {
-  if (state == PUMPING)
-       GPIO_SetBits(MASH_PUMP_PORT, MASH_PUMP_PIN);
+  if (command == MASH_PUMP_PUMPING)
+    {
+      GPIO_SetBits(MASH_PUMP_PORT, MASH_PUMP_PIN);
+      MashPumpState = MASH_PUMP_PUMPING;
+    }
   else
-    GPIO_ResetBits(MASH_PUMP_PORT, MASH_PUMP_PIN);
-  uMashPumpState = state;
-
+    {
+      GPIO_ResetBits(MASH_PUMP_PORT, MASH_PUMP_PIN);
+      MashPumpState =  MASH_PUMP_STOPPED;
+    }
 }
-
-
 
 #define START_MASH_PUMP_X1 155
 #define START_MASH_PUMP_Y1 30
@@ -119,9 +115,9 @@ void vMashPumpAppletDisplay( void *pvParameters){
 
             xSemaphoreTake(xAppletRunningSemaphore, portMAX_DELAY); //take the semaphore so that the key handler wont
                                                                                //return to the menu system until its returned
-                switch (uMashPumpState)
+                switch (MashPumpState)
                 {
-                case PUMPING:
+                case MASH_PUMP_PUMPING:
                 {
                         if(tog)
                         {
@@ -133,7 +129,7 @@ void vMashPumpAppletDisplay( void *pvParameters){
                         }
                         break;
                 }
-                case STOPPED:
+                case MASH_PUMP_STOPPED:
                 {
                         if(tog)
                         {
@@ -170,14 +166,13 @@ int iMashPumpKey(int xx, int yy)
 
   if (xx > STOP_MASH_PUMP_X1+1 && xx < STOP_MASH_PUMP_X2-1 && yy > STOP_MASH_PUMP_Y1+1 && yy < STOP_MASH_PUMP_Y2-1)
     {
-      vMashPump(STOPPED);
-      uMashPumpState = STOPPED;
-
+      vMashPump(STOP_MASH_PUMP);
+      MashPumpState = MASH_PUMP_STOPPED;
     }
   else if (xx > START_MASH_PUMP_X1+1 && xx < START_MASH_PUMP_X2-1 && yy > START_MASH_PUMP_Y1+1 && yy < START_MASH_PUMP_Y2-1)
     {
-      vMashPump(PUMPING);
-      uMashPumpState = PUMPING;
+      vMashPump(START_MASH_PUMP);
+      MashPumpState = MASH_PUMP_PUMPING;
     }
   else if (xx > BK_X1 && yy > BK_Y1 && xx < BK_X2 && yy < BK_Y2)
     {

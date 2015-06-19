@@ -28,13 +28,10 @@ xTaskHandle xCHILLERPumpTaskHandle = NULL, xCHILLERPumpAppletDisplayHandle = NUL
 // semaphore that stops the returning from the applet to the menu system until the applet goes into the blocked state.
 xSemaphoreHandle xChillerAppletRunningSemaphore;
 
+ChillerPumpState_t ChillerPumpState = CHILLER_PUMP_STOPPED;
 
-
-
-volatile int uChillerPumpState = STOPPED;
-
-unsigned char ucGetChillerPumpState(){
-  return uChillerPumpState;
+ChillerPumpState_t GetChillerPumpState(){
+  return ChillerPumpState;
 }
 
 void vChillerPumpInit(void){
@@ -46,30 +43,22 @@ void vChillerPumpInit(void){
    GPIO_Init( CHILLER_PUMP_PORT, &GPIO_InitStructure );
    GPIO_ResetBits(CHILLER_PUMP_PORT, CHILLER_PUMP_PIN); //pull low
    vSemaphoreCreateBinary(xChillerAppletRunningSemaphore);
-//  vPCF_ResetBits(CHILLER_PUMP_PIN, CHILLER_PUMP_PORT); //pull low
-  vSemaphoreCreateBinary(xChillerAppletRunningSemaphore);
-
-
 }
 
-void vChillerPump( uint8_t state )
+void vChillerPump(ChillerPumpCommand command )
 {
-  if (state == PUMPING)
-    GPIO_SetBits(CHILLER_PUMP_PORT, CHILLER_PUMP_PIN);
+  if (command == START_CHILLER_PUMP)
+    {
+      GPIO_SetBits(CHILLER_PUMP_PORT, CHILLER_PUMP_PIN);
+      ChillerPumpState = CHILLER_PUMP_PUMPING;
+    }
   else
-    GPIO_ResetBits(CHILLER_PUMP_PORT, CHILLER_PUMP_PIN); //pull low
-
-   uChillerPumpState = state;
-
-//  if (state)
-//    vPCF_SetBits(CHILLER_PUMP_PIN, CHILLER_PUMP_PORT);
-//  else
-//    vPCF_ResetBits(CHILLER_PUMP_PIN, CHILLER_PUMP_PORT);
-//  uChillerPumpState = state;
+    {
+      GPIO_ResetBits(CHILLER_PUMP_PORT, CHILLER_PUMP_PIN); //pull low
+      ChillerPumpState = CHILLER_PUMP_STOPPED;
+    }
 
 }
-
-
 
 #define START_CHILLER_PUMP_X1 155
 #define START_CHILLER_PUMP_Y1 30
@@ -129,9 +118,9 @@ void vChillerPumpAppletDisplay( void *pvParameters){
 
             xSemaphoreTake(xChillerAppletRunningSemaphore, portMAX_DELAY); //take the semaphore so that the key handler wont
                                                                                //return to the menu system until its returned
-                switch (uChillerPumpState)
+                switch (ChillerPumpState)
                 {
-                case PUMPING:
+                case CHILLER_PUMP_PUMPING:
                 {
                         if(tog)
                         {
@@ -143,7 +132,7 @@ void vChillerPumpAppletDisplay( void *pvParameters){
                         }
                         break;
                 }
-                case STOPPED:
+                case CHILLER_PUMP_STOPPED:
                 {
                         if(tog)
                         {
@@ -180,14 +169,14 @@ int iChillerPumpKey(int xx, int yy)
 
   if (xx > STOP_CHILLER_PUMP_X1+1 && xx < STOP_CHILLER_PUMP_X2-1 && yy > STOP_CHILLER_PUMP_Y1+1 && yy < STOP_CHILLER_PUMP_Y2-1)
     {
-      vChillerPump(STOPPED);
-      uChillerPumpState = STOPPED;
+      vChillerPump(STOP_CHILLER_PUMP);
+      ChillerPumpState = CHILLER_PUMP_STOPPED;
 
     }
   else if (xx > START_CHILLER_PUMP_X1+1 && xx < START_CHILLER_PUMP_X2-1 && yy > START_CHILLER_PUMP_Y1+1 && yy < START_CHILLER_PUMP_Y2-1)
     {
-      vChillerPump(PUMPING);
-      uChillerPumpState = PUMPING;
+      vChillerPump(START_CHILLER_PUMP);
+      ChillerPumpState = CHILLER_PUMP_PUMPING;
     }
   else if (xx > BK_X1 && yy > BK_Y1 && xx < BK_X2 && yy < BK_Y2)
     {

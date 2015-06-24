@@ -47,7 +47,7 @@ void vMashPumpInit(void){
 
 void vMashPump(MashPumpCommand command )
 {
-  if (command == MASH_PUMP_PUMPING)
+  if (command == START_MASH_PUMP)
     {
       GPIO_SetBits(MASH_PUMP_PORT, MASH_PUMP_PIN);
       MashPumpState = MASH_PUMP_PUMPING;

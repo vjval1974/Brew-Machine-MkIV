@@ -82,17 +82,17 @@ struct UserParameters UserParametersList[] =
 //#endif
 //
 //  //Grind
-//  BrewParameters.iGrindTime = 8;
+//  BrewParameters.iGrindTime = 10;
 //
 //  //Mash
 //  BrewParameters.fHLTMaxLitres = 22.0; // This is the max amount that can be drained
-//  BrewParameters.fStrikeTemp = 79.3;
-//  BrewParameters.fMashOutTemp = 99.9;
+//  BrewParameters.fStrikeTemp = 81.2;
+//  BrewParameters.fMashOutTemp = 75;
 //  BrewParameters.fSpargeTemp = 85.0;
 //  BrewParameters.fCleanTemp = 70.0; // less than the temp of a new strike. For 2 brews.
-//  BrewParameters.fStrikeLitres = 14.16;
+//  BrewParameters.fStrikeLitres = 19.53;
 //  BrewParameters.fMashOutLitres = 13.39;
-//  BrewParameters.fSpargeLitres = 11.56;
+//  BrewParameters.fSpargeLitres = 8.38;
 //  BrewParameters.iMashTime = 60;
 //  BrewParameters.iPumpTime1 = 15;
 //  BrewParameters.iStirTime1 = 15;
@@ -107,31 +107,30 @@ struct UserParameters UserParametersList[] =
 //    BrewParameters.iMashOutStirTime2 = 0;
 //
 //    //Sparge
-//    BrewParameters.iSpargeTime = 20;
+//    BrewParameters.iSpargeTime = 15;
 //      BrewParameters.iSpargePumpTime1 = 5;
 //      BrewParameters.iSpargeStirTime1 = 7;
-//      BrewParameters.iSpargePumpTime2 = 10;
+//      BrewParameters.iSpargePumpTime2 = 7;
 //      BrewParameters.iSpargeStirTime2 = 0;
-//
 //
 //  //Pump
 //  BrewParameters.iPumpPrimingCycles = 3;
 //  BrewParameters.iPumpPrimingTime = 2;
 //
 //  //Boil
-//  BrewParameters.uiBoilTime = 90;//60;
-//  BrewParameters.uiBringToBoilTime = 18;
+//  BrewParameters.uiBoilTime = 60;//60;
+//  BrewParameters.uiBringToBoilTime = 22;
 //
-//  BrewParameters.uiHopTimes[0] = 90;
-//  BrewParameters.uiHopTimes[1] = 45;
-//  BrewParameters.uiHopTimes[2] = 45;
-//  BrewParameters.uiHopTimes[3] = 15;
-//  BrewParameters.uiHopTimes[4] = 10;
-//  BrewParameters.uiHopTimes[5] = 5;
+//  BrewParameters.uiHopTimes[0] = 60;
+//  BrewParameters.uiHopTimes[1] = 30;
+//  BrewParameters.uiHopTimes[2] = 15;
+//  BrewParameters.uiHopTimes[3] = 5;
+//  BrewParameters.uiHopTimes[4] = 1;
+//  BrewParameters.uiHopTimes[5] = 1;
 //
 //  BrewParameters.uiSettlingRecircTime = 2; //mins
 //    BrewParameters.uiSettlingTime = 6; //mins
-//    BrewParameters.uiChillTime = 8; //mins
+//    BrewParameters.uiChillTime = 10; //mins
 //    BrewParameters.uiChillerPumpPrimingCycles = 3;
 //    BrewParameters.uiChillerPumpPrimingTime = 3; //seconds
 //

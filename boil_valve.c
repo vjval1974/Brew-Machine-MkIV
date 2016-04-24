@@ -72,6 +72,7 @@ void vBoilValveInit(void)
 }
 
 
+
 void vBoilValveFunc(int Command)
 {
 
@@ -80,15 +81,15 @@ void vBoilValveFunc(int Command)
   case BOIL_VALVE_OPEN:
     {
       // need to turn relay 2 off which sets up for REV direction
-      vPCF_ResetBits(BOIL_VALVE_PIN2, BOIL_VALVE_PORT); //pull low
-      vPCF_SetBits(BOIL_VALVE_PIN1, BOIL_VALVE_PORT); //pull low
+      vPCF_ResetBits(BOIL_VALVE_PIN1, BOIL_VALVE_PORT); //pull low
+      vPCF_SetBits(BOIL_VALVE_PIN2, BOIL_VALVE_PORT); //pull low
       break;
     }
   case BOIL_VALVE_CLOSE:
     {
       // need to turn relay 1 off which sets up for REV direction
-      vPCF_ResetBits(BOIL_VALVE_PIN1, BOIL_VALVE_PORT); //pull low
-      vPCF_SetBits(BOIL_VALVE_PIN2, BOIL_VALVE_PORT); //pull low
+      vPCF_ResetBits(BOIL_VALVE_PIN2, BOIL_VALVE_PORT); //pull low
+      vPCF_SetBits(BOIL_VALVE_PIN1, BOIL_VALVE_PORT); //pull low
       break;
     }
 

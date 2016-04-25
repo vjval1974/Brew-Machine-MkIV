@@ -85,7 +85,7 @@ static unsigned char ds1820_power_reset(void); // created to see if the bus will
 
 
 uint8_t rom[8]; //temporary to store rom codes
-float temps[NUM_SENSORS]; // holds the converted temperatures from the devices
+volatile float temps[NUM_SENSORS]; // holds the converted temperatures from the devices
 char * b[NUM_SENSORS]; // holds the 64 bit addresses of the temp sensors
 
 ////////////////////////////////////////////////////////////////////////////
@@ -96,9 +96,6 @@ void vTaskDS1820Convert( void *pvParameters ){
     static char print_buf[80];
     int ii = 0;
     static float fTemp[NUM_SENSORS] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0}, fLastTemp[NUM_SENSORS] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0};
-
-
-
 
     // initialise the bus
     ds1820_init();
@@ -140,35 +137,25 @@ void vTaskDS1820Convert( void *pvParameters ){
         vConsolePrint("NO SENSOR\r\n");
       }
 
-      ds1820_convert();
-
-      vTaskDelay(750/portTICK_RATE_MS); // wait for conversion
-
-      // save values in array for use by application
-      for (ii = 0 ; ii < NUM_SENSORS; ii++)
-          temps[ii] = ds1820_read_device(b[ii]);
-
-
-
     for (;;)
     {
-
         ds1820_convert();
-        
         vTaskDelay(750/portTICK_RATE_MS); // wait for conversion
 
         // save values in array for use by application
-        for (ii = 0 ; ii < NUM_SENSORS; ii++){
+        for (ii = 0 ; ii < NUM_SENSORS; ii++)
+        {
             fTemp[ii] = ds1820_read_device(b[ii]);
-            // Dont want spurious values - crude.
-            if (fTemp[ii] < 120.0){
-                if (fTemp[ii] < (temps[ii] + 5.0))
-                  temps[ii] = fTemp [ii];
-                else if (fTemp[ii] > (temps[ii] - 5.0))
-                  temps[ii] = fTemp [ii];
-                else if (fTemp[ii] <= 85.0 && fTemp[ii] >= 86.0)
-                  temps[ii] = fTemp[ii];
-            }
+            if (fTemp[ii] < 105.0 && fTemp[ii] > 0.0)
+              {
+                if ((fTemp[ii] < (temps[ii] + 5.0)) || (fTemp[ii] > (temps[ii] - 5.0)) || (fTemp[ii] <= 85.0 && fTemp[ii] >= 86.0))
+                  {
+                    portENTER_CRITICAL(); // so that other task cannot access temps[] while we are saving.
+                    temps[ii] = fTemp [ii];
+                    portEXIT_CRITICAL();
+                  }
+
+              }
             if (fTemp[ii] == 0.0)
               {
                 vConsolePrint("zero values. Temp Bus Resetting\r\n");
@@ -176,24 +163,7 @@ void vTaskDS1820Convert( void *pvParameters ){
                 ds1820_reset();
               }
         }
-
-
-
         taskYIELD();
-
-        //printf("DS1820 Convert Water Mark = %u\r\n", uxTaskGetStackHighWaterMark(NULL));
-      // Uncomment below to send temps to the console
-/*
-        printf("HLT Temp = %.2fDeg-C\r\n", temps[HLT]);
-        printf("Mash Temp = %.2fDeg-C\r\n", temps[MASH]);
-        printf("Cabinet Temp = %.2fDeg-C\r\n", temps[CABINET]);
-        printf("Ambient Temp = %.2fDeg-C\r\n", temps[AMBIENT]);
-        printf("HLT SSR Temp = %.2fDeg-C\r\n", temps[HLT_SSR]);
-        printf("BOIL SSR Temp = %.2fDeg-C\r\n", temps[BOIL_SSR]);
-*/
-        //vTaskDelay(200); // I put this in here to check that this process
-        // wasnt getting switched in if theres a problem with a sensor.
-
     }
     
 }

@@ -160,6 +160,16 @@ crane position 4ae55d488afb49ae9dd48fa1f151e39b
 
 
      */
+size_t uiGetHeapDiff()
+{
+  static size_t last;
+  size_t retval = 0;
+  size_t size = xPortGetFreeHeapSize();
+  if (size - last != 0 )
+      retval = size-last;
+  last = size;
+  return retval;
+}
 
 void vCheckTask(void *pvParameters)
 {
@@ -172,7 +182,8 @@ void vCheckTask(void *pvParameters)
   char pcBoilValveState[14], pcMashValveState[14], pcHltValveState[14], pcChillerValveState[14], pcGrainMillState[14], pcMashPumpState[14], pcInletValveState[14], pcCranePosition[14];
 
   int ii = 0;
-  unsigned int touch, hops, ds1820, timer, litres, check, low_level = 64, heap, print, serial, serialcontrol;
+  unsigned int touch, hops, ds1820, timer, litres, check, low_level = 64, print, serial, serialcontrol;
+  size_t heapdiff, heapRemaining;
   unsigned int display_applet, stats_applet, res_applet, graph_applet, brew_task;
   static char cBuf[80];
   for (;;){
@@ -187,7 +198,6 @@ void vCheckTask(void *pvParameters)
       check = uxTaskGetStackHighWaterMark(NULL);
       serial = uxTaskGetStackHighWaterMark(xSerialHandlerTaskHandle);
       serialcontrol = uxTaskGetStackHighWaterMark(xSerialControlTaskHandle);
-      heap = xPortGetFreeHeapSize();
       display_applet =  uiGetBrewAppletDisplayHWM();
       res_applet =  uiGetBrewResAppletHWM();
       stats_applet =  uiGetBrewStatsAppletHWM();
@@ -225,9 +235,17 @@ void vCheckTask(void *pvParameters)
      // upper_limit = cI2cGetInput(CRANE_UPPER_LIMIT_PORT, CRANE_UPPER_LIMIT_PIN);
 
 //      sprintf(buf, "BD52AA17:%d \r \n", ii++%1024);
-      sprintf(pcHeapRemaining, "        Heap:%u        \r\n", heap);
-      vTaskDelay(25);
-      vConsolePrint(pcHeapRemaining);
+      heapdiff = uiGetHeapDiff();
+      if (heapdiff != 0)
+        {
+          sprintf(pcCranePosition, "Heap down by %02dBytes\r\n", (int)heapdiff);
+          vConsolePrint(pcCranePosition);
+          heapRemaining = xPortGetFreeHeapSize();
+          sprintf(pcHeapRemaining, "Heap:%d\r\n", heapRemaining);
+          vConsolePrint(pcHeapRemaining);
+        }
+
+
      // vTaskDelay(25);
      // vConsolePrint(buf);
 

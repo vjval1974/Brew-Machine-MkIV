@@ -38,6 +38,12 @@ volatile float diag_setpoint = 74.5; // when calling the heat_hlt task, we use t
 #define LCD_FLOAT( x, y, dp , var ) lcd_printf(x, y, 4, "%0d.%0d", (unsigned int)floor(var), (unsigned int)((var-floor(var))*pow(10, dp)));
 
 
+unsigned int uiGetHltTemp()
+{
+  return (unsigned int)ds1820_get_temp(HLT);
+}
+
+
 void vHLTAppletDisplay(void *pvParameters);
 
 void hlt_init()
@@ -316,6 +322,45 @@ void vTaskBrewHLT(void * pvParameters)
     }
 
 }
+
+unsigned int uGetHltLevel()
+{
+  if (!GPIO_ReadInputDataBit(HLT_HIGH_LEVEL_PORT, HLT_HIGH_LEVEL_PIN ))
+    return HLT_LEVEL_HIGH;
+  if (!GPIO_ReadInputDataBit(HLT_LEVEL_CHECK_PORT, HLT_LEVEL_CHECK_PIN)
+      && GPIO_ReadInputDataBit(HLT_HIGH_LEVEL_PORT, HLT_HIGH_LEVEL_PIN ))
+    return HLT_LEVEL_MID;
+  else return HLT_LEVEL_LOW;
+}
+
+
+HltState GetHltState()
+{
+  HltState S;
+  S.level = uGetHltLevel();
+  if (S.level == HLT_LEVEL_HIGH)
+    sprintf(S.levelStr, "HLT Level HIGH");
+  else if (S.level == HLT_LEVEL_MID)
+    sprintf(S.levelStr, "HLT Level MID");
+  else
+    sprintf(S.levelStr, "HLT Level LOw");
+
+  S.temp_float = ds1820_get_temp(HLT);
+  S.temp_int = uiGetHltTemp();
+  S.filling = ucGetInletValveState();
+  S.draining = ucGetHltValveState();
+  if (S.filling)
+    sprintf(S.fillingStr, "HLT Filling");
+  else
+    sprintf(S.fillingStr, "HLT NOT Filling");
+  if (S.draining)
+    sprintf(S.drainingStr, "HLT Draining");
+  else
+    sprintf(S.drainingStr, "HLT NOT Draining");
+
+  return S;
+}
+
 
 //=================================================================================================================================================================
 

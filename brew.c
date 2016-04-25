@@ -41,6 +41,7 @@
 #include "boil.h"
 #include "hop_dropper.h"
 #include "main.h"
+#include "boil.h"
 
 #define ARRAY_LENGTH( x ) ( sizeof(x)/sizeof(x[0]) ) // not as yet implemented
 
@@ -1585,6 +1586,7 @@ void vBrewApplet(int init){
         }
 
       vTaskSuspend(xBrewStatsAppletDisplayHandle);
+
       if (xBrewResAppletDisplayHandle == NULL)
         {
           xTaskCreate( vBrewResAppletDisplay,
@@ -1629,6 +1631,29 @@ void vBrewStatsAppletDisplay(void * pvParameters){
   for (;;)
     {
       vConsolePrint("Stats Display Applet Running\r\n");
+      // print to lcd -
+      // Boil level
+      HltState hlt = GetHltState();
+      BoilerState boiler = GetBoilerState();
+
+
+      lcd_printf(3,2,20, "HLT Temp = %d", hlt.temp_int);
+      lcd_printf(4,3,20, "Level = %s", hlt.levelStr);
+      lcd_printf(4,4,20, "%s", hlt.drainingStr);
+      lcd_printf(4,5,20, "%s", hlt.fillingStr);
+      lcd_printf(3,6,20, "BOILER Level = %s", boiler.levelStr);
+      lcd_printf(4,7,20, " %s", boiler.boilStateStr);
+      lcd_printf(4,8,20, "Duty Cycle = %s", boiler.dutyStr);
+      lcd_printf(3,9,20, "MASH Temp = %d", (int)ds1820_get_temp(MASH));
+      lcd_printf(4,10,20, "Litres Dlvrd = %d", uiGetActualLitresDelivered());
+      lcd_printf(4,11,20, "MASH Temp = %d", (int)ds1820_get_temp(MASH));
+
+      // boil duty cycle. current.
+      // hlt level
+      // hlt temp
+      // amount of litres delivered to mash and boil.
+      // current mash temp,
+      //
       vTaskDelay(500);
     }
 
@@ -1748,18 +1773,19 @@ void vBrewAppletDisplay( void *pvParameters){
       fAmbientTemp = ds1820_get_temp(AMBIENT);
       fCabinetTemp = ds1820_get_temp(CABINET);
 
-      if (!GPIO_ReadInputDataBit(HLT_LEVEL_CHECK_PORT, HLT_LEVEL_CHECK_PIN))
-        {
-          ucHLTLevel = HLT_LEVEL_MID;
-          if (!GPIO_ReadInputDataBit(HLT_HIGH_LEVEL_PORT, HLT_HIGH_LEVEL_PIN))
-            {
-              ucHLTLevel = HLT_LEVEL_HIGH;
-            }
-
-        }
-      else {
-          ucHLTLevel = HLT_LEVEL_LOW;
-      }
+      ucHLTLevel = uGetHltLevel();
+//      if (!GPIO_ReadInputDataBit(HLT_LEVEL_CHECK_PORT, HLT_LEVEL_CHECK_PIN))
+//        {
+//          ucHLTLevel = HLT_LEVEL_MID;
+//          if (!GPIO_ReadInputDataBit(HLT_HIGH_LEVEL_PORT, HLT_HIGH_LEVEL_PIN))
+//            {
+//              ucHLTLevel = HLT_LEVEL_HIGH;
+//            }
+//
+//        }
+//      else {
+//          ucHLTLevel = HLT_LEVEL_LOW;
+//      }
 
 
 

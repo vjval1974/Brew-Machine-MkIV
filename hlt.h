@@ -47,6 +47,21 @@ void vHLTAppletCallback (int in_out);
 void vTaskBrewHLT(void * pvParameters);
 void vTaskHLTLevelChecker( void * pvParameters);
 unsigned int uiGetActualLitresDelivered(void);
+unsigned int uGetHltLevel();
+
+typedef struct HltState
+{
+  unsigned char level;
+  float temp_float;
+  int temp_int;
+  char levelStr[25];
+  unsigned char filling;
+  char fillingStr [16];
+  unsigned char draining;
+  char drainingStr [16];
+} HltState;
+
+HltState GetHltState();
 
 extern xTaskHandle xHeatHLTTaskHandle, xHLTAppletDisplayHandle;
 extern xTaskHandle xBrewHLTTaskHandle;

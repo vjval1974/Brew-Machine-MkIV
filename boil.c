@@ -50,10 +50,39 @@ volatile uint8_t uiBoilState = WAITING_FOR_COMMAND;
 
 void vBoilAppletDisplay(void * pvParameters);
 void vTaskBoil( void * pvParameters);
+static unsigned int uiGetADCBoilDuty();
 
 unsigned char ucGetBoilState(){
   return uiBoilState;
 }
+
+
+BoilerState GetBoilerState()
+{
+  BoilerState S;
+  S.level = uGetBoilLevel();
+  if (S.level == HIGH)
+    sprintf(S.levelStr, "Boil Level HIGH");
+  else if (S.level == LOW)
+    sprintf(S.levelStr, "Boil Level MID");
+
+  S.boil_state = ucGetBoilState();
+  if (S.boil_state ==  BOILING)
+    sprintf(S.boilStateStr, "Boiling");
+  else if (S.boil_state == WAITING_FOR_COMMAND)
+    sprintf(S.boilStateStr, "Boiler Waiting");
+  else if (S.boil_state == AUTO_BOILING)
+    sprintf(S.boilStateStr, "Auto-Boiling");
+  else if (S.boil_state == OFF)
+    sprintf(S.boilStateStr, "Boil OFF");
+
+  S.duty = uiGetADCBoilDuty();
+  sprintf(S.dutyStr, "%d", S.duty);
+
+  return S;
+}
+
+
 
 // semaphore that stops the returning from the applet to the menu system until the applet goes into the blocked state.
 xSemaphoreHandle xAppletRunningSemaphore;
@@ -131,12 +160,14 @@ void vBoilInit(void)
 
 }
 
-uint8_t uGetBoilLevel(void)
+BoilLevel uGetBoilLevel(void)
 {
- // // **************OVERRIDDEN *************************
-  //return 1;
+  // **************OVERRIDDEN *************************
+  //return HIGH;
 
-  return (GPIO_ReadInputDataBit(BOIL_LEVEL_PORT, BOIL_LEVEL_PIN) == 0);
+  if (GPIO_ReadInputDataBit(BOIL_LEVEL_PORT, BOIL_LEVEL_PIN) == 0)
+    return HIGH;
+  return LOW;
 
 }
 
@@ -250,14 +281,15 @@ static unsigned int uiTimerCompareController(unsigned char ucMessageSource, int 
 
 void vBoilStateController(unsigned int uiTimerCompareValue, unsigned int * uiBoilState)
 {
-  unsigned int boil_level =  uGetBoilLevel(); // each loop iteration, get the level of the boiler.
+ BoilLevel boil_level = uGetBoilLevel();// each loop iteration, get the level of the boiler.
+
 char buf[50];
   switch (*uiBoilState)
        {
        case BOILING:
          {
            //if the boil level is low, ensure the elements are off and leave.
-           if (!boil_level)
+           if (boil_level == LOW)
              {
                *uiBoilState = OFF;
                vConsolePrint("Boil level too low..Boil off.\r\n");
@@ -422,7 +454,7 @@ void vBoilApplet(int init){
 
 void vBoilAppletDisplay( void *pvParameters){
         static char tog = 0; //toggles each loop
-        uint8_t boil_level;
+        BoilLevel boil_level;
         float diag_duty1; // = diag_duty;
 
         for(;;)
@@ -435,7 +467,7 @@ void vBoilAppletDisplay( void *pvParameters){
             lcd_fill(1,178, 170,40, Black);
 
             //Tell user whether there is enough water to heat
-            if (boil_level)
+            if (boil_level == HIGH)
               lcd_printf(1,11,20,"level OK");
             else
               lcd_printf(1,11,20,"level LOW");

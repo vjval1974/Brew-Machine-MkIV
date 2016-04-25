@@ -231,7 +231,7 @@ void vSerialHandlerTask ( void * pvParameters)
           //save in buffer and increment buffer index
           buf[index++] = c;
           portENTER_CRITICAL();
-          //if newline or full, print it and copy the buffer to 'line' string
+          //if newline or full, copy the buffer to 'line' string
           if (c == '\r' || c == '\n' || index >= BUFFER_SIZE){
               buf[index] = '\0';
               strcpy(line, buf);
@@ -256,7 +256,7 @@ void vSerialHandlerTask ( void * pvParameters)
 
 static int result = 0xFE;
 char buf[BUFFER_SIZE];
-char * input;
+char input[BUFFER_SIZE];
 char cmp[BUFFER_SIZE];
 
 void vSerialControlCentreTask( void * pvParameters){
@@ -268,7 +268,6 @@ static char brewStarted = FALSE;
     {
       xQueueReceive(xCommandQueue, &buf, portMAX_DELAY);
       portENTER_CRITICAL();
-      char * input = (char *)pvPortMalloc(strlen(buf)+1);
       strcpy (input, buf);
       result = (strcmp(input, "command\r\0"));
     //  vConsolePrint("got something\r\n");
@@ -295,7 +294,8 @@ static char brewStarted = FALSE;
         }
       else if (strcmp(input, "STOP\r\0") == 0)
         {
-          vConsolePrint("STOP command from UI");
+          vConsolePrint("STOP command from UI\r\n");
+
           //code here!
         }
 

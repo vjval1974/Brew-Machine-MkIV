@@ -8,6 +8,7 @@
 #ifndef HLT_H_
 #define HLT_H_
 #include "queue.h"
+#include "valves.h"
 
 //#define HLT_LEVEL_ADC_CHAN 10 // corresponds to PORT C, Bit 0
 #define HLT_SSR_PORT GPIOC
@@ -55,9 +56,9 @@ typedef struct HltState
   float temp_float;
   int temp_int;
   char levelStr[25];
-  unsigned char filling;
+  ValveState filling;
   char fillingStr [16];
-  unsigned char draining;
+  ValveState draining;
   char drainingStr [16];
 } HltState;
 

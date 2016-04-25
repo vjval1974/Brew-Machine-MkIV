@@ -343,17 +343,17 @@ HltState GetHltState()
   else if (S.level == HLT_LEVEL_MID)
     sprintf(S.levelStr, "HLT Level MID");
   else
-    sprintf(S.levelStr, "HLT Level LOw");
+    sprintf(S.levelStr, "HLT Level Low");
 
   S.temp_float = ds1820_get_temp(HLT);
   S.temp_int = uiGetHltTemp();
   S.filling = ucGetInletValveState();
   S.draining = ucGetHltValveState();
-  if (S.filling)
+  if (S.filling == VALVE_OPENED)
     sprintf(S.fillingStr, "HLT Filling");
   else
     sprintf(S.fillingStr, "HLT NOT Filling");
-  if (S.draining)
+  if (S.draining == VALVE_OPENED)
     sprintf(S.drainingStr, "HLT Draining");
   else
     sprintf(S.drainingStr, "HLT NOT Draining");

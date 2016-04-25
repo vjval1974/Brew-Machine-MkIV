@@ -1578,7 +1578,7 @@ void vBrewApplet(int init){
         {
           xTaskCreate( vBrewStatsAppletDisplay,
               ( signed portCHAR * ) "Brew Stats",
-              configMINIMAL_STACK_SIZE,
+              configMINIMAL_STACK_SIZE + 100,
               NULL,
               tskIDLE_PRIORITY,
               &xBrewStatsAppletDisplayHandle );
@@ -1636,17 +1636,15 @@ void vBrewStatsAppletDisplay(void * pvParameters){
       HltState hlt = GetHltState();
       BoilerState boiler = GetBoilerState();
 
-
-      lcd_printf(3,2,20, "HLT Temp = %d", hlt.temp_int);
-      lcd_printf(4,3,20, "Level = %s", hlt.levelStr);
-      lcd_printf(4,4,20, "%s", hlt.drainingStr);
-      lcd_printf(4,5,20, "%s", hlt.fillingStr);
-      lcd_printf(3,6,20, "BOILER Level = %s", boiler.levelStr);
-      lcd_printf(4,7,20, " %s", boiler.boilStateStr);
-      lcd_printf(4,8,20, "Duty Cycle = %s", boiler.dutyStr);
-      lcd_printf(3,9,20, "MASH Temp = %d", (int)ds1820_get_temp(MASH));
-      lcd_printf(4,10,20, "Litres Dlvrd = %d", uiGetActualLitresDelivered());
-      lcd_printf(4,11,20, "MASH Temp = %d", (int)ds1820_get_temp(MASH));
+      CLEAR_APPLET_CANVAS;
+      lcd_printf(0,2,20, "HLT Level = %s", hlt.levelStr);
+      lcd_printf(1,3,20, "%s", hlt.drainingStr);
+      lcd_printf(1,4,20, "%s", hlt.fillingStr);
+      lcd_printf(0,5,20, "BOILER %s", boiler.boilStateStr);
+      lcd_printf(1,6,20, "%s", boiler.levelStr);
+      lcd_printf(1,7,20, "Duty Cycle = %s", boiler.dutyStr);
+      lcd_printf(0,8,20, "Litres Dlvrd = %d", uiGetActualLitresDelivered());
+      lcd_printf(4,9,20, "MASH Temp = %d", (int)fGetNominalMashTemp());
 
       // boil duty cycle. current.
       // hlt level
@@ -1654,7 +1652,7 @@ void vBrewStatsAppletDisplay(void * pvParameters){
       // amount of litres delivered to mash and boil.
       // current mash temp,
       //
-      vTaskDelay(500);
+      vTaskDelay(1000);
     }
 
 }

@@ -62,9 +62,9 @@ BoilerState GetBoilerState()
   BoilerState S;
   S.level = uGetBoilLevel();
   if (S.level == HIGH)
-    sprintf(S.levelStr, "Boil Level HIGH");
+    sprintf(S.levelStr, "Level HIGH");
   else if (S.level == LOW)
-    sprintf(S.levelStr, "Boil Level MID");
+    sprintf(S.levelStr, "Level LOW");
 
   S.boil_state = ucGetBoilState();
   if (S.boil_state ==  BOILING)

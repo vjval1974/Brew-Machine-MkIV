@@ -65,49 +65,29 @@ int DS1820DiagKey(int xx, int yy){
 
 void  vTaskDS1820DisplayTemps( void *pvParameters){
 
-        //char lcd_string[20];
-        static int count = 0;
-        float fTempHLT = 0, fTempMash = 0, fTempCabinet = 0, fTempWaterproof = 90.0, fTempAmbient =0;
-        lcd_printf(1,1, 12, "TEMPERATURES");
-        for (;;)
-        {
-            xSemaphoreTake(xAppletRunningSemaphore, portMAX_DELAY); //take the semaphore so that the key handler wont
-                                                                            //return to the menu system until its returned
-            fTempHLT = ds1820_get_temp(HLT);
-            fTempMash = ds1820_get_temp(MASH);
-            fTempCabinet = ds1820_get_temp(CABINET);
-            fTempWaterproof = ds1820_get_temp(WATERPROOF);
-            fTempAmbient = ds1820_get_temp(AMBIENT);
-            count++;
-                //portENTER_CRITICAL();
-                lcd_fill(1,50, 200, 190, Black);
+  //char lcd_string[20];
+  static int count = 0;
+  float fTempHLT = 0, fTempMash = 0;
+  lcd_printf(1,1, 12, "TEMPERATURES");
+  for (;;)
+    {
+      xSemaphoreTake(xAppletRunningSemaphore, portMAX_DELAY); //take the semaphore so that the key handler wont
+      //return to the menu system until its returned
+      fTempHLT = ds1820_get_temp(HLT);
+      fTempMash = ds1820_get_temp(MASH);
+      //fTempCabinet = ds1820_get_temp(CABINET);
 
-                lcd_printf(1, 5, 10, "HLT = %u.%u", (unsigned int)floor(fTempHLT), (unsigned int)((fTempHLT-floor(fTempHLT))*pow(10, 3)));
-                lcd_printf(1, 6, 10, "MASH = %u.%u", (unsigned int)floor(fTempMash), (unsigned int)((fTempMash-floor(fTempMash))*pow(10, 3)));
-                lcd_printf(1, 7, 10, "Cabinet = %u.%u", (unsigned int)floor(fTempCabinet), (unsigned int)((fTempCabinet-floor(fTempCabinet))*pow(10, 3)));
-                lcd_printf(1,8,10,"WP = ");
-                LCD_FLOAT(6,8,1, fTempWaterproof);
-                lcd_printf(1,9,10,"AMBIENT = ");
-                                LCD_FLOAT(11,9,1, fTempAmbient);
+      count++;
 
-                //(unsigned int)((current_temp-floor(current_temp))*pow(10, 3))
-                //                lcd_printf(1, 8, 10, "Ambient = %d.%d", (unsigned int)floor(ds1820_get_temp(AMBIENT)), (unsigned int)(ds1820_get_temp(AMBIENT)-floor(ds1820_get_temp(AMBIENT)))*pow(10, 3));
-//                lcd_printf(1, 9, 10, "HLT_SSR = %d.%d", (unsigned int)floor(ds1820_get_temp(HLT_SSR)), (unsigned int)(ds1820_get_temp(HLT_SSR)-floor(ds1820_get_temp(HLT_SSR)))*pow(10, 3));
-//                lcd_printf(1, 10, 10, "MASH_SSR = %d.%d", (unsigned int)floor(ds1820_get_temp(BOIL_SSR)), (unsigned int)(ds1820_get_temp(BOIL_SSR)-floor(ds1820_get_temp(BOIL_SSR)))*pow(10, 3));
-////
-//                lcd_printf(1, 5, 10, "HLT = %.2f", ds1820_get_temp(HLT));
-//                lcd_printf(1, 6, 10, "Mash = %.2f", ds1820_get_temp(MASH));
-//                lcd_printf(1, 7, 10, "Cabinet = %.2f", ds1820_get_temp(CABINET));
-//                lcd_printf(1, 8, 10, "Ambient = %.2f", ds1820_get_temp(AMBIENT));
-//                lcd_printf(1, 9, 10, "HLT_SSR = %.2f", ds1820_get_temp(HLT_SSR));
-//                lcd_printf(1, 10, 10, "BOIL_SSR = %.2f", ds1820_get_temp(BOIL_SSR));
+      lcd_fill(1,50, 200, 190, Black);
 
-                //printf("Display High water = %u\r\n",uxTaskGetStackHighWaterMark(NULL));
-                //portEXIT_CRITICAL();
+      lcd_printf(1, 5, 10, "HLT = %u.%u", (unsigned int)floor(fTempHLT), (unsigned int)((fTempHLT-floor(fTempHLT))*pow(10, 3)));
+      lcd_printf(1, 6, 10, "MASH = %u.%u", (unsigned int)floor(fTempMash), (unsigned int)((fTempMash-floor(fTempMash))*pow(10, 3)));
+      // lcd_printf(1, 7, 10, "Cabinet = %u.%u", (unsigned int)floor(fTempCabinet), (unsigned int)((fTempCabinet-floor(fTempCabinet))*pow(10, 3)));
 
-                xSemaphoreGive(xAppletRunningSemaphore); //give back the semaphore as its safe to return now.
-                vTaskDelay(500);
+      xSemaphoreGive(xAppletRunningSemaphore); //give back the semaphore as its safe to return now.
+      vTaskDelay(500);
 
-        }
+    }
 }
 ////////////////////////////////////////////////////////////////////////////

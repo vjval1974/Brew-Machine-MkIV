@@ -25,8 +25,6 @@
 // main.h holds the definition for the preprocessor directive TESTING
 #include "main.h"
 
-
-
 #define BOIL_PORT GPIOD
 #define BOIL_PIN GPIO_Pin_12
 #define BOIL_DUTY_ADC_CHAN 10 // This is PC0
@@ -41,9 +39,8 @@
 
 xQueueHandle xBoilQueue = NULL;
 
-
-
 #define TIM_ARR_TOP 10000
+
 static unsigned int uiBoilDuty = 0; // for user interface ONLY
 int diag_duty = 50;
 volatile uint8_t uiBoilState = WAITING_FOR_COMMAND;
@@ -52,37 +49,37 @@ void vBoilAppletDisplay(void * pvParameters);
 void vTaskBoil( void * pvParameters);
 static unsigned int uiGetADCBoilDuty();
 
-unsigned char ucGetBoilState(){
+unsigned char ucGetBoilState()
+{
   return uiBoilState;
 }
 
-
 BoilerState GetBoilerState()
 {
-  BoilerState S;
-  S.level = uGetBoilLevel();
-  if (S.level == HIGH)
-    sprintf(S.levelStr, "Level HIGH");
-  else if (S.level == LOW)
-    sprintf(S.levelStr, "Level LOW");
+  BoilerState boilerState;
 
-  S.boil_state = ucGetBoilState();
-  if (S.boil_state ==  BOILING)
-    sprintf(S.boilStateStr, "Boiling");
-  else if (S.boil_state == WAITING_FOR_COMMAND)
-    sprintf(S.boilStateStr, "Boiler Waiting");
-  else if (S.boil_state == AUTO_BOILING)
-    sprintf(S.boilStateStr, "Auto-Boiling");
-  else if (S.boil_state == OFF)
-    sprintf(S.boilStateStr, "Boil OFF");
+  boilerState.level = uGetBoilLevel();
+  if (boilerState.level == HIGH)
+    sprintf(boilerState.levelStr, "Level HIGH");
+  else if (boilerState.level == LOW)
+    sprintf(boilerState.levelStr, "Level LOW");
 
-  S.duty = uiGetADCBoilDuty();
-  sprintf(S.dutyStr, "%d", S.duty);
+  boilerState.boil_state = ucGetBoilState();
 
-  return S;
+  if (boilerState.boil_state ==  BOILING)
+    sprintf(boilerState.boilStateStr, "Boiling");
+  else if (boilerState.boil_state == WAITING_FOR_COMMAND)
+    sprintf(boilerState.boilStateStr, "Boiler Waiting");
+  else if (boilerState.boil_state == AUTO_BOILING)
+    sprintf(boilerState.boilStateStr, "Auto-Boiling");
+  else if (boilerState.boil_state == OFF)
+    sprintf(boilerState.boilStateStr, "Boil OFF");
+
+  boilerState.duty = uiGetADCBoilDuty();
+  sprintf(boilerState.dutyStr, "%d", boilerState.duty);
+
+  return boilerState;
 }
-
-
 
 // semaphore that stops the returning from the applet to the menu system until the applet goes into the blocked state.
 xSemaphoreHandle xAppletRunningSemaphore;
@@ -96,13 +93,10 @@ void vBoilInit(void)
   NVIC_InitTypeDef NVIC_InitStructure;
   GPIO_InitTypeDef GPIO_InitStructure;
 
-
   GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-
   GPIO_InitStructure.GPIO_Pin =  BOIL_PIN;
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;// Alt Function - Push Pull
   GPIO_Init( BOIL_PORT, &GPIO_InitStructure );
-
 
   GPIO_InitStructure.GPIO_Pin =  BOIL_LEVEL_PIN;
   GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;// Pulled up input
@@ -154,16 +148,12 @@ void vBoilInit(void)
           tskIDLE_PRIORITY ,
           &xBoilTaskHandle );
     }
-  //else
-  //  printf("Boil task could not be created.. memory error?\r\n");
-
-
 }
 
 BoilLevel uGetBoilLevel(void)
 {
   // **************OVERRIDDEN *************************
-  //return HIGH;
+  return HIGH;
 
   if (GPIO_ReadInputDataBit(BOIL_LEVEL_PORT, BOIL_LEVEL_PIN) == 0)
     return HIGH;
@@ -222,31 +212,32 @@ static unsigned int uiTimerCompareController(unsigned char ucMessageSource, int 
   int iDuty = 0;
   unsigned int uiTimerCompareValue = 0;
   static unsigned int uiLastTimerCompareValue = 0;
+
   switch (ucMessageSource)
   {
   case BREW_TASK:
-  {
-    uiADCDuty = uiGetADCBoilDuty();
-    // Only print if there is a change
-    if (uiLastADCDuty != uiADCDuty)
-      {
-        vConsolePrint("Boil: Msg rcvd from BREW TASK\r\n");
-        sprintf(buf, "BrewBoil:ADC %d \r\n", uiADCDuty);
-        vConsolePrint(buf);
-      }
-    uiLastADCDuty = uiADCDuty;
+    {
+      uiADCDuty = uiGetADCBoilDuty();
+      // Only print if there is a change
+      if (uiLastADCDuty != uiADCDuty)
+        {
+          vConsolePrint("Boil: Msg rcvd from BREW TASK\r\n");
+          sprintf(buf, "BrewBoil:ADC %d \r\n", uiADCDuty);
+          vConsolePrint(buf);
+        }
+      uiLastADCDuty = uiADCDuty;
 
-    // determine which duty cycle to accept
-    if (uiADCDuty <= 20)
-      {
-        iDuty = iDefaultDuty;
-      }
-    else iDuty = uiADCDuty;
+      // determine which duty cycle to accept
+      if (uiADCDuty <= 20)
+        {
+          iDuty = iDefaultDuty;
+        }
+      else iDuty = uiADCDuty;
 
-    uiTimerCompareValue = uiTimerCompare(iDuty); // set the timer value to the duty cycle %
-    uiBoilDuty = iDuty;  // for UserInterface
-    break;
-  }
+      uiTimerCompareValue = uiTimerCompare(iDuty); // set the timer value to the duty cycle %
+      uiBoilDuty = iDuty;  // for UserInterface
+      break;
+    }
   case BREW_TASK_RESET:
     {
       sprintf(buf, "Boil: Received duty cycle of %d, from ID #%d\r\n", iDefaultDuty, ucMessageSource);
@@ -269,52 +260,45 @@ static unsigned int uiTimerCompareController(unsigned char ucMessageSource, int 
   default:
     {
       uiTimerCompareValue = uiTimerCompare(iDefaultDuty); // set the timer value to the duty cycle %
-      vConsolePrint("DEFAULT!Boil:\r\n");
-      sprintf(buf, "Boil: Received duty cycle of %d, from ID #%d\r\n", iDefaultDuty, ucMessageSource);
-      vConsolePrint(buf);
       break;
     }
 
   }
- return uiTimerCompareValue;
+  return uiTimerCompareValue;
 }
 
-void vBoilStateController(unsigned int uiTimerCompareValue, unsigned int * uiBoilState)
+void vBoilStateController(unsigned int uiTimerCompareValue)
 {
- BoilLevel boil_level = uGetBoilLevel();// each loop iteration, get the level of the boiler.
+  BoilLevel boil_level = uGetBoilLevel();// each loop iteration, get the level of the boiler.
 
-char buf[50];
-  switch (*uiBoilState)
-       {
-       case BOILING:
-         {
-           //if the boil level is low, ensure the elements are off and leave.
-           if (boil_level == LOW)
-             {
-               *uiBoilState = OFF;
-               vConsolePrint("Boil level too low..Boil off.\r\n");
-             }
-           else
-             {
-               vStartBoilPWM(uiTimerCompareValue);
-               //*uiBoilState = WAITING_FOR_COMMAND;
-             }
-           break;
-         }
-       case OFF:
-         {
-           vStopBoilPWM();
-           *uiBoilState = OFF;
-           break;
-         }
-       default:
-         {
-           sprintf(buf, "DEFAULT CASE, BOILSTATE=%d\r\n", *uiBoilState);
-           vConsolePrint(buf);
-           vStopBoilPWM();
-           *uiBoilState = OFF;
-         }
-       }
+  switch (uiBoilState)
+  {
+  case BOILING:
+    {
+      //if the boil level is low, ensure the elements are off and leave.
+      if (boil_level == LOW)
+        {
+          uiBoilState = OFF;
+          vConsolePrint("Boil level too low..Boil off.\r\n");
+        }
+      else
+        {
+          vStartBoilPWM(uiTimerCompareValue);
+        }
+      break;
+    }
+  case OFF:
+    {
+      vStopBoilPWM();
+      uiBoilState = OFF;
+      break;
+    }
+  default:
+    {
+      vStopBoilPWM();
+      uiBoilState = OFF;
+    }
+  }
 }
 struct GenericMessage xMessage2;
 volatile  struct GenericMessage * xMessage;
@@ -327,7 +311,6 @@ void vTaskBoil( void * pvParameters)
   int iDefaultDuty = 0; // receive value from queue.
   int iDuty = 0; // duty in int type
   unsigned int uiADCDuty = 0;
-  unsigned int uiBoilState = WAITING_FOR_COMMAND;
   static unsigned int uiTimerCompareValue = 0; //value of the duty cycle when tranformed to timer units
   portBASE_TYPE xStatus; //queue receive status
   static char buf[50], buf1[50]; //text storage buffers
@@ -340,7 +323,7 @@ void vTaskBoil( void * pvParameters)
           //Validate the message contents
           iDefaultDuty = uiValidateIntegerPct(*(int *)xMessage->pvMessageContent);
           sprintf(buf, "MSG, duty = %d, st=%d tsk = %d\r\n", iDefaultDuty, xMessage->uiStepNumber, xMessage->ucFromTask);
-                   vConsolePrint(buf);
+          vConsolePrint(buf);
           if (iDefaultDuty > 0)
             {
               uiBoilState = BOILING;
@@ -349,12 +332,6 @@ void vTaskBoil( void * pvParameters)
             {
               uiBoilState = OFF;
             }
-          // Work out what to do with the duty cycle passed in based on the source of the message
-//          uiTimerCompareValue = uiTimerCompareController(xMessage->ucFromTask, iDefaultDuty);
-//          sprintf(buf, "msg, duty = %d, tm = %d\r\n", *(int *)xMessage->pvMessageContent, uiTimerCompareValue);
-//                   vConsolePrint(buf);
-          // If the compare value is above zero, change state to boiling
-
         }
       else //no message received (polls continually)
         {
@@ -362,14 +339,12 @@ void vTaskBoil( void * pvParameters)
           if  (uiBoilState == BOILING)
             {
               uiTimerCompareValue = uiTimerCompareController(xMessage->ucFromTask, iDefaultDuty);
-              vBoilStateController(uiTimerCompareValue, &uiBoilState);
+              vBoilStateController(uiTimerCompareValue);
             }
           else
             {
-              vBoilStateController(0, &uiBoilState);
+              vBoilStateController(0);
             }
-
-
         }
 
       vTaskDelay(1000);
@@ -418,118 +393,111 @@ unsigned int uiGetBoilDuty()
 #define BAK_Y2 235
 #define BAK_W (BAK_X2-BAK_X1)
 #define BAK_H (BAK_Y2-BAK_Y1)
-void vBoilApplet(int init){
+void vBoilApplet(int init)
+{
   if (init)
-        {
-                lcd_DrawRect(DUTY_UP_X1, DUTY_UP_Y1, DUTY_UP_X2, DUTY_UP_Y2, Red);
-                lcd_fill(DUTY_UP_X1+1, DUTY_UP_Y1+1, DUTY_UP_W, DUTY_UP_H, Blue);
-                lcd_DrawRect(DUTY_DN_X1, DUTY_DN_Y1, DUTY_DN_X2, DUTY_DN_Y2, Red);
-                lcd_fill(DUTY_DN_X1+1, DUTY_DN_Y1+1, DUTY_DN_W, DUTY_DN_H, Blue);
-                lcd_DrawRect(STOP_HEATING_X1, STOP_HEATING_Y1, STOP_HEATING_X2, STOP_HEATING_Y2, Cyan);
-                lcd_fill(STOP_HEATING_X1+1, STOP_HEATING_Y1+1, STOP_HEATING_W, STOP_HEATING_H, Red);
-                lcd_DrawRect(START_HEATING_X1, START_HEATING_Y1, START_HEATING_X2, START_HEATING_Y2, Cyan);
-                lcd_fill(START_HEATING_X1+1, START_HEATING_Y1+1, START_HEATING_W, START_HEATING_H, Green);
-                lcd_DrawRect(BAK_X1, BAK_Y1, BAK_X2, BAK_Y2, Cyan);
-                lcd_fill(BAK_X1+1, BAK_Y1+1, BAK_W, BAK_H, Magenta);
-                lcd_printf(10,1,18,  "MANUAL Boil APPLET");
-                lcd_printf(3,4,11,  "Duty UP");
-                lcd_printf(1,8,13,  "Duty DOWN");
-                lcd_printf(22,4,13, "START BOIL");
-                lcd_printf(22,8,12, "STOP BOIL");
-                lcd_printf(30, 13, 4, "Back");
-                //vTaskDelay(2000);
-                //adc_init();
-                //adc_init();
-                //create a dynamic display task
-                xTaskCreate( vBoilAppletDisplay,
-                    ( signed portCHAR * ) "hlt_disp",
-                    configMINIMAL_STACK_SIZE + 500,
-                    NULL,
-                   tskIDLE_PRIORITY ,
-                    &xBoilAppletDisplayHandle );
-        }
+    {
+      lcd_DrawRect(DUTY_UP_X1, DUTY_UP_Y1, DUTY_UP_X2, DUTY_UP_Y2, Red);
+      lcd_fill(DUTY_UP_X1+1, DUTY_UP_Y1+1, DUTY_UP_W, DUTY_UP_H, Blue);
+      lcd_DrawRect(DUTY_DN_X1, DUTY_DN_Y1, DUTY_DN_X2, DUTY_DN_Y2, Red);
+      lcd_fill(DUTY_DN_X1+1, DUTY_DN_Y1+1, DUTY_DN_W, DUTY_DN_H, Blue);
+      lcd_DrawRect(STOP_HEATING_X1, STOP_HEATING_Y1, STOP_HEATING_X2, STOP_HEATING_Y2, Cyan);
+      lcd_fill(STOP_HEATING_X1+1, STOP_HEATING_Y1+1, STOP_HEATING_W, STOP_HEATING_H, Red);
+      lcd_DrawRect(START_HEATING_X1, START_HEATING_Y1, START_HEATING_X2, START_HEATING_Y2, Cyan);
+      lcd_fill(START_HEATING_X1+1, START_HEATING_Y1+1, START_HEATING_W, START_HEATING_H, Green);
+      lcd_DrawRect(BAK_X1, BAK_Y1, BAK_X2, BAK_Y2, Cyan);
+      lcd_fill(BAK_X1+1, BAK_Y1+1, BAK_W, BAK_H, Magenta);
+      lcd_printf(10,1,18,  "MANUAL Boil APPLET");
+      lcd_printf(3,4,11,  "Duty UP");
+      lcd_printf(1,8,13,  "Duty DOWN");
+      lcd_printf(22,4,13, "START BOIL");
+      lcd_printf(22,8,12, "STOP BOIL");
+      lcd_printf(30, 13, 4, "Back");
 
+      xTaskCreate( vBoilAppletDisplay,
+          ( signed portCHAR * ) "hlt_disp",
+          configMINIMAL_STACK_SIZE + 500,
+          NULL,
+          tskIDLE_PRIORITY ,
+          &xBoilAppletDisplayHandle );
+    }
 }
 
-
 void vBoilAppletDisplay( void *pvParameters){
-        static char tog = 0; //toggles each loop
-        BoilLevel boil_level;
-        float diag_duty1; // = diag_duty;
+  static char tog = 0; //toggles each loop
+  BoilLevel boil_level;
+  float diag_duty1; // = diag_duty;
 
-        for(;;)
+  for(;;)
+    {
+      xSemaphoreTake(xAppletRunningSemaphore, portMAX_DELAY); //take the semaphore so that the key handler wont
+      //return to the menu system until its returned
+      boil_level = uGetBoilLevel();
+      diag_duty1 = diag_duty;
+      lcd_fill(1,178, 170,40, Black);
+
+      //Tell user whether there is enough water to heat
+      if (boil_level == HIGH)
+        lcd_printf(1,11,20,"level OK");
+      else
+        lcd_printf(1,11,20,"level LOW");
+
+      //display the state and user info (the state will flash on the screen)
+      switch (uiBoilState)
+      {
+      case BOILING:
         {
-
-            xSemaphoreTake(xAppletRunningSemaphore, portMAX_DELAY); //take the semaphore so that the key handler wont
-                                                                    //return to the menu system until its returned
-            boil_level = uGetBoilLevel();
-            diag_duty1 = diag_duty;
-            lcd_fill(1,178, 170,40, Black);
-
-            //Tell user whether there is enough water to heat
-            if (boil_level == HIGH)
-              lcd_printf(1,11,20,"level OK");
-            else
-              lcd_printf(1,11,20,"level LOW");
-
-            //display the state and user info (the state will flash on the screen)
-            switch (uiBoilState)
+          if(tog)
             {
-            case BOILING:
-              {
-                if(tog)
-                  {
-                    lcd_fill(1,220, 180,29, Black);
-                    lcd_printf(1,13,15,"BOILING");
-                  }
-                else{
-                    lcd_fill(1,210, 180,17, Black);
-                }
-                break;
-              }
-            case OFF:
-              {
-                if(tog)
-                  {
-                    lcd_fill(1,210, 180,29, Black);
-                    lcd_printf(1,13,11,"NOT BOILING");
-                  }
-                else
-                  {
-                    lcd_fill(1,210, 180,17, Black);
-                  }
-
-                break;
-              }
-            case WAITING_FOR_COMMAND:
-              {
-                if(tog)
-                  {
-                    lcd_fill(1,210, 180,29, Black);
-                    lcd_printf(1,13,11,"WAITING_FOR_CMD");
-                  }
-                else
-                  {
-                    lcd_fill(1,210, 180,17, Black);
-                  }
-
-                break;
-              }
-
-            default:
-              {
-                break;
-              }
+              lcd_fill(1,220, 180,29, Black);
+              lcd_printf(1,13,15,"BOILING");
+            }
+          else{
+              lcd_fill(1,210, 180,17, Black);
+          }
+          break;
+        }
+      case OFF:
+        {
+          if(tog)
+            {
+              lcd_fill(1,210, 180,29, Black);
+              lcd_printf(1,13,11,"NOT BOILING");
+            }
+          else
+            {
+              lcd_fill(1,210, 180,17, Black);
             }
 
-                tog = tog ^ 1;
-                lcd_fill(102,99, 35,10, Black);
-                lcd_printf(13,6,15,"%d%%", diag_duty);
-                xSemaphoreGive(xAppletRunningSemaphore); //give back the semaphore as its safe to return now.
-                vTaskDelay(500);
-
-
+          break;
         }
+      case WAITING_FOR_COMMAND:
+        {
+          if(tog)
+            {
+              lcd_fill(1,210, 180,29, Black);
+              lcd_printf(1,13,11,"WAITING_FOR_CMD");
+            }
+          else
+            {
+              lcd_fill(1,210, 180,17, Black);
+            }
+
+          break;
+        }
+
+      default:
+        {
+          break;
+        }
+      }
+
+      tog = tog ^ 1;
+      lcd_fill(102,99, 35,10, Black);
+      lcd_printf(13,6,15,"%d%%", diag_duty);
+      xSemaphoreGive(xAppletRunningSemaphore); //give back the semaphore as its safe to return now.
+      vTaskDelay(500);
+    }
 }
 
 struct GenericMessage xMessage1;
@@ -538,7 +506,6 @@ int iBoilKey(int xx, int yy)
 {
   static struct GenericMessage * xMessage;
   xMessage = &xMessage1;
-  xMessage->pvMessageContent = (void *)&diag_duty;
   xMessage->ucFromTask = 0;
   xMessage->uiStepNumber = 0;
   xMessage->ucToTask = BOIL_TASK;
@@ -551,17 +518,22 @@ int iBoilKey(int xx, int yy)
 
       //printf("Duty Cycle is now %d\r\n", diag_duty);
       if (uiBoilState == BOILING)
-        xQueueSendToBack(xBoilQueue, &xMessage, 0);
+        {
+          xMessage->pvMessageContent = (void *)&diag_duty;
+          xQueueSendToBack(xBoilQueue, &xMessage, 0);
+        }
     }
   else if (xx > DUTY_DN_X1+1 && xx < DUTY_DN_X2-1 && yy > DUTY_DN_Y1+1 && yy < DUTY_DN_Y2-1)
-
     {
       if (diag_duty == 0)
         diag_duty = 0;
       else diag_duty-=1;
       //printf("Duty Cycle is now %d\r\n", diag_duty);
       if (uiBoilState == BOILING)
-        xQueueSendToBack(xBoilQueue, &xMessage, 0);
+        {
+          xMessage->pvMessageContent = (void *)&diag_duty;
+          xQueueSendToBack(xBoilQueue, &xMessage, 0);
+        }
     }
   else if (xx > STOP_HEATING_X1+1 && xx < STOP_HEATING_X2-1 && yy > STOP_HEATING_Y1+1 && yy < STOP_HEATING_Y2-1)
     {
@@ -589,11 +561,7 @@ int iBoilKey(int xx, int yy)
       //return the semaphore for taking by another task.
       xSemaphoreGive(xAppletRunningSemaphore);
       return 1;
-
     }
-
   vTaskDelay(10);
   return 0;
-
-
 }

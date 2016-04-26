@@ -284,27 +284,31 @@ void vValvesApplet(int init){
         {
           lcd_DrawRect(TOGGLE_INLET_VALVE_X1, TOGGLE_INLET_VALVE_Y1, TOGGLE_INLET_VALVE_X2, TOGGLE_INLET_VALVE_Y2, Blue);
           lcd_fill(TOGGLE_INLET_VALVE_X1+1, TOGGLE_INLET_VALVE_Y1+1, TOGGLE_INLET_VALVE_W, TOGGLE_INLET_VALVE_H, Red);
-          lcd_printf(0,8,13, "INLET OPENED");
+          lcd_printf(0,8,13, "INLET");
+          lcd_printf(0,9,13, "OPENED");
         }
 
       else
         {
           lcd_DrawRect(TOGGLE_INLET_VALVE_X1, TOGGLE_INLET_VALVE_Y1, TOGGLE_INLET_VALVE_X2, TOGGLE_INLET_VALVE_Y2, Cyan);
           lcd_fill(TOGGLE_INLET_VALVE_X1+1, TOGGLE_INLET_VALVE_Y1+1, TOGGLE_INLET_VALVE_W, TOGGLE_INLET_VALVE_H, Green);
-          lcd_printf(0,8,13, "INLET CLOSED");
+          lcd_printf(0,8,13, "INLET");
+          lcd_printf(0,9,13, "CLOSED");
         }
 
       if (ChillerValveState == VALVE_OPENED)
          {
            lcd_DrawRect(TOGGLE_CHILLER_VALVE_X1, TOGGLE_CHILLER_VALVE_Y1, TOGGLE_CHILLER_VALVE_X2, TOGGLE_CHILLER_VALVE_Y2, Blue);
            lcd_fill(TOGGLE_CHILLER_VALVE_X1+1, TOGGLE_CHILLER_VALVE_Y1+1, TOGGLE_CHILLER_VALVE_W, TOGGLE_CHILLER_VALVE_H, Red);
-           lcd_printf(12,8,13, "CHILLER OPENED");
+           lcd_printf(12,8,13, "CHILLER");
+           lcd_printf(12,9,13, "OPENED");
          }
        else
          {
            lcd_DrawRect(TOGGLE_CHILLER_VALVE_X1, TOGGLE_CHILLER_VALVE_Y1, TOGGLE_CHILLER_VALVE_X2, TOGGLE_CHILLER_VALVE_Y2, Cyan);
            lcd_fill(TOGGLE_CHILLER_VALVE_X1+1, TOGGLE_CHILLER_VALVE_Y1+1, TOGGLE_CHILLER_VALVE_W, TOGGLE_CHILLER_VALVE_H, Green);
-           lcd_printf(12,8,13, "CHILLER CLOSED");
+           lcd_printf(12,8,13, "CHILLER");
+           lcd_printf(12,9,13, "CLOSED");
          }
 
 
@@ -329,8 +333,8 @@ void vValvesAppletDisplay( void *pvParameters){
         //TEMPLATE
 //        printf("***********whole = %d.%d \n\r", (unsigned int)floor(fNumber), (unsigned int)((fNumber-floor(fNumber))*pow(10, uiDecimalPlaces)));
 
-        static ValveState hlt_last = 0, mash_last = 0, boil_last = 0, inlet_last = 0;
-        static ValveState chiller_last = 0;
+        static ValveState hlt_last = VALVE_CLOSED, mash_last = VALVE_CLOSED, boil_last = VALVE_CLOSED, inlet_last = VALVE_CLOSED;
+        static ValveState chiller_last = VALVE_CLOSED;
         for(;;)
           {
 
@@ -349,7 +353,7 @@ void vValvesAppletDisplay( void *pvParameters){
                 InletValveState != inlet_last ||
                 ChillerValveState != chiller_last
             ){
-                if (HLTValveState)
+                if (HLTValveState == VALVE_OPENED)
                   {
                     lcd_DrawRect(TOGGLE_HLT_VALVE_X1, TOGGLE_HLT_VALVE_Y1, TOGGLE_HLT_VALVE_X2, TOGGLE_HLT_VALVE_Y2, Blue);
                     lcd_fill(TOGGLE_HLT_VALVE_X1+1, TOGGLE_HLT_VALVE_Y1+1, TOGGLE_HLT_VALVE_W, TOGGLE_HLT_VALVE_H, Red);
@@ -363,7 +367,7 @@ void vValvesAppletDisplay( void *pvParameters){
                     lcd_printf(0,4,13,"HLT->HLT");
                   }
 
-                if (MashValveState)
+                if (MashValveState == VALVE_OPENED)
                   {
                     lcd_DrawRect(TOGGLE_MASH_VALVE_X1, TOGGLE_MASH_VALVE_Y1, TOGGLE_MASH_VALVE_X2, TOGGLE_MASH_VALVE_Y2, Blue);
                     lcd_fill(TOGGLE_MASH_VALVE_X1+1, TOGGLE_MASH_VALVE_Y1+1, TOGGLE_MASH_VALVE_W, TOGGLE_MASH_VALVE_H, Red);
@@ -377,32 +381,36 @@ void vValvesAppletDisplay( void *pvParameters){
                     lcd_printf(12,4,13, "MASH->MASH");
                   }
 
-                if (InletValveState)
+                if (InletValveState == VALVE_OPENED)
                   {
                     lcd_DrawRect(TOGGLE_INLET_VALVE_X1, TOGGLE_INLET_VALVE_Y1, TOGGLE_INLET_VALVE_X2, TOGGLE_INLET_VALVE_Y2, Blue);
                     lcd_fill(TOGGLE_INLET_VALVE_X1+1, TOGGLE_INLET_VALVE_Y1+1, TOGGLE_INLET_VALVE_W, TOGGLE_INLET_VALVE_H, Red);
-                    lcd_printf(0,8,13, "INLET OPENED");
+                    lcd_printf(0,8,13, "INLET");
+                    lcd_printf(0,9,13, "OPENED");
                   }
 
                 else
                   {
                     lcd_DrawRect(TOGGLE_INLET_VALVE_X1, TOGGLE_INLET_VALVE_Y1, TOGGLE_INLET_VALVE_X2, TOGGLE_INLET_VALVE_Y2, Cyan);
                     lcd_fill(TOGGLE_INLET_VALVE_X1+1, TOGGLE_INLET_VALVE_Y1+1, TOGGLE_INLET_VALVE_W, TOGGLE_INLET_VALVE_H, Green);
-                    lcd_printf(0,8,13, "INLET CLOSED");
+                    lcd_printf(0,8,13, "INLET");
+                    lcd_printf(0,9,13, "CLOSED");
                   }
 
                 if (ChillerValveState == VALVE_OPENED)
                   {
                     lcd_DrawRect(TOGGLE_CHILLER_VALVE_X1, TOGGLE_CHILLER_VALVE_Y1, TOGGLE_CHILLER_VALVE_X2, TOGGLE_CHILLER_VALVE_Y2, Blue);
                     lcd_fill(TOGGLE_CHILLER_VALVE_X1+1, TOGGLE_CHILLER_VALVE_Y1+1, TOGGLE_CHILLER_VALVE_W, TOGGLE_CHILLER_VALVE_H, Red);
-                    lcd_printf(12,8,13, "CHILLER OPENED");
+                    lcd_printf(12,8,13, "CHILLER");
+                    lcd_printf(12,9,13, "OPENED");
                   }
 
                 else
                   {
                     lcd_DrawRect(TOGGLE_CHILLER_VALVE_X1, TOGGLE_CHILLER_VALVE_Y1, TOGGLE_CHILLER_VALVE_X2, TOGGLE_CHILLER_VALVE_Y2, Cyan);
                     lcd_fill(TOGGLE_CHILLER_VALVE_X1+1, TOGGLE_CHILLER_VALVE_Y1+1, TOGGLE_CHILLER_VALVE_W, TOGGLE_CHILLER_VALVE_H, Green);
-                    lcd_printf(12,8,13, "CHILLER CLOSED");
+                    lcd_printf(12,8,13, "CHILLER");
+                    lcd_printf(12,9,13, "CLOSED");
                   }
 
                 hlt_last = HLTValveState;

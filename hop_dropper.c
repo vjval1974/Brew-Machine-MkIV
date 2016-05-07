@@ -126,6 +126,8 @@ void vTaskHops(void * pvParameters){
                   if (uDebounce(HOP_DROPPER_LIMIT_PORT, HOP_DROPPER_LIMIT_PIN, ON))
 
                     {
+                      vTaskDelay(50); // delay for lining up.
+                      //todo: make the delay a parameter.
                       vHopsDrive(OFF);
                       vConsolePrint("State = STOPPED\r\n");
                       uState = STOPPED;
@@ -139,66 +141,6 @@ void vTaskHops(void * pvParameters){
         } //xQueueReceive
     } //inf loop
 } // func
-/*
-void vTaskHopsNext(  void * pvParameters)
-{
-  char gap = 0, in = 0;
-  vHopsDrive(ON);
-  vTaskDelay(5); // wait for motor to start driving
-  // Looking for a gap between the cups.
-  while (gap == 0)
-    {
-      in = GPIO_ReadInputDataBit(HOP_DROPPER_LIMIT_PORT, HOP_DROPPER_LIMIT_PIN); //sit in loop waiting for the gap
-
-      if (!in){
-          //debounce
-          vTaskDelay(5);
-          // check again
-          in = GPIO_ReadInputDataBit(HOP_DROPPER_LIMIT_PORT, HOP_DROPPER_LIMIT_PIN); //sit in loop waiting for the gap
-          if (!in){
-              vConsolePrint("found gap\r\n");
-              vTaskDelay(100);
-              gap = 1;
-          }
-      }
-      else
-        {
-          vConsolePrint("waiting for gap\r\n");
-          gap = 0;
-        }
-
-
-    }
-
-  // we get here if we have a gap (ie, the limit has moved from the cup edge).
-  // Keep driving now until we get the next cup edge.
-  for(;;)
-    {
-      // Check the limit
-      in = GPIO_ReadInputDataBit(HOP_DROPPER_LIMIT_PORT, HOP_DROPPER_LIMIT_PIN); //sit in loop waiting for the gap
-      //debounce
-      if (in){
-          vTaskDelay(5);
-          // check again
-          in = GPIO_ReadInputDataBit(HOP_DROPPER_LIMIT_PORT, HOP_DROPPER_LIMIT_PIN); //sit in loop waiting for the gap
-          if (in) //we have hit the next stop
-            {
-              vConsolePrint("second\r\n");
-              vTaskDelay(100);
-              vHopsDrive(OFF); // stop the motor
-              xHopsNextTaskHandle = NULL; // delete this task handle
-              vTaskDelete(NULL); //delete this task.
-            }
-      }
-      vTaskDelay(10);
-    }
-
-
-}
-
-
-*/
-
 
 void vHopDropperAppletDisplay( void *pvParameters){
   static char tog = 0; //toggles each loop
@@ -269,8 +211,8 @@ void vHopDropperAppletDisplay( void *pvParameters){
 
 #define HOPS_NEXT_X1 0
 #define HOPS_NEXT_Y1 30
-#define HOPS_NEXT_X2 100
-#define HOPS_NEXT_Y2 100
+#define HOPS_NEXT_X2 150
+#define HOPS_NEXT_Y2 150
 #define HOPS_NEXT_W (HOPS_NEXT_X2-HOPS_NEXT_X1)
 #define HOPS_NEXT_H (HOPS_NEXT_Y2-HOPS_NEXT_Y1)
 
@@ -289,7 +231,10 @@ void vHopDropperApplet(int init){
                 lcd_DrawRect(BK_X1, BK_Y1, BK_X2, BK_Y2, Cyan);
                 lcd_fill(BK_X1+1, BK_Y1+1, BK_W, BK_H, Magenta);
                 lcd_printf(10,1,18,  "MANUAL Hops APPLET");
-                lcd_printf(3,4,11,  "Hops next");
+                lcd_printf(1,3,11,  "Increment the");
+                lcd_printf(1,4,11,  "Hop Dropper to");
+                lcd_printf(1,5,11,  "it's next");
+                lcd_printf(1,6,11,  "position");
                 lcd_printf(30, 13, 4, "Back");
                 //vTaskDelay(2000);
                 //adc_init();

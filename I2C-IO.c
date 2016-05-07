@@ -349,7 +349,7 @@ for (;;)
         iRCVStatus = iI2C_Receive(uAddress, &uCurrent);
         while((iRCVStatus == FAIL) && (cnt < 10))
           {
-            vConsolePrint("Receiving failed, trying again\r\n");
+           // vConsolePrint("Receiving failed, trying again\r\n");
             vTaskDelay(100);
             vI2C_Init();
             vTaskDelay(100);

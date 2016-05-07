@@ -492,7 +492,7 @@ int iBoilValveKey(int xx, int yy){
   static uint16_t last_window = 0;
   static struct GenericMessage * pxMessage;
   pxMessage = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
-  int iOpen= OPEN, iClose = CLOSE, iStop = STOP;
+  int iOpen= BOIL_VALVE_OPEN, iClose = BOIL_VALVE_CLOSE, iStop = BOIL_VALVE_STOP;
   pxMessage->pvMessageContent = &iStop;
 
   if (xx > UP_X1+1 && xx < UP_X2-1 && yy > UP_Y1+1 && yy < UP_Y2-1)

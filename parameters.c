@@ -65,7 +65,7 @@ struct UserParameters UserParametersList[] =
     {&BrewParameters.uiHopTimes[4], INT_TYPE, "Hop Time 5"},
     {&BrewParameters.uiHopTimes[5], INT_TYPE, "Hop Time 6"},
     {&BrewParameters.uiChillTime, INT_TYPE, "Chill Time "},
-    {NULL, NULL, NULL}
+    {(int *)NULL, (int)NULL, (char *)NULL}
 };
 
 // END OF NEW CODE
@@ -85,54 +85,54 @@ void vParametersInit(void)
   BrewParameters.iGrindTime = 17;
 
   //Mash
-  BrewParameters.fHLTMaxLitres = 22.0; // This is the max amount that can be drained
-  BrewParameters.fStrikeTemp = 80.8;
+  BrewParameters.fHLTMaxLitres = 21.0; // This is the max amount that can be drained
+  BrewParameters.fStrikeTemp = 78.6;
   BrewParameters.fMashOutTemp = 80;
-  BrewParameters.fSpargeTemp = 87.0;
+  BrewParameters.fSpargeTemp = 90.0;
   BrewParameters.fCleanTemp = 70.0; // less than the temp of a new strike. For 2 brews.
-  BrewParameters.fStrikeLitres = 21.8;
+  BrewParameters.fStrikeLitres = 21.0;
   BrewParameters.fMashOutLitres = 13.39;
-  BrewParameters.fSpargeLitres = 9.97;
-  BrewParameters.iMashTime = 60;
+  BrewParameters.fSpargeLitres = 8.2;
+  BrewParameters.iMashTime = 45;
   BrewParameters.iPumpTime1 = 15;
   BrewParameters.iStirTime1 = 15;
-  BrewParameters.iPumpTime2 = 15;
-  BrewParameters.iStirTime2 = 10;  // mashing out so stirring here is OK
+  BrewParameters.iPumpTime2 = 10;
+  BrewParameters.iStirTime2 = 0;
 
   //Mash Out
   BrewParameters.iMashOutTime = 10;
-    BrewParameters.iMashOutPumpTime1 = 5;
-    BrewParameters.iMashOutStirTime1 = 4;
-    BrewParameters.iMashOutPumpTime2 = 5;
-    BrewParameters.iMashOutStirTime2 = 0;
+  BrewParameters.iMashOutPumpTime1 = 5;
+  BrewParameters.iMashOutStirTime1 = 4;
+  BrewParameters.iMashOutPumpTime2 = 5;
+  BrewParameters.iMashOutStirTime2 = 0;
 
-    //Sparge
-    BrewParameters.iSpargeTime = 20;
-      BrewParameters.iSpargePumpTime1 = 5;
-      BrewParameters.iSpargeStirTime1 = 7;
-      BrewParameters.iSpargePumpTime2 = 7;
-      BrewParameters.iSpargeStirTime2 = 0;
+  //Sparge
+  BrewParameters.iSpargeTime = 15;
+  BrewParameters.iSpargePumpTime1 = 5;
+  BrewParameters.iSpargeStirTime1 = 5;
+  BrewParameters.iSpargePumpTime2 = 5;
+  BrewParameters.iSpargeStirTime2 = 0;
 
   //Pump
-  BrewParameters.iPumpPrimingCycles = 3;
-  BrewParameters.iPumpPrimingTime = 2;
+  BrewParameters.iPumpPrimingCycles = 5;
+  BrewParameters.iPumpPrimingTime = 1;
 
   //Boil
-  BrewParameters.uiBoilTime = 90;//60;
-  BrewParameters.uiBringToBoilTime = 28;
+  BrewParameters.uiBoilTime = 60;//60;
+  BrewParameters.uiBringToBoilTime = 20;
 
-  BrewParameters.uiHopTimes[0] = 90;
-  BrewParameters.uiHopTimes[1] = 45;
-  BrewParameters.uiHopTimes[2] = 15;
+  BrewParameters.uiHopTimes[0] = 60;
+  BrewParameters.uiHopTimes[1] = 15;
+  BrewParameters.uiHopTimes[2] = 14;
   BrewParameters.uiHopTimes[3] = 10;
   BrewParameters.uiHopTimes[4] = 5;
   BrewParameters.uiHopTimes[5] = 1;
 
   BrewParameters.uiSettlingRecircTime = 2; //mins
-    BrewParameters.uiSettlingTime = 6; //mins
-    BrewParameters.uiChillTime = 10; //mins
-    BrewParameters.uiChillerPumpPrimingCycles = 3;
-    BrewParameters.uiChillerPumpPrimingTime = 3; //seconds
+  BrewParameters.uiSettlingTime = 6; //mins
+  BrewParameters.uiChillTime = 10; //mins
+  BrewParameters.uiChillerPumpPrimingCycles = 3;
+  BrewParameters.uiChillerPumpPrimingTime = 3; //seconds
 
 
 
@@ -423,7 +423,8 @@ void vParametersAppletDisplay( void *pvParameters){
                         if(tog)
                         {
                               lcd_fill(1,220, 180,29, Black);
-                              LCD_FLOAT(1, 13, 2, atof(input));
+                              LCD_FLOAT(1, 13, 2, (double)atof((char *)input));
+
                               lcd_printf(1,14,2, UserParametersList[indexToList].text);
                               LCD_FLOAT(1, 15, 2, atof(UserParametersList[indexToList].element));
                               switch (UserParametersList[indexToList].type)
@@ -600,7 +601,7 @@ int ii = 0;
              {
              case INT_TYPE:
              {
-                 *(int*)UserParametersList[indexToList].element = atoi(input);
+                 *(int*)UserParametersList[indexToList].element = atoi((char *)input);
 
                  break;
              }
@@ -612,7 +613,7 @@ int ii = 0;
              }
              case FLOAT_TYPE:
              {
-               *(float*)UserParametersList[indexToList].element = atof(input);
+               *(float*)UserParametersList[indexToList].element = atof((char *)input);
 
 
 

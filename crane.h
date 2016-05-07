@@ -17,21 +17,12 @@
 #include "task.h"
 #include "queue.h"
 
-
-//---CRANE LIMITS PORT/PINS
-//#define CRANE_UPPER_LIMIT_PIN GPIO_Pin_14
-//#define CRANE_UPPER_LIMIT_PIN GPIO_Pin_8
-//#define CRANE_UPPER_LIMIT_PORT GPIOC
-
 //now on I2C
 #define CRANE_UPPER_LIMIT_PIN 1
 #define CRANE_UPPER_LIMIT_PORT PORTV
 
 #define CRANE_LOWER_LIMIT_PIN 2
 #define CRANE_LOWER_LIMIT_PORT PORTV
-
-//#define CRANE_LOWER_LIMIT_PIN GPIO_Pin_12
-//#define CRANE_LIMIT_PORT GPIOB
 
 // Crane outputs
 #define CRANE_PORT PORTU

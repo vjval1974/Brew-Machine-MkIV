@@ -124,42 +124,6 @@ int example_applet_touch_handler(int xx, int yy)
 	return xx > 200 && yy > 200;
 }
 
-/*
- mashtemp    E21DFC36AFB24226A323D7931B6A1F30
- test        BD52AA172CAE4F58A11EC35872EFEB99
-hlt temp 81A73894E64546868F39EE1758D459AD
-mash litres 86D9AD06427A4CA5A3D73104E8AC8AAC
-mash out litres 00ECDA3F7E294557B29BA74A40B71CD9
-sparge litres CFDE12E5173D49F9A2E8DE7EE809970D
-brew step 1308CA31CAEE4A9A8AC5B353F5ACB594
-brew elapsed hours 4D51E338F02649DFA173631622024A90
-brew elapsed minutes 99A2038A62BF47E7BFB1922A43C0825C
-brew elapsed seconds E9C4FDDEDEBC41D7AC3A3F4C636759A2
-brew step elapsed hours 78EC4E5F06604291888E6A723134AD55
-brew step elapsed minutes 35C22A915227449C8F2A740F2C26B344
-brew step elapsed seconds 02BA9C74C1384C069ECB648C3CEFFCBA
-boil duty F066509116CA43F7B6845C8E2EBA69FA
-chiller pump state 461F715060F5468883F6F8500CEAA4BC
-boil state 60140A1EB194439B8C9A198355FD93AA
-brew state FB46F7E5DF914AF1816035EC02DEE0DC
-HLT litres delivered 3AEE6966D7664AA4BE05BBBBF48E2836
-Nominal Mash Temp B9118BEE3E5948C9806A71439478177E
-Nominal Mash Out Temp 49DA95B5F4A94FA4AB1630C8B451BEEB
-Nominal Sparge Temp f248107493574d2499521469c5bd6e60
-boil valve state 13bc096ac29f4c79a884d2138cbcb5e5
-mash valve state 642ae282b7b14167825ea0ef854b74d6
-hlt valve state f0f5139fbee44ede8280109f4ab68b9d
-Chiller valve state 3845dc46d51a41c4a21ce46f6a42f444
-grain mill state c8cfc1c409e144f48e180600e42df643
-mash pump state 144aebd8dbfa4bfbaaf17e335b044405
-chiller pump state e60d5cc288bc4d48b28bb7a33aedfa94
-inlet valve state b204d4c35ec84de59b80de85e9221da5
-crane position 4ae55d488afb49ae9dd48fa1f151e39b
-
-
-
-
-     */
 size_t uiGetHeapDiff()
 {
   static size_t last;
@@ -204,37 +168,6 @@ void vCheckTask(void *pvParameters)
       graph_applet =  uiGetBrewGraphAppletHWM();
       brew_task =  uiGetBrewTaskHWM();
 
-
-
-//      sprintf(pcBrewElapsedHours, "4D51E338:%02u\r\n\0", ucGetBrewHoursElapsed());vConsolePrint(pcBrewElapsedHours);vTaskDelay(25);
-//      sprintf(pcBrewElapsedMinutes, "99A2038A:%02u\r\n\0", ucGetBrewMinutesElapsed());vConsolePrint(pcBrewElapsedMinutes);vTaskDelay(25);
-//      sprintf(pcBrewElapsedSeconds, "E9C4FDDE:%02u\r\n\0", ucGetBrewSecondsElapsed());vConsolePrint(pcBrewElapsedSeconds);vTaskDelay(25);
-//      sprintf(pcBrewStep, "1308CA31:%02u\r\n\0", ucGetBrewStep());vConsolePrint(pcBrewStep);vTaskDelay(25);
-//      sprintf(pcBrewStepElapsedSeconds, "02BA9C74:%02u\r\n\0", ucGetBrewStepSecondsElapsed());vConsolePrint(pcBrewStepElapsedSeconds);vTaskDelay(25);
-//      sprintf(pcBrewStepElapsedMinutes, "35C22A91:%02u\r\n\0", ucGetBrewStepMinutesElapsed());vConsolePrint(pcBrewStepElapsedMinutes);vTaskDelay(25);
-//      sprintf(pcMashTemp, "E21DFC36:%02u\r\n\0", (unsigned int)floor(ds1820_get_temp(MASH)));vConsolePrint(pcMashTemp);vTaskDelay(25);
-//      sprintf(pcHLTTemp, "81A73894:%02u\r\n\0", (unsigned int)floor(ds1820_get_temp(HLT)));vConsolePrint(pcHLTTemp);vTaskDelay(25);
-//      sprintf(pcChillerPumpState, "461F7150:%02u\r\n\0", GetChillerPumpState());vConsolePrint(pcChillerPumpState);vTaskDelay(25);
-//      sprintf(pcBoilState, "60140A1E:%02u\r\n\0", ucGetBoilState());vConsolePrint(pcBoilState);vTaskDelay(25);
-//      sprintf(pcBrewState, "FB46F7E5:%02u\r\n\0", ucGetBrewState());vConsolePrint(pcBrewState);vTaskDelay(25);
-//      sprintf(pcBoilDuty, "F0665091:%02u\r\n\0", uiGetBoilDuty());vConsolePrint(pcBoilDuty);vTaskDelay(25);
-//      sprintf(pcLitresDelivered, "3AEE6966:%02u\r\n\0", uiGetActualLitresDelivered());vConsolePrint(pcLitresDelivered);vTaskDelay(25);
-//      sprintf(pcNominalMashTemp, "B9118BEE:%02u\r\n\0", fGetNominalMashTemp());vConsolePrint(pcNominalMashTemp);vTaskDelay(25);
-//      sprintf(pcNominalMashOutTemp, "49DA95B5:%02u\r\n\0", fGetNominalMashOutTemp());vConsolePrint(pcNominalMashOutTemp);vTaskDelay(25);
-//      sprintf(pcNominalSpargeTemp, "f2481074:%02u\r\n\0", fGetNominalSpargeTemp());vConsolePrint(pcNominalSpargeTemp);vTaskDelay(25);
-//      sprintf(pcBoilValveState, "13bc096a:%02u\r\n\0", ucGetBoilValveState());vConsolePrint(pcBoilValveState);vTaskDelay(25);
-//      sprintf(pcMashValveState, "642ae282:%02u\r\n\0", ucGetMashValveState());vConsolePrint(pcMashValveState);vTaskDelay(25);
-//      sprintf(pcHltValveState, "f0f5139f:%02u\r\n\0", ucGetHltValveState());vConsolePrint(pcHltValveState);vTaskDelay(25);
-//      sprintf(pcChillerValveState, "3845dc46:%02u\r\n\0", ucGetChillerValveState());vConsolePrint(pcChillerValveState);vTaskDelay(25);
-//      sprintf(pcGrainMillState, "c8cfc1c4:%02u\r\n\0", ucGetGrainMillState());vConsolePrint(pcGrainMillState);vTaskDelay(25);
-//      sprintf(pcMashPumpState, "144aebd8:%02u\r\n\0", GetMashPumpState());vConsolePrint(pcMashPumpState);vTaskDelay(25);
-//      sprintf(pcInletValveState, "b204d4c3:%02u\r\n\0", ucGetInletValveState());vConsolePrint(pcInletValveState);vTaskDelay(25);
-//      sprintf(pcCranePosition, "4ae55d48:%02u\r\n\0", ucGetCranePosition());vConsolePrint(pcCranePosition);vTaskDelay(25);
-
-     // lower_limit = cI2cGetInput(CRANE_LOWER_LIMIT_PORT, CRANE_LOWER_LIMIT_PIN);
-     // upper_limit = cI2cGetInput(CRANE_UPPER_LIMIT_PORT, CRANE_UPPER_LIMIT_PIN);
-
-//      sprintf(buf, "BD52AA17:%d \r \n", ii++%1024);
       heapdiff = uiGetHeapDiff();
       if (heapdiff != 0)
         {
@@ -244,10 +177,6 @@ void vCheckTask(void *pvParameters)
           sprintf(pcHeapRemaining, "Heap:%d\r\n", heapRemaining);
           vConsolePrint(pcHeapRemaining);
         }
-
-
-     // vTaskDelay(25);
-     // vConsolePrint(buf);
 
        if (touch < low_level ||
            timer < low_level ||
@@ -261,10 +190,7 @@ void vCheckTask(void *pvParameters)
            ((graph_applet < low_level) && (graph_applet != 0)) ||
            ((brew_task < low_level) && (brew_task != 0)) )
 
-
-
         {
-          //vTaskSuspendAll();
           vConsolePrint("=============================\r\n");
           sprintf(cBuf,"check task: idle ticks = %d\r\n", ulIdleCycleCount);vConsolePrint(cBuf);vTaskDelay(25);
           sprintf(cBuf, "touchwm = %d\r\n", touch); vConsolePrint(cBuf); vTaskDelay(25);

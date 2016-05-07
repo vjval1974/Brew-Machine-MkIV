@@ -119,7 +119,7 @@ void vTaskDS1820Convert( void *pvParameters ){
     for (;;)
     {
         ds1820_convert();
-        vTaskDelay(750/portTICK_RATE_MS); // wait for conversion
+        vTaskDelay(850/portTICK_RATE_MS); // wait for conversion
 
         // save values in array for use by application
         for (ii = 0 ; ii < NUM_SENSORS; ii++)

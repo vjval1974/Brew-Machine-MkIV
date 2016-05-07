@@ -222,7 +222,7 @@ void menu_command(unsigned item)
 void menu_touch(int xx, int yy)
 {
   //char c[15];
-  vConsolePrint("Menu Touch Called\r\n");
+ // vConsolePrint("Menu Touch Called\r\n");
   //sprintf(c, "x %d y %d\r\n", xx, yy);
    //vConsolePrint(c);
 

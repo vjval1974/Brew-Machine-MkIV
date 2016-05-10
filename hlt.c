@@ -111,6 +111,7 @@ void vTaskBrewHLT(void * pvParameters)
   static unsigned char ucStep = 0;
   static unsigned char ucHeatAndFillMessageSent = 0;
 
+  static unsigned char ucLitresDeliveredDisplayCtr = 0;
   const int STEP_COMPLETE = 40;
   const int STEP_FAILED = 41;
   const int STEP_TIMEOUT = 45;
@@ -288,39 +289,36 @@ void vTaskBrewHLT(void * pvParameters)
           vValveActuate(HLT_VALVE, OPEN_VALVE);
           fActualLitresDelivered = fGetBoilFlowLitres();
 
-          if(((int)(fActualLitresDelivered * 1000) % 100) < 10)
+          if (ucLitresDeliveredDisplayCtr++ >= 10) // every 2 seconds.
             {
-              sprintf(buf, "ml delivered = %d\r\n", (int)(fActualLitresDelivered*1000));
-
+              sprintf(buf, "Delivered = %dml to Mash Tun\r\n", (int)(fActualLitresDelivered*1000));
               vConsolePrint(buf);
+              ucLitresDeliveredDisplayCtr = 0;
             }
+
 #ifdef TESTING
           fActualLitresDelivered = fLitresToDrain + 1;
 #endif
 
           if (fActualLitresDelivered >= fLitresToDrain)
             {
+              vConsolePrint("HLT is DRAINED\r\n");
               vValveActuate(HLT_VALVE, CLOSE_VALVE);
+              vTaskDelay(500);
+              uiActualLitresDelivered += (unsigned int)(fActualLitresDelivered*1000);
               xMessage->ucFromTask = HLT_TASK;
               xMessage->ucToTask = BREW_TASK;
               xMessage->uiStepNumber = ucStep;
               xMessage->pvMessageContent = (void *)&STEP_COMPLETE;
               xQueueSendToBack(xBrewTaskReceiveQueue, &xMessage, 0);
-              vConsolePrint("HLT is DRAINED\r\n");
               uRcvdState = HLT_STATE_IDLE;
-              uiActualLitresDelivered += (unsigned int)(fActualLitresDelivered*1000);
-            }
 
-          //sprintf(buf, "Draining!\r\n");
-          //vConsolePrint(buf);
+            }
           break;
         }
       }
-
       vTaskDelayUntil(&xLastWakeTime, 200 / portTICK_RATE_MS );
-
     }
-
 }
 
 unsigned int uGetHltLevel()

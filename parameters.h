@@ -21,10 +21,13 @@ struct Parameters {
   float fStrikeTemp;
   float fMashOutTemp;
   float fSpargeTemp;
+  float fSpargeTemp2;
+  float fSpargeTemp3;
   float fCleanTemp;
   float fStrikeLitres;
   float fMashOutLitres;
   float fSpargeLitres;
+
 
   //Mash
   int iMashTime; // Minutes

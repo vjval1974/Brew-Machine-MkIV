@@ -52,8 +52,10 @@ struct UserParameters UserParametersList[] =
     {&BrewParameters.fStrikeLitres, FLOAT_TYPE, "Strike(l)"},
     {&BrewParameters.fMashOutTemp, FLOAT_TYPE, "Mash Out Temp"},
     {&BrewParameters.fMashOutLitres, FLOAT_TYPE, "Mash Out(l)"},
-    {&BrewParameters.fSpargeTemp, FLOAT_TYPE, "Sparge Temp"},
-    {&BrewParameters.fSpargeLitres, FLOAT_TYPE, "Sparge(l)"},
+    {&BrewParameters.fSpargeTemp, FLOAT_TYPE, "Sparge1 Temp"},
+    {&BrewParameters.fSpargeTemp2, FLOAT_TYPE, "Sparge2 Temp"},
+    {&BrewParameters.fSpargeTemp3, FLOAT_TYPE, "Sparge3 Temp"},
+    {&BrewParameters.fSpargeLitres, FLOAT_TYPE, "Sparge1(l)"},
     {&BrewParameters.iMashTime, INT_TYPE, "Mash Time"},
     {&BrewParameters.iMashOutTime, INT_TYPE, "Mash Out Time"},
     {&BrewParameters.iSpargeTime, INT_TYPE, "Sparge Time"},
@@ -86,13 +88,19 @@ void vParametersInit(void)
 
   //Mash
   BrewParameters.fHLTMaxLitres = 21.0; // This is the max amount that can be drained
-  BrewParameters.fStrikeTemp = 78.6;
+  BrewParameters.fStrikeTemp = 81.2;
   BrewParameters.fMashOutTemp = 80;
-  BrewParameters.fSpargeTemp = 90.0;
-  BrewParameters.fCleanTemp = 70.0; // less than the temp of a new strike. For 2 brews.
+
+  BrewParameters.fSpargeTemp = 95.0;
+  BrewParameters.fSpargeTemp2 = 85.0;
+  BrewParameters.fSpargeTemp3 = 75.6;
+
+  BrewParameters.fCleanTemp = 60.0;
+
   BrewParameters.fStrikeLitres = 21.0;
   BrewParameters.fMashOutLitres = 13.39;
-  BrewParameters.fSpargeLitres = 8.2;
+  BrewParameters.fSpargeLitres = 9.03;
+
   BrewParameters.iMashTime = 45;
   BrewParameters.iPumpTime1 = 15;
   BrewParameters.iStirTime1 = 15;
@@ -130,9 +138,11 @@ void vParametersInit(void)
 
   BrewParameters.uiSettlingRecircTime = 2; //mins
   BrewParameters.uiSettlingTime = 6; //mins
+
   BrewParameters.uiChillTime = 10; //mins
-  BrewParameters.uiChillerPumpPrimingCycles = 3;
-  BrewParameters.uiChillerPumpPrimingTime = 3; //seconds
+
+  BrewParameters.uiChillerPumpPrimingCycles = 5;
+  BrewParameters.uiChillerPumpPrimingTime = 1; //seconds
 
 
 

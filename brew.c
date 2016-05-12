@@ -114,7 +114,7 @@ void vBrewApplet(int init);
 void vBrewRunStep(void);
 void vBrewNextStep(void);
 double dValidateDrainLitres(double parameter);
-
+double dGetSpargeSetpoint(int currentSpargeNumber);
 
 float fGetNominalMashTemp()
 {
@@ -568,6 +568,8 @@ struct GenericMessage Message1;
 void vBrewHLTSetupFunction(int piParameters[5]){
   static struct HLTMsg  * Content =  &Content1;
   struct GenericMessage * Message = &Message1;
+  static int iSpargeNumber = 0;
+  static double dSpargeSetpoint;
 
   if (Content == NULL || Message == NULL)
     {
@@ -596,21 +598,20 @@ void vBrewHLTSetupFunction(int piParameters[5]){
         }
       case SPARGE:
         {
+          dSpargeSetpoint = dGetSpargeSetpoint(iSpargeNumber);
+          Content->uData1 = dSpargeSetpoint;
           Content->pcMsgText = "Sparge";
-          Content->uData1 = BrewParameters.fSpargeTemp;
+          iSpargeNumber++;
           break;
         }
       case NO_MASH_OUT:
         {
-
           break;
         }
       case CLEAN:
         {
           Content->pcMsgText = "Clean";
           Content->uData1 = BrewParameters.fCleanTemp;
-
-
           break;
         }
 
@@ -665,6 +666,37 @@ void vBrewHLTSetupFunction(int piParameters[5]){
   xQueueSendToBack(xBrewTaskHLTQueue, &Message, portMAX_DELAY);
 
   vBrewNextStep();
+}
+
+double dGetSpargeSetpoint(int currentSpargeNumber)
+{
+
+  double retval;
+  switch (currentSpargeNumber)
+      {
+      case 0:
+        {
+          retval = BrewParameters.fSpargeTemp;
+          break;
+        }
+      case 1:
+        {
+          retval = BrewParameters.fSpargeTemp2;
+          break;
+        }
+      case 2:
+        {
+          retval = BrewParameters.fSpargeTemp3;
+          break;
+        }
+      default:
+        {
+          retval = BrewParameters.fSpargeTemp;
+          break;
+        }
+      }
+  return retval;
+
 }
 
 double dValidateDrainLitres(double parameter)
@@ -877,6 +909,7 @@ volatile  int iStirTime1;
 volatile  int iStirTime2;
 volatile  int iPumpTime1;
 volatile  int iPumpTime2;
+
 
 void vBrewMashOutSetupFunction(int piParameters[5])
 {
@@ -1096,11 +1129,24 @@ void vBrewBoilPollFunction(int piParameters[5])
       vChillerPump(START_CHILLER_PUMP);
     }
 
-  if (iTimeRemaining != iLastTime)
+  // Print time remaining for the boil or bring to boil.
+  if (iBoilState == BOIL_7)
     {
-      sprintf(buf, "Time Remaining: %d\r\n State = %d\r\n", iTimeRemaining, iBoilState);
-      vConsolePrint(buf);
-      iLastTime = iTimeRemaining;
+      if (iBringTimeRemaining != iLastTime)
+        {
+          sprintf(buf, "Time Remaining: %d\r\nState = %d\r\n", iBringTimeRemaining, iBoilState);
+          vConsolePrint(buf);
+          iLastTime = iBringTimeRemaining;
+        }
+    }
+  else
+    {
+      if (iTimeRemaining != iLastTime)
+        {
+          sprintf(buf, "Time Remaining: %d\r\nState = %d\r\n", iTimeRemaining, iBoilState);
+          vConsolePrint(buf);
+          iLastTime = iTimeRemaining;
+        }
     }
 
   switch (iBoilState)

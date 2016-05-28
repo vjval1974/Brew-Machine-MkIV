@@ -18,6 +18,7 @@
 #define CHILL_TASK 105 // Not a task, but for chiller purposes it is ok for now.
 #define BREW_TASK_RESET 106
 #define BREW_TASK_BRING_TO_BOIL 107
+#define BREW_TASK_SPARGESETUP 108
 
 
 struct GenericMessage

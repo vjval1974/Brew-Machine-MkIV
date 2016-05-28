@@ -817,14 +817,15 @@ void vBrewPreChillSetupFunction(int piParameters[5])
 
 // CHILL setup function.
 //--------------------------
-// Opens the boil valve, Opens the chiller valve and turns on the pump.
+// 1 Close Boil Valve
+// 2 Open Chiller Valve
+// 3 Start Recirc Pump
 struct GenericMessage xMessageChillCloseBoilValve;
 
-const int iCommand47 = BOIL_VALVE_OPEN;
+const int iCommand47 = BOIL_VALVE_CLOSE;
 void vBrewChillSetupFunction(int piParameters[5])
 {
   static struct GenericMessage * msgCloseBoilValve = &xMessageChillCloseBoilValve;
-
 
   msgCloseBoilValve->ucFromTask = CHILL_TASK;
   msgCloseBoilValve->ucToTask = BOIL_VALVE_TASK;
@@ -833,8 +834,9 @@ void vBrewChillSetupFunction(int piParameters[5])
   vConsolePrint("Chill Setup Function called\r\n");
   xQueueSendToBack(xBoilValveQueue, &msgCloseBoilValve, 1000); // open boil valve to direct wort through chiller
   vTaskDelay(50);
+
   vChillerPump(START_CHILLER_PUMP); //Pump.
-  vValveActuate(CHILLER_VALVE, OPEN_VALVE); // Runs water through the other side of the chiller.
+  vValveActuate(CHILLER_VALVE, OPEN_VALVE);
 }
 
 // PRE-CHILL polling function
@@ -857,31 +859,33 @@ void vBrewPreChillPollFunction(int piParameters[5])
 }
 
 // CHILL Polling function
+
+// 1 Wait for elapsed time and open boil valve.
+// 2 Wait another 8 minutes until pumped out
+
 static struct GenericMessage xMessage5;
 static struct GenericMessage * xMessage6;
 
 void vBrewChillPollFunction(int piParameters[5])
 {
-  const int iCommand = CLOSE;
-  xMessage6 = &xMessage5;
+	const int iCommand = BOIL_VALVE_OPEN;
+	xMessage6 = &xMessage5;
 
-  //Brew[BrewState.ucStep].uTimeRemaining = (BrewParameters.uiChillTime*60) - Brew[BrewState.ucStep].uElapsedTime;
-  if (Brew[BrewState.ucStep].uElapsedTime >= BrewParameters.uiChillTime*60)
-    {
-      vChillerPump(STOP_CHILLER_PUMP);
-      vValveActuate(CHILLER_VALVE, CLOSE_VALVE);
-      Brew[BrewState.ucStep].ucComplete = 1;
-      xMessage6->ucFromTask = CHILL_TASK;
-      xMessage6->ucToTask = BOIL_VALVE_TASK;
-      xMessage6->uiStepNumber = BrewState.ucStep;
-      xMessage6->pvMessageContent = (void *)&iCommand;
-      xQueueSendToBack(xBoilValveQueue, &xMessage6, 1000); // Make sure the boil valve is closed.
-      vBrewNextStep();
-
-    }
-
+	if (Brew[BrewState.ucStep].uElapsedTime >= BrewParameters.uiChillTime*60)
+	{
+		Brew[BrewState.ucStep].ucComplete = 1;
+		xMessage6->ucFromTask = CHILL_TASK;
+		xMessage6->ucToTask = BOIL_VALVE_TASK;
+		xMessage6->uiStepNumber = BrewState.ucStep;
+		xMessage6->pvMessageContent = (void *)&iCommand;
+		xQueueSendToBack(xBoilValveQueue, &xMessage6, 1000); // Make sure the boil valve is closed.
+	}
+	if (Brew[BrewState.ucStep].uElapsedTime >= (BrewParameters.uiChillTime*60 + (8 * 60)))
+	{
+		vValveActuate(CHILLER_VALVE, CLOSE_VALVE);
+		vBrewNextStep();
+	}
 }
-
 
 void vBrewMillPollFunction (int piParameters[5])
 {
@@ -921,6 +925,9 @@ void vBrewMashOutSetupFunction(int piParameters[5])
 }
 
 
+static struct GenericMessage xSpargeWarmBoilerMessage;
+  const int iDuty40PctConst = 40; // changed to see if its more stable
+
 void vBrewSpargeSetupFunction(int piParameters[5])
 {
   iMashTime = BrewParameters.iSpargeTime * 60;
@@ -928,6 +935,15 @@ void vBrewSpargeSetupFunction(int piParameters[5])
   iStirTime2 = BrewParameters.iSpargeStirTime2 * 60;
   iPumpTime1 = BrewParameters.iSpargePumpTime1 * 60;
   iPumpTime2 = BrewParameters.iSpargePumpTime2 * 60;
+
+  // send message to boil at 40% duty cycle to keep warm
+    static struct GenericMessage * xMessage;
+    xMessage = &xSpargeWarmBoilerMessage;
+    xMessage->ucFromTask = BREW_TASK_SPARGESETUP;
+    xMessage->ucToTask = BOIL_TASK;
+    xMessage->pvMessageContent = (void *)&iDuty40PctConst;
+    if (xBoilQueue != NULL)
+      xQueueSendToBack(xBoilQueue, &xMessage, 0);
 }
 
 

@@ -91,8 +91,8 @@ void vTaskDS1820Convert( void *pvParameters ){
     }
   
     // Allocate memory for sensors
-    b[HLT] = (char *) malloc (sizeof(rom)+1);
-    b[MASH] = (char *) malloc (sizeof(rom)+1);
+    b[HLT] = (char *) pvPortMalloc (sizeof(rom)+1);
+    b[MASH] = (char *) pvPortMalloc (sizeof(rom)+1);
    // b[CABINET] = (char *) malloc (sizeof(rom)+1);
 
 

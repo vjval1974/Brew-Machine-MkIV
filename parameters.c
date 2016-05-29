@@ -84,22 +84,22 @@ void vParametersInit(void)
 #endif
 
   //Grind
-  BrewParameters.iGrindTime = 17;
+  BrewParameters.iGrindTime = 16;
 
   //Mash
   BrewParameters.fHLTMaxLitres = 21.0; // This is the max amount that can be drained
-  BrewParameters.fStrikeTemp = 81.2;
+  BrewParameters.fStrikeTemp = 77.3;
   BrewParameters.fMashOutTemp = 80;
 
-  BrewParameters.fSpargeTemp = 95.0;
-  BrewParameters.fSpargeTemp2 = 85.0;
-  BrewParameters.fSpargeTemp3 = 75.6;
+  BrewParameters.fSpargeTemp = 99.0;
+  BrewParameters.fSpargeTemp2 = 95.0;
+  BrewParameters.fSpargeTemp3 = 85.6;
 
   BrewParameters.fCleanTemp = 60.0;
 
-  BrewParameters.fStrikeLitres = 21.0;
+  BrewParameters.fStrikeLitres = 20.88;
   BrewParameters.fMashOutLitres = 13.39;
-  BrewParameters.fSpargeLitres = 9.03;
+  BrewParameters.fSpargeLitres = 11.41;
 
   BrewParameters.iMashTime = 45;
   BrewParameters.iPumpTime1 = 15;
@@ -127,7 +127,7 @@ void vParametersInit(void)
 
   //Boil
   BrewParameters.uiBoilTime = 60;//60;
-  BrewParameters.uiBringToBoilTime = 20;
+  BrewParameters.uiBringToBoilTime = 25;
 
   BrewParameters.uiHopTimes[0] = 60;
   BrewParameters.uiHopTimes[1] = 15;
@@ -136,10 +136,10 @@ void vParametersInit(void)
   BrewParameters.uiHopTimes[4] = 5;
   BrewParameters.uiHopTimes[5] = 1;
 
-  BrewParameters.uiSettlingRecircTime = 2; //mins
-  BrewParameters.uiSettlingTime = 6; //mins
+  BrewParameters.uiSettlingRecircTime = 1; //mins
+  BrewParameters.uiSettlingTime = 1; //mins
 
-  BrewParameters.uiChillTime = 10; //mins
+  BrewParameters.uiChillTime = 15; //mins
 
   BrewParameters.uiChillerPumpPrimingCycles = 5;
   BrewParameters.uiChillerPumpPrimingTime = 1; //seconds

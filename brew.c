@@ -868,23 +868,38 @@ static struct GenericMessage * xMessage6;
 
 void vBrewChillPollFunction(int piParameters[5])
 {
-	const int iCommand = BOIL_VALVE_OPEN;
-	xMessage6 = &xMessage5;
-
 	if (Brew[BrewState.ucStep].uElapsedTime >= BrewParameters.uiChillTime*60)
 	{
 		Brew[BrewState.ucStep].ucComplete = 1;
-		xMessage6->ucFromTask = CHILL_TASK;
-		xMessage6->ucToTask = BOIL_VALVE_TASK;
-		xMessage6->uiStepNumber = BrewState.ucStep;
-		xMessage6->pvMessageContent = (void *)&iCommand;
-		xQueueSendToBack(xBoilValveQueue, &xMessage6, 1000); // Make sure the boil valve is closed.
-	}
-	if (Brew[BrewState.ucStep].uElapsedTime >= (BrewParameters.uiChillTime*60 + (8 * 60)))
-	{
-		vValveActuate(CHILLER_VALVE, CLOSE_VALVE);
 		vBrewNextStep();
 	}
+}
+
+const int iCommandOpenBoilValve = BOIL_VALVE_OPEN;
+void vBrewPumpToFermenterSetupFunction(int piParameters[5])
+{
+
+	xMessage6 = &xMessage5;
+
+	vValveActuate(CHILLER_VALVE, CLOSE_VALVE);
+	vChillerPump(START_CHILLER_PUMP); //Pump.
+
+	xMessage6->ucFromTask = CHILL_TASK;
+	xMessage6->ucToTask = BOIL_VALVE_TASK;
+	xMessage6->uiStepNumber = BrewState.ucStep;
+	xMessage6->pvMessageContent = (void *)&iCommandOpenBoilValve;
+	xQueueSendToBack(xBoilValveQueue, &xMessage6, 1000); // Open boil valve
+}
+
+void vBrewPumpToFermenterPollFunction(int piParameters[5])
+{
+	if (Brew[BrewState.ucStep].uElapsedTime >= BrewParameters.uiChillTime*60)
+	{
+		vChillerPump(STOP_CHILLER_PUMP); //Pump.
+		Brew[BrewState.ucStep].ucComplete = 1;
+		vBrewNextStep();
+	}
+
 }
 
 void vBrewMillPollFunction (int piParameters[5])
@@ -2001,6 +2016,7 @@ static struct BrewStep Brew[] = {
     {"Boil",                 (void *)vBrewBoilSetupFunction,      (void *)vBrewBoilPollFunction ,    {60,55,1,0,0},                        90*60,  0,      0, 0, 1},
     {"SettlingBefChill",     (void *)vBrewPreChillSetupFunction,  (void *)vBrewPreChillPollFunction,  {6*60,0,0,0,0},                      10*60,   0,      0, 0, 0},
     {"Chill",                (void *)vBrewChillSetupFunction,     (void *)vBrewChillPollFunction ,   {8,0,0,0,0},                          10*60,  0,      0, 0, 1},
+    {"Pump Out",    (void *)vBrewPumpToFermenterSetupFunction,     (void *)vBrewPumpToFermenterPollFunction ,   {8,0,0,0,0},                          10*60,  0,      0, 0, 1},
     {"BREW FINISHED",        NULL,                                (void *)vBrewWaitingPollFunction,  {1,0,0,0,0},                          2,      0,      0, 0, 0},
     {NULL,                   NULL,                                NULL,                              {0,0,0,0,0},                          0,      0,      0, 0, 0}
 };

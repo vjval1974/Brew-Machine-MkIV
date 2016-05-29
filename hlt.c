@@ -198,7 +198,9 @@ void vTaskBrewHLT(void * pvParameters)
               else if (actual > fTempSetpoint + 0.1)
                 {
                   //vConsolePrint("HLT: Temp reached, checking again\r\n");
-                  vTaskDelay(200);
+            	  vTaskDelay(900);
+            	  actual = ds1820_get_temp(HLT);
+
                   if (actual > fTempSetpoint + 0.1) // check again
                     {
                       GPIO_WriteBit(HLT_SSR_PORT, HLT_SSR_PIN, 0);
@@ -210,7 +212,8 @@ void vTaskBrewHLT(void * pvParameters)
                           // Only send once
                           if (ucHeatAndFillMessageSent == 0)
                             {
-                              vConsolePrint("HLT: Temp and level reached, sending msg\r\n");
+                        	  sprintf(buf, "HLT: Temp and level reached ~%ddeg, sending msg\r\n", (int)actual);
+                              vConsolePrint(buf);
                               BrewState.ucHLTState = HLT_STATE_AT_TEMP;
                               xMessage->ucFromTask = HLT_TASK;
                               xMessage->ucToTask = BREW_TASK;

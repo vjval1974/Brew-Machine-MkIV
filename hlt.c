@@ -92,7 +92,8 @@ void vTaskBrewHLT(void * pvParameters)
   struct GenericMessage * gMsg;
   struct HLTMsg * hMsg;
   static uint8_t uRcvdState = HLT_STATE_IDLE;
-  const char * pcRcvdMsgText;
+  char RcvdMsgText[50];
+  float fRcvdMsgData1, fRcvdMsgData2;
   static float fDrainLitres = 0;
   char buf[50];
   xLastWakeTime = xTaskGetTickCount();
@@ -121,15 +122,17 @@ void vTaskBrewHLT(void * pvParameters)
       if(xQueueReceive(xBrewTaskHLTQueue, &gMsg, 0) == pdPASS){
           hMsg = (struct HLTMsg *)gMsg->pvMessageContent;
           uRcvdState = hMsg->uState;
-          pcRcvdMsgText = hMsg->pcMsgText;
+          strcpy(RcvdMsgText, hMsg->pcMsgText);
+          fRcvdMsgData1 = hMsg->uData1;
+          fRcvdMsgData2 = hMsg->uData2;
           ucStep = gMsg->uiStepNumber;
           uFirst = 1;
           ucHeatAndFillMessageSent = 0;
-          if (hMsg->pcMsgText != NULL)
+          if (RcvdMsgText != NULL)
             {
               sprintf(buf, "HLT Message: From: %s, to: %s\r\n", pcTASKS[gMsg->ucFromTask-TASK_BASE], pcTASKS[gMsg->ucToTask - TASK_BASE]);
               vConsolePrint(buf);
-              vConsolePrint(hMsg->pcMsgText);
+              vConsolePrint(RcvdMsgText);
               vConsolePrint("\r\n");
             }
 
@@ -154,7 +157,7 @@ void vTaskBrewHLT(void * pvParameters)
         {
           if (uFirst)
             {
-              fTempSetpoint = hMsg->uData1;
+              fTempSetpoint = fRcvdMsgData1;
               vConsolePrint("HLT Entered HEAT AND FILL State\r\n");
               //LCD_FLOAT(10,3,1,fTempSetpoint);
               //lcd_printf(1,3,10, "Setpoint:");
@@ -236,7 +239,7 @@ void vTaskBrewHLT(void * pvParameters)
             {
               GPIO_WriteBit(HLT_SSR_PORT, HLT_SSR_PIN, 0); //make sure its off
               vResetFlow1();
-              fLitresToDrain = hMsg->uData1;
+              fLitresToDrain = fRcvdMsgData1;
               vConsolePrint("HLT: Entered DRAIN State\r\n");
 
               // Need to set up message to the Applet.

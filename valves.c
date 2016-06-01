@@ -251,6 +251,10 @@ void vValvesApplet(int init){
   if (init)
     {
 
+	  lcd_DrawRect(BK_X1, BK_Y1, BK_X2, BK_Y2, Cyan);
+	  lcd_fill(BK_X1+1, BK_Y1+1, BK_W, BK_H, Magenta);
+	  lcd_printf(30, 13, 4, "Back");
+
       if (HLTValveState == VALVE_OPENED)
         {
           lcd_DrawRect(TOGGLE_HLT_VALVE_X1, TOGGLE_HLT_VALVE_Y1, TOGGLE_HLT_VALVE_X2, TOGGLE_HLT_VALVE_Y2, Blue);

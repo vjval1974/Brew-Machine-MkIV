@@ -235,8 +235,9 @@ jtag: all
 	echo "stm32f1x mass_erase 0" | nc localhost 4444
 	sleep 1
 	echo "flash write_bank 0 RTOSBrew.bin 0" | nc localhost 4444
-	sleep 2
+	sleep 25
 	echo "reset halt" | nc localhost 4444
+	sleep 5
 
 oldjtag: all
 	echo "reset halt" | nc localhost 4444
@@ -247,4 +248,6 @@ oldjtag: all
 	echo "reset halt" | nc localhost 4444
 
 run: jtag
+	sleep 2
 	echo "reset run" | nc localhost 4444
+	sleep 2

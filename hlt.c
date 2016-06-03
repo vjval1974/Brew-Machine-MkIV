@@ -14,6 +14,7 @@
 #include "lcd.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
 #include "task.h"
 #include "semphr.h"
@@ -24,25 +25,57 @@
 #include "console.h"
 #include "Flow1.h"
 #include "main.h"
+#include "hlt.h"
 
 volatile char hlt_state = OFF;
 
 // semaphore that stops the returning from the applet to the menu system until the applet goes into the blocked state.
 xSemaphoreHandle xHLTAppletRunningSemaphore;
 xTaskHandle xHeatHLTTaskHandle = NULL, xHLTAppletDisplayHandle = NULL;
-xQueueHandle xBrewTaskHLTQueue = NULL;
+xQueueHandle xHltTaskQueue = NULL;
 xTaskHandle xBrewHLTTaskHandle = NULL;
 xTaskHandle xTaskHLTLevelCheckerTaskHandle = NULL;
 
 volatile float diag_setpoint = 74.5; // when calling the heat_hlt task, we use this value instead of the passed parameter.
 #define LCD_FLOAT( x, y, dp , var ) lcd_printf(x, y, 4, "%0d.%0d", (unsigned int)floor(var), (unsigned int)((var-floor(var))*pow(10, dp)));
 
+const char * pcHltCommands[3] = {"Idle", "Fill and Heat", "Drain"};
+
+static float fGetStableHltTemp(float tolerance);
 
 unsigned int uiGetHltTemp()
 {
   return (unsigned int)ds1820_get_temp(HLT);
 }
 
+void vPrintHltMessage(HltMessage msg)
+{
+	static char buf[80];
+
+	if (msg.pcTxt != NULL)
+	{
+		sprintf(buf, "From: %s\r\n", msg.pcTxt);
+		vConsolePrint(buf );
+		vTaskDelay(50);
+	}
+	sprintf(buf, "Command: %s\r\n", pcHltCommands[msg.command]);
+	vConsolePrint(buf );vTaskDelay(50);
+
+	sprintf(buf, "Data1: %d\r\n", msg.iData1);
+			vConsolePrint(buf );vTaskDelay(50);
+
+	sprintf(buf, "Data2: %d\r\n", msg.iData2);
+	vConsolePrint(buf );vTaskDelay(50);
+
+	sprintf(buf, "Data3: ~%d\r\n", (int)msg.fData3);
+	vConsolePrint(buf );vTaskDelay(50);
+
+	sprintf(buf, "Data4: ~%d\r\n", (int)msg.fData4);
+	vConsolePrint(buf );vTaskDelay(50);
+
+	sprintf(buf, "Step: %d\r\n", (int)msg.ucStepNumber);
+	vConsolePrint(buf );vTaskDelay(50);
+}
 
 void vHLTAppletDisplay(void *pvParameters);
 
@@ -67,15 +100,13 @@ void hlt_init()
   adc_init(); //initialise the ADC1 so we can use a channel from it for the hlt level
 
   vSemaphoreCreateBinary(xHLTAppletRunningSemaphore);
-  if (xBrewTaskHLTQueue == NULL)
-    {
-      xBrewTaskHLTQueue = xQueueCreate(5,sizeof(struct GenericMessage *));
-      if (xBrewTaskHLTQueue == NULL)
-        vConsolePrint("FATAL Error creating  Brew HLT Task Queue\r\n");
-      else vConsolePrint("Created Brew HLT Task Queues\r\n");
-    }
-
-
+  if (xHltTaskQueue == NULL)
+  {
+	  xHltTaskQueue = xQueueCreate(5, sizeof(HltMessage));
+	  if (xHltTaskQueue == NULL)
+		  vConsolePrint("FATAL Error creating HLT Task Queue\r\n");
+	  else vConsolePrint("Created Brew HLT Task Queues\r\n");
+  }
 
 }
 
@@ -85,198 +116,204 @@ unsigned int uiGetActualLitresDelivered(void)
   return uiActualLitresDelivered;
 }
 
+static char cMaintainHighLevelHlt() {
+	char cSetpointReached = 0;
+	if (!GPIO_ReadInputDataBit(HLT_HIGH_LEVEL_PORT, HLT_HIGH_LEVEL_PIN )) // looking for zero volts
+	{
+		vTaskDelay(2000);
+		vValveActuate(INLET_VALVE, CLOSE_VALVE);
+		cSetpointReached = 1;
+	}
+	else
+	{
+		vValveActuate(INLET_VALVE, OPEN_VALVE);
+		cSetpointReached = 0;
+	}
+	return cSetpointReached;
+}
+
+static char cMaintainTempHlt(float fTempSetpoint)
+{
+	float currentHltTemp = 0.0;
+	char cSetpointReached = 0;
+	// ensure we have water above the elements
+	if (uGetHltLevel() == HLT_LEVEL_MID || uGetHltLevel() == HLT_LEVEL_HIGH)
+	{
+		currentHltTemp = fGetStableHltTemp(2.0); //delays for approx 1.8 seconds
+
+		if (currentHltTemp < fTempSetpoint)
+		{
+			GPIO_WriteBit(HLT_SSR_PORT, HLT_SSR_PIN, 1);
+		}
+		else if (currentHltTemp > fTempSetpoint + 0.1)
+		{
+			cSetpointReached = 1;
+			GPIO_WriteBit(HLT_SSR_PORT, HLT_SSR_PIN, 0);
+		}
+	}
+	else //DONT HEAT... WE WILL BURN OUT THE ELEMENT
+	{
+		GPIO_WriteBit(HLT_SSR_PORT, HLT_SSR_PIN, 0); //make sure its off
+		cSetpointReached = 0;
+	}
+	return cSetpointReached;
+}
+
 //=================================================================================================================================================================
 void vTaskBrewHLT(void * pvParameters)
 {
-  portTickType xLastWakeTime;
-  struct GenericMessage * gMsg;
-  struct HLTMsg * hMsg;
-  static uint8_t uRcvdState = HLT_STATE_IDLE;
-  char RcvdMsgText[50];
-  float fRcvdMsgData1, fRcvdMsgData2;
-  static float fDrainLitres = 0;
-  char buf[50];
-  xLastWakeTime = xTaskGetTickCount();
-  static uint8_t uFirst = 0;
-  float  fTempSetpoint = 0.0;
-  static float fLitresToDrain = 0.0;
-  float fActualLitresDelivered = 0.0;
-  float actual = 0.0;
-  float hlt_level = 0.0;
-  char hlt_ok = 0;
-  struct TextMsg  * NewMessage;
-  NewMessage = (struct TextMsg *)pvPortMalloc(sizeof(struct TextMsg));
-  struct GenericMessage * xMessage;
-  xMessage = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
-  char pcMessageText[40];
-  static unsigned char ucStep = 0;
-  static unsigned char ucHeatAndFillMessageSent = 0;
+	portTickType xLastWakeTime;
 
-  static unsigned char ucLitresDeliveredDisplayCtr = 0;
-  const int STEP_COMPLETE = 40;
-  const int STEP_FAILED = 41;
-  const int STEP_TIMEOUT = 45;
+	char buf[50];
+	xLastWakeTime = xTaskGetTickCount();
+	static uint8_t uFirst = 0;
+	float  fTempSetpoint = 0.0;
+	static float fLitresToDrain = 0.0;
+	float fActualLitresDelivered = 0.0;
+	//float currentHltTemp = 0.0;
 
-  for(;;)
-    {
-      if(xQueueReceive(xBrewTaskHLTQueue, &gMsg, 0) == pdPASS){
-          hMsg = (struct HLTMsg *)gMsg->pvMessageContent;
-          uRcvdState = hMsg->uState;
-          strcpy(RcvdMsgText, hMsg->pcMsgText);
-          fRcvdMsgData1 = hMsg->uData1;
-          fRcvdMsgData2 = hMsg->uData2;
-          ucStep = gMsg->uiStepNumber;
-          uFirst = 1;
-          ucHeatAndFillMessageSent = 0;
-          if (RcvdMsgText != NULL)
-            {
-              sprintf(buf, "HLT Message: From: %s, to: %s\r\n", pcTASKS[gMsg->ucFromTask-TASK_BASE], pcTASKS[gMsg->ucToTask - TASK_BASE]);
-              vConsolePrint(buf);
-              vConsolePrint(RcvdMsgText);
-              vConsolePrint("\r\n");
-            }
+	struct TextMsg  * NewMessage = (struct TextMsg *)pvPortMalloc(sizeof(struct TextMsg));
+	struct GenericMessage * xMsgCmdCompleteToBrew = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
 
-      }
-      else uFirst = 0;
+	char pcMessageText[40];
 
-      switch(uRcvdState)
-      {
-      case HLT_STATE_IDLE:
-        {
-          if (uFirst){
-              vConsolePrint("HLT Entered IDLE State\r\n");
-              vValveActuate(INLET_VALVE, CLOSE_VALVE);
-              vValveActuate(HLT_VALVE, CLOSE_VALVE);
-              GPIO_WriteBit(HLT_SSR_PORT, HLT_SSR_PIN, 0);
-          }
+	static unsigned char ucStep = 0;
+	static unsigned char ucHeatAndFillMessageSent = 0;
+	static unsigned char ucLitresDeliveredDisplayCtr = 0;
+	char cHltLevelReached = 0;
+	char cHltTempReached = 0;
 
-          break;
-        }
+	const int STEP_COMPLETE = 40;
+	const int STEP_FAILED = 41;
+	const int STEP_TIMEOUT = 45;
 
-      case HLT_STATE_FILL_HEAT:
-        {
-          if (uFirst)
-            {
-              fTempSetpoint = fRcvdMsgData1;
-              vConsolePrint("HLT Entered HEAT AND FILL State\r\n");
-              //LCD_FLOAT(10,3,1,fTempSetpoint);
-              //lcd_printf(1,3,10, "Setpoint:");
+	HltMessage rcvdMsg;
 
-              //ucHLTFlag = 0;
-              BrewState.ucHLTState = HLT_STATE_FILL_HEAT;
-              sprintf(pcMessageText, "Heating to %02d.%02d Deg", (unsigned int)floor(fTempSetpoint), (unsigned int)((fTempSetpoint-floor(fTempSetpoint))*pow(10, 2)));
-              NewMessage->pcMsgText = pcMessageText;
-              NewMessage->ucLine = 4;
-              xQueueSendToBack(xBrewAppletTextQueue, &NewMessage, 0);
-            }
+	for(;;)
+	{
+		if (xQueueReceive(xHltTaskQueue, &rcvdMsg, 0) == pdPASS)
+		{
+			vPrintHltMessage(rcvdMsg);
+			uFirst = 1;
+			ucHeatAndFillMessageSent = 0;
+			ucStep = rcvdMsg.ucStepNumber;
+		}
+		else uFirst = 0;
 
-          // make sure the HLT valve is closed
-          vValveActuate(HLT_VALVE, CLOSE_VALVE);
+		switch (rcvdMsg.command)
+		{
+		case HLT_CMD_IDLE:
+		{
+			if (uFirst){
+				vConsolePrint("HLT Entered IDLE State\r\n");
+				vValveActuate(INLET_VALVE, CLOSE_VALVE);
+				vValveActuate(HLT_VALVE, CLOSE_VALVE);
+				GPIO_WriteBit(HLT_SSR_PORT, HLT_SSR_PIN, 0);
+			}
+			break;
+		}
+		case HLT_CMD_HEAT_AND_FILL:
+		{
+			if (uFirst)
+			{
+				fTempSetpoint = rcvdMsg.fData3;
+				vConsolePrint("HLT Entered HEAT AND FILL State\r\n");
+				BrewState.ucHLTState = HLT_STATE_FILL_HEAT;
+				sprintf(pcMessageText, "Heating to %02d.%02d Deg", (unsigned int)floor(fTempSetpoint), (unsigned int)((fTempSetpoint-floor(fTempSetpoint))*pow(10, 2)));
+				NewMessage->pcMsgText = pcMessageText;
+				NewMessage->ucLine = 4;
+				xQueueSendToBack(xBrewAppletTextQueue, &NewMessage, 0);
+			}
+			// make sure the HLT valve is closed
+			vValveActuate(HLT_VALVE, CLOSE_VALVE);
 
+			cHltLevelReached = cMaintainHighLevelHlt();
 
-          if (!GPIO_ReadInputDataBit(HLT_HIGH_LEVEL_PORT, HLT_HIGH_LEVEL_PIN)) // looking for zero volts
-            {
-              vTaskDelay(2000);
-              vValveActuate(INLET_VALVE, CLOSE_VALVE);
-              // vConsolePrint("HLT is FULL \r\n");
-            }
-          else
-            vValveActuate(INLET_VALVE, OPEN_VALVE);
+			cHltTempReached = cMaintainTempHlt(fTempSetpoint);
+			if (cHltLevelReached == 1 && cHltTempReached == 1)
+			{
+				if (ucHeatAndFillMessageSent == 0)
+				{
+					sprintf(buf, "HLT: Temp and level reached, sending msg\r\n");
+					vConsolePrint(buf);
+					BrewState.ucHLTState = HLT_STATE_AT_TEMP;
+					xMsgCmdCompleteToBrew->ucFromTask = HLT_TASK;
+					xMsgCmdCompleteToBrew->ucToTask = BREW_TASK;
+					xMsgCmdCompleteToBrew->uiStepNumber = rcvdMsg.ucStepNumber;
+					xMsgCmdCompleteToBrew->pvMessageContent = (void *)&STEP_COMPLETE;
+					xQueueSendToBack(xBrewTaskReceiveQueue, &xMsgCmdCompleteToBrew, 0);
+					ucHeatAndFillMessageSent = 1;
+				}
+			}
 
-          // ensure we have water above the elements
-          if (!GPIO_ReadInputDataBit(HLT_LEVEL_CHECK_PORT, HLT_LEVEL_CHECK_PIN)) // looking for zero volts
-            {
-              //check the temperature
-              actual = ds1820_get_temp(HLT);
+			break;
 
-              // output depending on temp
-              if (actual < fTempSetpoint)
-                {
-                  GPIO_WriteBit(HLT_SSR_PORT, HLT_SSR_PIN, 1);
+		}
+		case HLT_CMD_DRAIN:
+		{
+			if (uFirst)
+			{
+				GPIO_WriteBit(HLT_SSR_PORT, HLT_SSR_PIN, 0); //make sure its off
+				vResetFlow1();
+				fLitresToDrain = rcvdMsg.fData3;
+				vConsolePrint("HLT: Entered DRAIN State\r\n");
 
-                }
-              else if (actual > fTempSetpoint + 0.1)
-                {
-                  //vConsolePrint("HLT: Temp reached, checking again\r\n");
-            	  vTaskDelay(900);
-            	  actual = ds1820_get_temp(HLT);
+				// Need to set up message to the Applet.
+				LCD_FLOAT(10,10,1,fTempSetpoint);
+				lcd_printf(1,10,10, "Setpoint:");
+				vValveActuate(HLT_VALVE, OPEN_VALVE);
+				BrewState.ucHLTState = HLT_STATE_DRAIN;
+			}
+			vValveActuate(HLT_VALVE, OPEN_VALVE);
+			fActualLitresDelivered = fGetBoilFlowLitres();
 
-                  if (actual > fTempSetpoint + 0.1) // check again
-                    {
-                      GPIO_WriteBit(HLT_SSR_PORT, HLT_SSR_PIN, 0);
-                      //vConsolePrint("HLT: Temp reached for sure!\r\n");
-                      // Send message if we are full and at temp.
-                      if (!GPIO_ReadInputDataBit(HLT_HIGH_LEVEL_PORT, HLT_HIGH_LEVEL_PIN)) // looking for zero volts
-                        {
+			if (ucLitresDeliveredDisplayCtr++ >= 10) // every 2 seconds.
+			{
+				sprintf(buf, "Delivered = %dml to Mash Tun\r\n", (int)(fActualLitresDelivered*1000));
+				vConsolePrint(buf);
+				ucLitresDeliveredDisplayCtr = 0;
+			}
+			if (fActualLitresDelivered >= fLitresToDrain)
+			{
+				vConsolePrint("HLT is DRAINED\r\n");
+				vValveActuate(HLT_VALVE, CLOSE_VALVE);
+				vTaskDelay(500);
+				uiActualLitresDelivered += (unsigned int)(fActualLitresDelivered*1000);
+				xMsgCmdCompleteToBrew->ucFromTask = HLT_TASK;
+				xMsgCmdCompleteToBrew->ucToTask = BREW_TASK;
+				xMsgCmdCompleteToBrew->uiStepNumber = rcvdMsg.ucStepNumber;
+				xMsgCmdCompleteToBrew->pvMessageContent = (void *)&STEP_COMPLETE;
+				xQueueSendToBack(xBrewTaskReceiveQueue, &xMsgCmdCompleteToBrew, 0);
+				rcvdMsg.command = HLT_CMD_IDLE;
+			}
+			break;
+		}
 
-                          // Only send once
-                          if (ucHeatAndFillMessageSent == 0)
-                            {
-                        	  sprintf(buf, "HLT: Temp and level reached ~%ddeg, sending msg\r\n", (int)actual);
-                              vConsolePrint(buf);
-                              BrewState.ucHLTState = HLT_STATE_AT_TEMP;
-                              xMessage->ucFromTask = HLT_TASK;
-                              xMessage->ucToTask = BREW_TASK;
-                              xMessage->uiStepNumber = ucStep;
-                              xMessage->pvMessageContent = (void *)&STEP_COMPLETE;
-                              xQueueSendToBack(xBrewTaskReceiveQueue, &xMessage, 0);
-                              ucHeatAndFillMessageSent = 1;
-                            }
-                        }
-                    }
-                }
-            }
-          else //DONT HEAT... WE WILL BURN OUT THE ELEMENT
-            {
-              GPIO_WriteBit(HLT_SSR_PORT, HLT_SSR_PIN, 0); //make sure its off
-              //vConsolePrint("WARNING, Water not above element in HLT\r\n");
-            }
-          break;
-        }
-      case HLT_STATE_DRAIN:
-        {
-          if (uFirst)
-            {
-              GPIO_WriteBit(HLT_SSR_PORT, HLT_SSR_PIN, 0); //make sure its off
-              vResetFlow1();
-              fLitresToDrain = fRcvdMsgData1;
-              vConsolePrint("HLT: Entered DRAIN State\r\n");
+		}
+		vTaskDelayUntil(&xLastWakeTime, 200 / portTICK_RATE_MS );
 
-              // Need to set up message to the Applet.
-              LCD_FLOAT(10,10,1,fTempSetpoint);
-              lcd_printf(1,10,10, "Setpoint:");
-              vValveActuate(HLT_VALVE, OPEN_VALVE);
-              BrewState.ucHLTState = HLT_STATE_DRAIN;
-            }
-          vValveActuate(HLT_VALVE, OPEN_VALVE);
-          fActualLitresDelivered = fGetBoilFlowLitres();
-
-          if (ucLitresDeliveredDisplayCtr++ >= 10) // every 2 seconds.
-            {
-              sprintf(buf, "Delivered = %dml to Mash Tun\r\n", (int)(fActualLitresDelivered*1000));
-              vConsolePrint(buf);
-              ucLitresDeliveredDisplayCtr = 0;
-            }
-          if (fActualLitresDelivered >= fLitresToDrain)
-            {
-              vConsolePrint("HLT is DRAINED\r\n");
-              vValveActuate(HLT_VALVE, CLOSE_VALVE);
-              vTaskDelay(500);
-              uiActualLitresDelivered += (unsigned int)(fActualLitresDelivered*1000);
-              xMessage->ucFromTask = HLT_TASK;
-              xMessage->ucToTask = BREW_TASK;
-              xMessage->uiStepNumber = ucStep;
-              xMessage->pvMessageContent = (void *)&STEP_COMPLETE;
-              xQueueSendToBack(xBrewTaskReceiveQueue, &xMessage, 0);
-              uRcvdState = HLT_STATE_IDLE;
-
-            }
-          break;
-        }
-      }
-      vTaskDelayUntil(&xLastWakeTime, 200 / portTICK_RATE_MS );
     }
 }
+
+/*
+ * if (!GPIO_ReadInputDataBit(HLT_HIGH_LEVEL_PORT, HLT_HIGH_LEVEL_PIN)) // looking for zero volts
+			    	{
+			    		if (ucHeatAndFillMessageSent == 0)
+			    		{
+			    			sprintf(buf, "HLT: Temp and level reached ~%ddeg, sending msg\r\n", (int)currentHltTemp);
+			    			vConsolePrint(buf);
+			    			BrewState.ucHLTState = HLT_STATE_AT_TEMP;
+			    			xMsgCmdCompleteToBrew->ucFromTask = HLT_TASK;
+			    			xMsgCmdCompleteToBrew->ucToTask = BREW_TASK;
+			    			xMsgCmdCompleteToBrew->uiStepNumber = rcvdMsg.ucStepNumber;
+			    			xMsgCmdCompleteToBrew->pvMessageContent = (void *)&STEP_COMPLETE;
+			    			xQueueSendToBack(xBrewTaskReceiveQueue, &xMsgCmdCompleteToBrew, 0);
+			    			ucHeatAndFillMessageSent = 1;
+			    		}
+					}
+ *
+ */
+
 
 unsigned int uGetHltLevel()
 {
@@ -288,6 +325,26 @@ unsigned int uGetHltLevel()
   else return HLT_LEVEL_LOW;
 }
 
+static float fGetStableHltTemp(float tolerance)
+{
+	static float LastTemp = 0.0;
+	float temp1 = ds1820_get_temp(HLT);
+	vTaskDelay(900);
+	float temp2 = ds1820_get_temp(HLT);
+	vTaskDelay(900);
+	float temp3 = ds1820_get_temp(HLT);
+	if (temp1 < temp2 + tolerance && temp1 > temp2 - tolerance)
+	{
+		// temp1 and 2 are similar
+		if (temp2 < temp3 + tolerance && temp2 > temp3 - tolerance)
+		{
+			// temp 2 and temp 3 are similar
+			LastTemp = (temp1 + temp2 + temp3)/3;
+			return LastTemp;
+		}
+	}
+	return LastTemp;
+}
 
 HltState GetHltState()
 {

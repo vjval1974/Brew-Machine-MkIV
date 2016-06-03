@@ -232,15 +232,24 @@ struct GenericMessage Message7;
 void vBrewSetHLTStateIdle()
 {
   static struct HLTMsg  * Content =  &Content7;
-  struct GenericMessage * Message = &Message7;
-  Content->pcMsgText = "HLT Idle";
-  Content->uData1 = 5.0;
-  Content->uState = HLT_STATE_IDLE;
-  Message->ucFromTask = BREW_TASK;
-  Message->ucToTask = HLT_TASK;
-  Message->uiStepNumber = BrewState.ucStep;
-  Message->pvMessageContent = Content;
-  xQueueSendToBack(xBrewTaskHLTQueue, &Message, portMAX_DELAY);
+//  struct GenericMessage * Message = &Message7;
+//  Content->pcMsgText = "HLT Idle";
+//  Content->uData1 = 5.0;
+//  Content->uState = HLT_STATE_IDLE;
+//  Message->ucFromTask = BREW_TASK;
+//  Message->ucToTask = HLT_TASK;
+//  Message->uiStepNumber = BrewState.ucStep;
+//  Message->pvMessageContent = Content;
+//  xQueueSendToBack(xBrewTaskHLTQueue, &Message, portMAX_DELAY);
+//
+  static HltMessage h;
+  h.command = HLT_CMD_IDLE;
+  h.pcTxt = "SetIdle";
+  h.iData1 = 0;
+  h.iData2 = 0;
+  h.fData3 = 0.0;
+  h.fData4 = 0.0;
+  xQueueSendToBack(xHltTaskQueue, &h, portMAX_DELAY);
 
 }
 
@@ -329,8 +338,11 @@ unsigned char ucGetBrewState()
 //----------------------------------------------------------------------------------------------------------------------------
 // Brew Task
 //----------------------------------------------------------------------------------------------------------------------------
+const char * btx = "Brew Task xXX";
 void vTaskBrew(void * pvParameters)
 {
+
+
   portTickType xBrewStart;
   static uint16_t uBrewSecondsElapsed = 0, uBrewMinutesElapsed = 0, uBrewHoursElapsed=0;
   xBrewStart = xTaskGetTickCount();
@@ -463,7 +475,12 @@ void vTaskBrew(void * pvParameters)
           break;
         }
       }
+
+
       vTaskDelayUntil(&BrewState.xLastWakeTime, 1000 / portTICK_RATE_MS );
+
+
+
     }
 }
 
@@ -562,45 +579,48 @@ void vBrewRunStep(void){
 #define NO_MASH_OUT 3
 #define CLEAN 4
 
-static struct HLTMsg  Content1;
+//static struct HLTMsg  Content1;
 struct GenericMessage Message1;
 //===================================================================================================================================================
 void vBrewHLTSetupFunction(int piParameters[5]){
-  static struct HLTMsg  * Content =  &Content1;
-  struct GenericMessage * Message = &Message1;
+static HltMessage hltMessage;
+hltMessage.iData1 = 0;
+hltMessage.iData2 = 0;
+hltMessage.fData3 = 0.0;
+hltMessage.fData4 = 0.0;
+hltMessage.command = HLT_CMD_IDLE;
+hltMessage.pcTxt = "Blah";
+
   static int iSpargeNumber = 0;
   static double dSpargeSetpoint;
 
-  if (Content == NULL || Message == NULL)
-    {
-      vConsolePrint("BREW_HLT_SETUP: content or message null!\r\n");
-    }
 
-  switch( piParameters[0] )
+  switch( (HltCommand)piParameters[0] )
   {
-  case HLT_STATE_FILL_HEAT:
+  case HLT_CMD_HEAT_AND_FILL:
     {
-      Content->uState = HLT_STATE_FILL_HEAT;
+      hltMessage.command = HLT_CMD_HEAT_AND_FILL;
+
       switch( piParameters[1] )
       {
       case STRIKE:
         {
-          Content->pcMsgText = "Strike";
-          Content->uData1 = BrewParameters.fStrikeTemp;
-          break;
+        	hltMessage.pcTxt = "HLTSetup-Fill-Strike";
+        	hltMessage.fData3 = BrewParameters.fStrikeTemp;
+        	break;
         }
       case MASH_OUT:
         {
-          Content->pcMsgText = "Mash Out";
-          Content->uData1 = BrewParameters.fMashOutTemp;
-          //xQueueSendToBack(xBrewTaskHLTQueue, &Content, portMAX_DELAY);
-          break;
+        	hltMessage.pcTxt = "HLTSetup-MashOut";
+        	hltMessage.fData3 = BrewParameters.fMashOutTemp;
+        	break;
         }
       case SPARGE:
         {
           dSpargeSetpoint = dGetSpargeSetpoint(iSpargeNumber);
-          Content->uData1 = dSpargeSetpoint;
-          Content->pcMsgText = "Sparge";
+
+          hltMessage.pcTxt = "HLTSetup-Sparge";
+          hltMessage.fData3 = dSpargeSetpoint;
           iSpargeNumber++;
           break;
         }
@@ -610,40 +630,42 @@ void vBrewHLTSetupFunction(int piParameters[5]){
         }
       case CLEAN:
         {
-          Content->pcMsgText = "Clean";
-          Content->uData1 = BrewParameters.fCleanTemp;
+           hltMessage.pcTxt = "HLTSetup-Clean";
+           hltMessage.fData3 = BrewParameters.fCleanTemp;
           break;
         }
 
       }
       break;
     }
-  case HLT_STATE_DRAIN:
+  case HLT_CMD_DRAIN:
     {
-      Content->uState = HLT_STATE_DRAIN;
+    	hltMessage.command = HLT_CMD_DRAIN;
       vResetFlow1();
       switch( piParameters[1] )
       {
       case STRIKE:
         {
-          Content->pcMsgText = "Drain For Strike";
-          Content->uData1 = dValidateDrainLitres(BrewParameters.fStrikeLitres);
+        	if (BrewParameters.fStrikeLitres > BrewParameters.fHLTMaxLitres)
+        		BrewParameters.fStrikeLitres = BrewParameters.fHLTMaxLitres;
+
+        	hltMessage.pcTxt = "HltSetup-DrainStrike";
+        	hltMessage.fData3 = dValidateDrainLitres(BrewParameters.fStrikeLitres);
           break;
         }
       case MASH_OUT:
         {
-          Content->pcMsgText = "Drain For Mash Out";
-          Content->uData1 = dValidateDrainLitres(BrewParameters.fMashOutLitres);
+        	hltMessage.pcTxt = "HltSetup-DrainMashOut";
+        	hltMessage.fData3 = dValidateDrainLitres(BrewParameters.fMashOutLitres);
           break;
         }
       case SPARGE:
         {
-          Content->pcMsgText = "Drain For Sparge";
-          Content->uData1 = dValidateDrainLitres(BrewParameters.fSpargeLitres);
+        	hltMessage.pcTxt = "HltSetup-DrainSparge";
+        	hltMessage.fData3 = dValidateDrainLitres(BrewParameters.fSpargeLitres);
           break;
         }
-      case NO_MASH_OUT:if (BrewParameters.fStrikeLitres > BrewParameters.fHLTMaxLitres)
-        BrewParameters.fStrikeLitres = BrewParameters.fHLTMaxLitres;
+      case NO_MASH_OUT:
         {
 
           break;
@@ -659,12 +681,9 @@ void vBrewHLTSetupFunction(int piParameters[5]){
 
     }
   }
-  Message->ucFromTask = BREW_TASK;
-  Message->ucToTask = HLT_TASK;
-  Message->uiStepNumber = BrewState.ucStep;
-  Message->pvMessageContent = Content;
-  xQueueSendToBack(xBrewTaskHLTQueue, &Message, portMAX_DELAY);
-
+  hltMessage.ucStepNumber = BrewState.ucStep;
+  xQueueSendToBack(xHltTaskQueue, &hltMessage, portMAX_DELAY);
+  vTaskDelay(500);
   vBrewNextStep();
 }
 
@@ -1369,7 +1388,7 @@ void vBrewApplet(int init){
       if (xBrewHLTTaskHandle == NULL)
         xTaskCreate( vTaskBrewHLT,
             ( signed portCHAR * ) "Brew HLT",
-            configMINIMAL_STACK_SIZE + 300,
+            configMINIMAL_STACK_SIZE + 900,
             NULL,
             tskIDLE_PRIORITY,
             &xBrewHLTTaskHandle );
@@ -1995,22 +2014,22 @@ static struct BrewStep Brew[] = {
     {"Raise Crane",          (void *)vBrewCraneSetupFunction,     NULL,                              {UP,0,0,0,0},                         25,     0,      0, 0, 0},
     {"Close D-Valves",       (void *)vBrewValvesSetupFunction,    NULL,                              {0,0,0,0,0},                          1,      0,      0, 0, 0},
     {"Close BoilValve",      (void *)vBrewBoilValveSetupFunction, NULL,                              {BOIL_VALVE_CLOSE,0,0,0,0},           20,      0,      0, 0, 1},
-    {"Fill+Heat:Strike",     (void *)vBrewHLTSetupFunction,       NULL,                              {HLT_STATE_FILL_HEAT,STRIKE,0,0,0},   40*60,  0,      0, 0, 0},
+    {"Fill+Heat:Strike",     (void *)vBrewHLTSetupFunction,       NULL,                              {HLT_CMD_HEAT_AND_FILL,STRIKE,0,0,0},   40*60,  0,      0, 0, 0},
     {"Grind Grains",         (void *)vBrewMillSetupFunction,      (void *)vBrewMillPollFunction,     {0,0,0,0,0},                          20*60,   0,      0, 0, 0},
-    {"DrainHLTForMash",      (void *)vBrewHLTSetupFunction,       NULL,                              {HLT_STATE_DRAIN,STRIKE,0,0,0},       5*60,   0,      0, 0, 1},
+    {"DrainHLTForMash",      (void *)vBrewHLTSetupFunction,       NULL,                              {HLT_CMD_DRAIN,STRIKE,0,0,0},       5*60,   0,      0, 0, 1},
     {"Lower Crane",          (void *)vBrewCraneSetupFunction,     NULL,                              {DN_INC,0,0,0,0},                     2*60,     0,      0, 0, 1},
-    {"Fill+Heat:Sparge1",    (void *)vBrewHLTSetupFunction,       NULL,                              {HLT_STATE_FILL_HEAT,SPARGE,0,0,0},   40*60,  0,      0, 0, 1},
+    {"Fill+Heat:Sparge1",    (void *)vBrewHLTSetupFunction,       NULL,                              {HLT_CMD_HEAT_AND_FILL,SPARGE,0,0,0},   40*60,  0,      0, 0, 1},
     {"Mash",                 (void *)vBrewMashSetupFunction,      (void *)vBrewMashPollFunction,     {0,0,0,0,0},                          60*60,  0,      0, 0, 0},
     {"MashPumpToBoil",        (void *)vBrewPumpToBoilSetupFunction,(void *)vBrewPumpToBoilPollFunction,{0,4*60,0,0,0},                      11*60,  0,      0, 0, 0},
-    {"DrainForSparge1",       (void *)vBrewHLTSetupFunction,       NULL,                              {HLT_STATE_DRAIN,SPARGE,0,0,0},       5*60,  0,      0, 0, 1},
-    {"Fill+Heat:Sparge2",     (void *)vBrewHLTSetupFunction,       NULL,                              {HLT_STATE_FILL_HEAT,SPARGE,0,0,0},   40*60,  0,      0, 0, 1},
+    {"DrainForSparge1",       (void *)vBrewHLTSetupFunction,       NULL,                              {HLT_CMD_DRAIN,SPARGE,0,0,0},       5*60,  0,      0, 0, 1},
+    {"Fill+Heat:Sparge2",     (void *)vBrewHLTSetupFunction,       NULL,                              {HLT_CMD_HEAT_AND_FILL,SPARGE,0,0,0},   40*60,  0,      0, 0, 1},
     {"Sparge1",               (void *)vBrewSpargeSetupFunction,    (void *)vBrewMashPollFunction,     {0,0,0,0,0},                          25*60,   0,      0, 0, 0},
     {"Pump to boil1",         (void *)vBrewPumpToBoilSetupFunction,(void *)vBrewPumpToBoilPollFunction,{0,3*60,0,0,0},                      11*60,  0,      0, 0, 0},
-    {"DrainForSparge2",       (void *)vBrewHLTSetupFunction,       NULL,                              {HLT_STATE_DRAIN,SPARGE,0,0,0},       5*60,  0,      0, 0, 1},
+    {"DrainForSparge2",       (void *)vBrewHLTSetupFunction,       NULL,                              {HLT_CMD_DRAIN,SPARGE,0,0,0},       5*60,  0,      0, 0, 1},
     {"Sparge2",               (void *)vBrewSpargeSetupFunction,    (void *)vBrewMashPollFunction,     {0,0,0,0,0},                          25*60,   0,      0, 0, 0},
     {"Pump to boil2",         (void *)vBrewPumpToBoilSetupFunction,(void *)vBrewPumpToBoilPollFunction,{0,3*60,0,0,0},                      11*60,  0,      0, 0, 1},
     {"Raise Crane",          (void *)vBrewCraneSetupFunction,     NULL,                              {UP,0,0,0,0},                         25,     0,      0, 0, 1},
-    {"Fill+Heat:Clean ",     (void *)vBrewHLTSetupFunction,       NULL,                              {HLT_STATE_FILL_HEAT, CLEAN,0,0,0},   40*60,  0,      0, 0, 0},
+    {"Fill+Heat:Clean ",     (void *)vBrewHLTSetupFunction,       NULL,                              {HLT_CMD_HEAT_AND_FILL, CLEAN,0,0,0},   40*60,  0,      0, 0, 0},
     {"BringToBoil",          (void *)vBrewBoilSetupFunction,      (void *)vBrewBoilPollFunction ,    {22,100,0,0,0},                       30*60,  0,      0, 0, 0},
     {"Pump to boil",         (void *)vBrewPumpToBoilSetupFunction,(void *)vBrewPumpToBoilPollFunction,{0,30,0,0,0},                        2*60,  0,      0, 0, 1},
     {"Boil",                 (void *)vBrewBoilSetupFunction,      (void *)vBrewBoilPollFunction ,    {60,55,1,0,0},                        90*60,  0,      0, 0, 1},

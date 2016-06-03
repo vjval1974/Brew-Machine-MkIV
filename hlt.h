@@ -50,6 +50,24 @@ void vTaskHLTLevelChecker( void * pvParameters);
 unsigned int uiGetActualLitresDelivered(void);
 unsigned int uGetHltLevel();
 
+typedef enum
+{
+	HLT_CMD_IDLE,
+	HLT_CMD_HEAT_AND_FILL,
+	HLT_CMD_DRAIN
+} HltCommand;
+
+typedef struct
+{
+	HltCommand command;
+	int iData1;
+    int iData2;
+    float fData3;
+    float fData4;
+    unsigned char ucStepNumber;
+    const char * pcTxt;
+} HltMessage;
+
 typedef struct HltState
 {
   unsigned char level;
@@ -63,9 +81,11 @@ typedef struct HltState
 } HltState;
 
 HltState GetHltState();
+void vPrintHltMessage(HltMessage msg);
 
 extern xTaskHandle xHeatHLTTaskHandle, xHLTAppletDisplayHandle;
 extern xTaskHandle xBrewHLTTaskHandle;
 extern xQueueHandle xBrewTaskHLTQueue;
+extern xQueueHandle xHltTaskQueue;
 extern xTaskHandle xTaskHLTLevelCheckerTaskHandle;
 #endif /* HLT_H_ */

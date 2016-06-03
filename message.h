@@ -32,8 +32,8 @@ struct GenericMessage
 struct HLTMsg {
   const char * pcMsgText;
   uint32_t uState;
-  double  uData1;
-  double  uData2;
+  double  dData1;
+  double  dData2;
 };
 
 

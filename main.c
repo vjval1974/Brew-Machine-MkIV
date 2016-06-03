@@ -271,12 +271,15 @@ int main( void )
 
   USARTInit(USART_PARAMS1);
 
-  xPrintQueue = xQueueCreate(150, sizeof(char *));
+
+  xPrintQueue = xQueueCreate(15, sizeof(char *));
   if (xPrintQueue == NULL)
     {
       printf("Failed to make print queue\r\n");
       for (;;);
     }
+
+
 
   vParametersInit();
   lcd_init();

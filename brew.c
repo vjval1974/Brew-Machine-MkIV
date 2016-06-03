@@ -1544,7 +1544,6 @@ unsigned int uiGetBrewResAppletHWM()
   else return 0;
 }
 
-
 void vBrewAppletDisplay( void *pvParameters){
 
   static char tog = 0; //toggles each loop
@@ -1555,10 +1554,10 @@ void vBrewAppletDisplay( void *pvParameters){
   static char b[40], a[40];
   struct TextMsg * RcvdTextMsg;
   RcvdTextMsg = (struct TextMsg *)pvPortMalloc(sizeof(struct TextMsg));
-  unsigned char ucHLTLevel;
+  HltLevel hltLevel;
   static unsigned char ucLastStep = 255;
   static unsigned char ucLastState = 255;
-  static unsigned char ucLastHLTLevel = 255;
+  static HltLevel ucLastHLTLevel = HLT_LEVEL_LOW;
   lcd_printf(0,10,40, "|HLT   |MASH  |CAB   |AMB   |");
   lcd_printf(0,11,40, "|      |      |      |      |");
   ucLastStep = BrewState.ucStep+1;
@@ -1567,7 +1566,6 @@ void vBrewAppletDisplay( void *pvParameters){
 
   for(;;)
     {
-
       xSemaphoreTake(xBrewAppletRunningSemaphore, portMAX_DELAY); //take the semaphore so that the key handler wont
       //return to the menu system until its returned
       if (xQueueReceive(xBrewAppletTextQueue, &RcvdTextMsg, 0) == pdPASS)
@@ -1579,7 +1577,7 @@ void vBrewAppletDisplay( void *pvParameters){
       fAmbientTemp = ds1820_get_temp(AMBIENT);
       fCabinetTemp = ds1820_get_temp(CABINET);
 
-      ucHLTLevel = uGetHltLevel();
+      hltLevel = xGetHltLevel();
 
       if (ucLastStep != BrewState.ucStep && Brew[BrewState.ucStep].pcStepName != NULL)
         {
@@ -1591,10 +1589,10 @@ void vBrewAppletDisplay( void *pvParameters){
           sprintf(buf[1], "STATE = %s", pcRunningState[BrewState.ucRunningState]);
           ucLastState = BrewState.ucRunningState;
         }
-      if (ucLastHLTLevel != ucHLTLevel)
+      if (ucLastHLTLevel != hltLevel)
         {
-          sprintf(buf[3], "HLT Level = %s", pcHLTLevels[ucHLTLevel]);
-          ucLastHLTLevel = ucHLTLevel;
+          sprintf(buf[3], "HLT Level = %s", pcHLTLevels[hltLevel]);
+          ucLastHLTLevel = hltLevel;
         }
       sprintf(buf[2], "Elapsed: %02d:%02d Brew %02d:%02d:%02d",
           ucGetBrewStepMinutesElapsed(), ucGetBrewStepSecondsElapsed(),

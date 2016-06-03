@@ -40,8 +40,10 @@ volatile float diag_setpoint = 74.5; // when calling the heat_hlt task, we use t
 #define LCD_FLOAT( x, y, dp , var ) lcd_printf(x, y, 4, "%0d.%0d", (unsigned int)floor(var), (unsigned int)((var-floor(var))*pow(10, dp)));
 
 const char * pcHltCommands[3] = {"Idle", "Fill and Heat", "Drain"};
+const char * pcHltLevels[3] =  {"HLT-Low", "HLT-Medium", "HLT-High"};
 
 static float fGetStableHltTemp(float tolerance);
+HltLevel xGetHltLevel();
 
 unsigned int uiGetHltTemp()
 {
@@ -137,7 +139,7 @@ static char cMaintainTempHlt(float fTempSetpoint)
 	float currentHltTemp = 0.0;
 	char cSetpointReached = 0;
 	// ensure we have water above the elements
-	if (uGetHltLevel() == HLT_LEVEL_MID || uGetHltLevel() == HLT_LEVEL_HIGH)
+	if (xGetHltLevel() == HLT_LEVEL_MID || xGetHltLevel() == HLT_LEVEL_HIGH)
 	{
 		currentHltTemp = fGetStableHltTemp(2.0); //delays for approx 1.8 seconds
 
@@ -295,27 +297,8 @@ void vTaskBrewHLT(void * pvParameters)
     }
 }
 
-/*
- * if (!GPIO_ReadInputDataBit(HLT_HIGH_LEVEL_PORT, HLT_HIGH_LEVEL_PIN)) // looking for zero volts
-			    	{
-			    		if (ucHeatAndFillMessageSent == 0)
-			    		{
-			    			sprintf(buf, "HLT: Temp and level reached ~%ddeg, sending msg\r\n", (int)currentHltTemp);
-			    			vConsolePrint(buf);
-			    			BrewState.ucHLTState = HLT_STATE_AT_TEMP;
-			    			xMsgCmdCompleteToBrew->ucFromTask = HLT_TASK;
-			    			xMsgCmdCompleteToBrew->ucToTask = BREW_TASK;
-			    			xMsgCmdCompleteToBrew->uiStepNumber = rcvdMsg.ucStepNumber;
-			    			xMsgCmdCompleteToBrew->pvMessageContent = (void *)&STEP_COMPLETE;
-			    			xQueueSendToBack(xBrewTaskReceiveQueue, &xMsgCmdCompleteToBrew, 0);
-			    			ucHeatAndFillMessageSent = 1;
-			    		}
-					}
- *
- */
 
-
-unsigned int uGetHltLevel()
+HltLevel xGetHltLevel()
 {
   if (!GPIO_ReadInputDataBit(HLT_HIGH_LEVEL_PORT, HLT_HIGH_LEVEL_PIN ))
     return HLT_LEVEL_HIGH;
@@ -349,7 +332,7 @@ static float fGetStableHltTemp(float tolerance)
 HltState GetHltState()
 {
   HltState S;
-  S.level = uGetHltLevel();
+  S.level = xGetHltLevel();
   if (S.level == HLT_LEVEL_HIGH)
     sprintf(S.levelStr, "HLT Level HIGH");
   else if (S.level == HLT_LEVEL_MID)
@@ -369,44 +352,45 @@ HltState GetHltState()
     sprintf(S.drainingStr, "HLT Draining");
   else
     sprintf(S.drainingStr, "HLT NOT Draining");
-
+  S.heatingState = xGetHltHeatingState();
   return S;
 }
 
+HltHeatingState xGetHltHeatingState()
+{
+	if (GPIO_ReadInputDataBit(HLT_SSR_PORT, HLT_SSR_PIN))
+		return HLT_HEATING;
+	return HLT_NOT_HEATING;
+}
 
 //=================================================================================================================================================================
 
 void vTaskHLTLevelChecker( void * pvParameters)
 {
-  uint16_t hlt_level_low = 0;
-  uint16_t hlt_level_high = 0;
+  HltLevel level;
+  HltHeatingState heatingState;
   int delay = 500;
-  static char cBuffer[1000];
 
   for (;;)
     {
-     hlt_level_low = !GPIO_ReadInputDataBit(HLT_LEVEL_CHECK_PORT, HLT_LEVEL_CHECK_PIN);
-     hlt_level_high = !GPIO_ReadInputDataBit(HLT_HIGH_LEVEL_PORT, HLT_HIGH_LEVEL_PIN);
-      if (!hlt_level_low && GPIO_ReadInputDataBit(HLT_SSR_PORT, HLT_SSR_PIN))
-        {
-          vTaskDelay(500);
-          if (!hlt_level_low && GPIO_ReadInputDataBit(HLT_SSR_PORT, HLT_SSR_PIN))
+	  level = xGetHltLevel();
+	  heatingState = xGetHltHeatingState();
+     if (level == HLT_LEVEL_LOW && heatingState == HLT_HEATING)
+     {
+          level = xGetHltLevel();
+          heatingState = xGetHltHeatingState();
+          if (level == HLT_LEVEL_HIGH  && GPIO_ReadInputDataBit(INLET_VALVE_PORT, INLET_VALVE_PIN))
             {
               GPIO_WriteBit(HLT_SSR_PORT, HLT_SSR_PIN, 0);
               vConsolePrint("HLT Level Check Task: INTERVENED\r\n");
               vConsolePrint("HLT Level Check Task: SSR on while level low!\r\n");
-             // vTaskPrioritySet(NULL,  tskIDLE_PRIORITY + 5);
-              //while(1);
             }
         }
-      if (hlt_level_high  && GPIO_ReadInputDataBit(INLET_VALVE_PORT, INLET_VALVE_PIN))
+      if (level == HLT_LEVEL_HIGH  && GPIO_ReadInputDataBit(INLET_VALVE_PORT, INLET_VALVE_PIN))
         {
-
           vTaskDelay(3000);
-
-          hlt_level_high = !GPIO_ReadInputDataBit(HLT_HIGH_LEVEL_PORT, HLT_HIGH_LEVEL_PIN);
-
-          if (hlt_level_high && GPIO_ReadInputDataBit(INLET_VALVE_PORT, INLET_VALVE_PIN))
+          level = xGetHltLevel();
+          if (level == HLT_LEVEL_HIGH  && GPIO_ReadInputDataBit(INLET_VALVE_PORT, INLET_VALVE_PIN))
             {
               vValveActuate(INLET_VALVE, CLOSE_VALVE);
               vConsolePrint("HLT Level Check Task: INTERVENED\r\n");
@@ -415,63 +399,47 @@ void vTaskHLTLevelChecker( void * pvParameters)
               while(1);
             }
         }
-      vTaskList(cBuffer);
-     // vConsolePrint(cBuffer);
       vTaskDelay(delay);
-
     }
-
 }
 
-
-//raw_adc_value = read_adc(HLT_LEVEL_ADC_CHAN);
-//GPIO_ReadInputDataBit(HLT_LEVEL_CHECK_PORT, HLT_LEVEL_CHECK_PIN);
-
-void
-vTaskHeatHLT(void * pvParameters)
+void vTaskHeatHLT(void * pvParameters)
 {
-  float * setpoint = (float *) pvParameters;
-  float actual = 0.0;
-  uint16_t hlt_level = 0;
-  char hlt_ok = 0;
-  //choose which value we use for the setpoint.
-  if (setpoint == NULL )
-    setpoint = (float *) &diag_setpoint;
+	float * setpoint = (float *) pvParameters;
+	float actual = 0.0;
+	uint16_t hlt_level = 0;
+	HltLevel hltLevel = HLT_LEVEL_LOW;
+	char hlt_ok = 0;
+	//choose which value we use for the setpoint.
+	if (setpoint == NULL )
+		setpoint = (float *) &diag_setpoint;
 
-  for (;;)
-    {
-      hlt_level = !GPIO_ReadInputDataBit(HLT_LEVEL_CHECK_PORT, HLT_LEVEL_CHECK_PIN);
-      // ensure we have water above the elements
+	for (;;)
+	{
+		hltLevel = xGetHltLevel();
+		if (hltLevel !=  HLT_LEVEL_LOW)
+		{
+			actual = fGetStableHltTemp(2.0);
 
-      if (hlt_level)
-        {
-          //check the temperature
-          actual = ds1820_get_temp(HLT);
-
-          // output depending on temp
-          if (actual < *setpoint)
-            {
-              vConsolePrint("Manual HLT: Heating ON\r\n");
-              GPIO_WriteBit(HLT_SSR_PORT, HLT_SSR_PIN, 1);
-              hlt_state = HEATING;
-            }
-          else
-            {
-              vConsolePrint("Manual HLT: Heating OFF\r\n");
-              GPIO_WriteBit(HLT_SSR_PORT, HLT_SSR_PIN, 0);
-              hlt_state = OFF;
-            }
-        }
-      else //DONT HEAT... WE WILL BURN OUT THE ELEMENT
-        {
-          vConsolePrint("Manual HLT: Level LOW, heating off!\r\n");
-          GPIO_WriteBit(HLT_SSR_PORT, HLT_SSR_PIN, 0); //make sure its off
-          hlt_state = OFF;
-        }
-      vTaskDelay(500/portTICK_RATE_MS); // 500ms delay is fine for heating
-//      taskYIELD();
-    }
-
+			if (actual < *setpoint)
+			{
+				GPIO_WriteBit(HLT_SSR_PORT, HLT_SSR_PIN, 1);
+				hlt_state = HEATING;
+			}
+			else
+			{
+				GPIO_WriteBit(HLT_SSR_PORT, HLT_SSR_PIN, 0);
+				hlt_state = OFF;
+			}
+		}
+		else
+		{
+			vConsolePrint("Manual HLT: Level LOW, heating off!\r\n");
+			GPIO_WriteBit(HLT_SSR_PORT, HLT_SSR_PIN, 0); //make sure its off
+			hlt_state = OFF;
+		}
+		vTaskDelay(500/portTICK_RATE_MS); // 500ms delay is fine for heating
+	}
 }
 
 #define SETPOINT_UP_X1 0
@@ -508,8 +476,8 @@ vTaskHeatHLT(void * pvParameters)
 #define BAK_Y2 235
 #define BAK_W (BAK_X2-BAK_X1)
 #define BAK_H (BAK_Y2-BAK_Y1)
-void
-vHLTApplet(int init)
+
+void vHLTApplet(int init)
 {
   if (init)
     {
@@ -537,76 +505,50 @@ vHLTApplet(int init)
       lcd_printf(22, 4, 13, "START HEATING");
       lcd_printf(22, 8, 12, "STOP HEATING");
       lcd_printf(30, 13, 4, "Back");
-      //vTaskDelay(2000);
-      //adc_init();
-      //adc_init();
+
       //create a dynamic display task
       vConsolePrint("Creating HLT_Display Task!\r\n");
       xTaskCreate( vHLTAppletDisplay, ( signed portCHAR * ) "hlt_disp",
           configMINIMAL_STACK_SIZE + 200, NULL, tskIDLE_PRIORITY,
           &xHLTAppletDisplayHandle);
-     // vTaskSuspend(xBrewHLTTaskHandle);
+
     }
   else
     vConsolePrint("n\r\n");
- // vTaskResume(xBrewHLTTaskHandle);
+ }
 
-}
-#define LOW 0
-#define MID 1
-#define HIGH 2
-const char * HLT_LEVELS[] =  {"HLT-Low", "HLT-Medium", "HLT-High"};
+
+
 void vHLTAppletDisplay(void *pvParameters)
 {
   static char tog = 0; //toggles each loop
-  unsigned char  ucHLTLevel;
+ // unsigned char  ucHLTLevel;
+  HltState hltState;
   float diag_setpoint1; // = diag_setpoint;
-  float current_temp;
+  //float current_temp;
   uint8_t ds10;
   char hlt_ok = 0;
   for (;;)
     {
 
       xSemaphoreTake(xHLTAppletRunningSemaphore, portMAX_DELAY);
-      //take the semaphore so that the key handler wont
-      //return to the menu system until its returned
-      current_temp = ds1820_get_temp(HLT);
 
-      if (!GPIO_ReadInputDataBit(HLT_LEVEL_CHECK_PORT, HLT_LEVEL_CHECK_PIN))
-        {
-          ucHLTLevel = MID;
-          if (!GPIO_ReadInputDataBit(HLT_HIGH_LEVEL_PORT, HLT_HIGH_LEVEL_PIN))
-            {
-              ucHLTLevel = HIGH;
-            }
-
-        }
-      else {
-          ucHLTLevel = LOW;
-      }
+      hltState = GetHltState();
       diag_setpoint1 = diag_setpoint;
       lcd_fill(1, 178, 170, 40, Black);
-
-      //Tell user whether there is enough water to heat
-      if (ucHLTLevel == LOW)
-        lcd_printf(1, 11, 20, HLT_LEVELS[LOW]);
-      else if (ucHLTLevel == MID)
-        lcd_printf(1, 11, 20, HLT_LEVELS[MID]);
-      else lcd_printf(1, 11, 20, HLT_LEVELS[HIGH]);
-
-
+      lcd_printf(1, 11, 20, pcHltLevels[hltState.level]);
       //display the state and user info (the state will flash on the screen)
-      switch (hlt_state)
+      switch (hltState.heatingState)
         {
-      case HEATING:
+      case HLT_HEATING:
         {
           if (tog)
             {
               lcd_fill(1, 220, 180, 29, Black);
               lcd_printf(1, 13, 15, "HEATING");
               lcd_printf(1, 14, 25, "Currently = %d.%ddegC",
-                  (unsigned int) floor(current_temp),
-                  (unsigned int) ((current_temp - floor(current_temp))
+                  (unsigned int) floor(hltState.temp_float),
+                  (unsigned int) ((hltState.temp_float - floor(hltState.temp_float))
                       * pow(10, 3)));
               //lcd_printf(1,14,15,"Currently = %2.1fdegC", current_temp);
             }
@@ -616,15 +558,15 @@ void vHLTAppletDisplay(void *pvParameters)
             }
           break;
         }
-      case OFF:
+      case HLT_NOT_HEATING:
         {
           if (tog)
             {
               lcd_fill(1, 210, 180, 29, Black);
               lcd_printf(1, 13, 11, "NOT HEATING");
               lcd_printf(1, 14, 25, "Currently = %d.%ddegC",
-                  (unsigned int) floor(current_temp),
-                  (unsigned int) ((current_temp - floor(current_temp))
+                  (unsigned int) floor(hltState.temp_float),
+                  (unsigned int) ((hltState.temp_float - floor(hltState.temp_float))
                       * pow(10, 3)));
               //lcd_printf(1,14,15,"Currently = %2.1fdegC", current_temp);
             }
@@ -703,7 +645,7 @@ HLTKey(int xx, int yy)
           // printf("No previous HLT Heating task\r\n");
           vConsolePrint("Creating MANUAL HLT Task\r\n");
           xTaskCreate( vTaskHeatHLT, ( signed portCHAR * ) "HLT_HEAT",
-              configMINIMAL_STACK_SIZE +800, NULL, tskIDLE_PRIORITY+1,
+              configMINIMAL_STACK_SIZE +300, NULL, tskIDLE_PRIORITY+1,
               &xHeatHLTTaskHandle);
         }
       else

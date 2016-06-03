@@ -31,9 +31,9 @@
 #define HLT_STATE_DRAIN 23
 #define HLT_STATE_AT_TEMP 24
 
-#define HLT_LEVEL_LOW 0
-#define HLT_LEVEL_MID 1
-#define HLT_LEVEL_HIGH 2
+//#define HLT_LEVEL_LOW 0
+//#define HLT_LEVEL_MID 1
+//#define HLT_LEVEL_HIGH 2
 
 #define HLT_MAX_LITRES 16 //full hlt
 #define HLT_MIN_LITRES 4 // hlt level at low level sensor
@@ -48,8 +48,20 @@ void vHLTAppletCallback (int in_out);
 void vTaskBrewHLT(void * pvParameters);
 void vTaskHLTLevelChecker( void * pvParameters);
 unsigned int uiGetActualLitresDelivered(void);
-unsigned int uGetHltLevel();
 
+
+typedef enum
+{
+	HLT_LEVEL_LOW,
+	HLT_LEVEL_MID,
+	HLT_LEVEL_HIGH
+} HltLevel;
+
+typedef enum
+{
+	HLT_NOT_HEATING,
+	HLT_HEATING
+} HltHeatingState;
 typedef enum
 {
 	HLT_CMD_IDLE,
@@ -70,7 +82,8 @@ typedef struct
 
 typedef struct HltState
 {
-  unsigned char level;
+  HltLevel level;
+  HltHeatingState heatingState;
   float temp_float;
   int temp_int;
   char levelStr[25];
@@ -80,7 +93,10 @@ typedef struct HltState
   char drainingStr [16];
 } HltState;
 
+
+HltLevel xGetHltLevel();
 HltState GetHltState();
+HltHeatingState xGetHltHeatingState();
 void vPrintHltMessage(HltMessage msg);
 
 extern xTaskHandle xHeatHLTTaskHandle, xHLTAppletDisplayHandle;

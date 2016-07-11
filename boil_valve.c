@@ -31,17 +31,11 @@ xQueueHandle xBoilValveQueue;
 xTaskHandle xBoilValveTaskHandle, xBoilValveAppletDisplayHandle;
 xSemaphoreHandle xAppletRunningSemaphore;
 
+BoilValveState xBoilValveState = BOIL_VALVE_STOPPED;
 
-// Boil Valve States
-
-
-
-
-unsigned char ucBoilValveState = BOIL_VALVE_STOPPED;
-
-unsigned char ucGetBoilValveState(void)
+BoilValveState xGetBoilValveState(void)
 {
-  return ucBoilValveState;
+  return xBoilValveState;
 }
 
 void vBoilValveInit(void)
@@ -71,25 +65,46 @@ void vBoilValveInit(void)
     vConsolePrint("Created Boil Valve Queue\r\n");
 }
 
+typedef enum
+{
+	PIN_LOW,
+	PIN_HIGH
+} PinState;
+
+typedef struct
+{
+	GPIO_TypeDef *  Port;
+	uint16_t Pin;
+} Input ;
+
+Input BoilValveClosedPin = { BOIL_VALVE_CLOSED_PORT, BOIL_VALVE_CLOSED_PIN };
+Input BoilValveOpenedPin = { BOIL_VALVE_OPENED_PORT, BOIL_VALVE_OPENED_PIN };
+
+PinState xGetPinState( Input input)
+{
+	if (debounce(input.Port, input.Pin) == 1)
+		return PIN_HIGH;
+	return PIN_LOW;
+}
 
 
-void vBoilValveFunc(int Command)
+void vBoilValveFunc(BoilValveCommand command)
 {
 
-  switch (Command)
+  switch (command)
   {
-  case BOIL_VALVE_OPEN:
+  case BOIL_VALVE_CMD_OPEN:
     {
       // need to turn relay 2 off which sets up for REV direction
-      vPCF_ResetBits(BOIL_VALVE_PIN1, BOIL_VALVE_PORT); //pull low
-      vPCF_SetBits(BOIL_VALVE_PIN2, BOIL_VALVE_PORT); //pull low
+      vPCF_ResetBits(BOIL_VALVE_PIN1, BOIL_VALVE_PORT);
+      vPCF_SetBits(BOIL_VALVE_PIN2, BOIL_VALVE_PORT);
       break;
     }
-  case BOIL_VALVE_CLOSE:
+  case BOIL_VALVE_CMD_CLOSE:
     {
       // need to turn relay 1 off which sets up for REV direction
-      vPCF_ResetBits(BOIL_VALVE_PIN2, BOIL_VALVE_PORT); //pull low
-      vPCF_SetBits(BOIL_VALVE_PIN1, BOIL_VALVE_PORT); //pull low
+      vPCF_ResetBits(BOIL_VALVE_PIN2, BOIL_VALVE_PORT);
+      vPCF_SetBits(BOIL_VALVE_PIN1, BOIL_VALVE_PORT);
       break;
     }
 
@@ -113,15 +128,15 @@ void vTaskBoilValve(void * pvParameters)
   xMessage = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
   xToSend = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
     static int iComplete = 0;
-  uint8_t limit = 0xFF, limit1 = 0xFF; //neither on or off.
-  static int iC = BOIL_VALVE_STOP;
+
+  BoilValveCommand iC = BOIL_VALVE_CMD_STOP;
   xToSend->ucFromTask = BOIL_VALVE_TASK;
   xToSend->ucToTask = BREW_TASK;
   xToSend->pvMessageContent = (void *)&iComplete;
   static int iCommandState = 0;
   char buf[40];
   xLastMessage->pvMessageContent = &iC;
-  uint8_t uIn1 = 0xFF, uIn2 = 0xFF; //neither on or off.
+  uint8_t uValveClosedLimit = 0xFF, uValveOpenedLimit = 0xFF; //neither on or off.
 
 
   for (;;)
@@ -141,34 +156,19 @@ void vTaskBoilValve(void * pvParameters)
               xToSend->uiStepNumber = xMessage->uiStepNumber;
               iCommandState = 0;
 
-//#ifdef TESTING
-//
-//      iCommandState = 1;
-//      vTaskDelay(100);
-//      if (xBrewTaskReceiveQueue != NULL)
-//
-//              {
-//                           const int iTest = 40;
-//                           vConsolePrint("BoilValve: Sending Step Complete message\r\n");
-//                           xToSend->pvMessageContent = (void *)&iTest;
-//                            xQueueSendToBack(xBrewTaskReceiveQueue, &xToSend, 10000);
-//                            iCommandState  = 0;
-//                            ucBoilValveState = BOIL_VALVE_STOPPED;
-//                          }
-//#endif
             }
 
 
-      switch(ucBoilValveState)
+      switch(xBoilValveState)
       {
       case BOIL_VALVE_OPENED:
         {
-          if (iC == BOIL_VALVE_CLOSE)
+          if (iC == BOIL_VALVE_CMD_CLOSE)
             {
               vBoilValveFunc(CLOSE);
-              ucBoilValveState = BOIL_VALVE_CLOSING;
+              xBoilValveState = BOIL_VALVE_CLOSING;
             }
-          else if (iC == BOIL_VALVE_OPEN)
+          else if (iC == BOIL_VALVE_CMD_OPEN)
             {
               iCommandState = 1;
               iComplete = STEP_COMPLETE;
@@ -177,12 +177,12 @@ void vTaskBoilValve(void * pvParameters)
         }
       case BOIL_VALVE_CLOSED:
         {
-          if (iC== BOIL_VALVE_OPEN)
+          if (iC== BOIL_VALVE_CMD_OPEN)
             {
-              vBoilValveFunc(BOIL_VALVE_OPEN);
-              ucBoilValveState = BOIL_VALVE_OPENING;
+              vBoilValveFunc(BOIL_VALVE_CMD_OPEN);
+              xBoilValveState = BOIL_VALVE_OPENING;
             }
-          else if (iC == BOIL_VALVE_CLOSE)
+          else if (iC == BOIL_VALVE_CMD_CLOSE)
             {
               iCommandState = 1;
               iComplete = STEP_COMPLETE;
@@ -191,25 +191,24 @@ void vTaskBoilValve(void * pvParameters)
         }
       case BOIL_VALVE_OPENING:
         {
-          if (iC== BOIL_VALVE_STOP)
+          if (iC== BOIL_VALVE_CMD_STOP)
             {
-              vBoilValveFunc(BOIL_VALVE_STOP);
+              vBoilValveFunc(BOIL_VALVE_CMD_STOP);
               vConsolePrint("BoilValve STOP while Opening \r\n");
-              ucBoilValveState = BOIL_VALVE_STOPPED;
+              xBoilValveState = BOIL_VALVE_STOPPED;
               iCommandState = 1;
               iComplete = STEP_COMPLETE;
             }
-          else if (iC== BOIL_VALVE_CLOSE)
+          else if (iC== BOIL_VALVE_CMD_CLOSE)
             {
-              uIn1 = debounce(BOIL_VALVE_CLOSED_PORT, BOIL_VALVE_CLOSED_PIN);
-              if (uIn1 != 0)
-                {
-                  vBoilValveFunc(BOIL_VALVE_CLOSE);
-                  ucBoilValveState = BOIL_VALVE_CLOSING;
+              if (xGetPinState(BoilValveClosedPin) == PIN_HIGH)
+              {
+                  vBoilValveFunc(BOIL_VALVE_CMD_CLOSE);
+                  xBoilValveState = BOIL_VALVE_CLOSING;
                 }
               else
                 {
-                  ucBoilValveState = BOIL_VALVE_CLOSED;
+                  xBoilValveState = BOIL_VALVE_CLOSED;
                   iCommandState = 1;
                   iComplete = STEP_COMPLETE;
                 }
@@ -217,56 +216,52 @@ void vTaskBoilValve(void * pvParameters)
             }
           else
             {
-              uIn1 = debounce(BOIL_VALVE_OPENED_PORT, BOIL_VALVE_OPENED_PIN);
-              if (uIn1 == 0)
-                {
-                  vBoilValveFunc(BOIL_VALVE_STOP);
+        	  if (xGetPinState(BoilValveOpenedPin) == PIN_LOW)
+        	  {
+                  vBoilValveFunc(BOIL_VALVE_CMD_STOP);
                   vConsolePrint("BoilValve STOP limit Open \r\n");
-                  ucBoilValveState = BOIL_VALVE_OPENED;
+                  xBoilValveState = BOIL_VALVE_OPENED;
                   iComplete = STEP_COMPLETE;
                   iCommandState = 1;
                 }
-             // sprintf(buf, "Opening with open limit = %d\r\n", uIn1);
+             // sprintf(buf, "Opening with open limit = %d\r\n", uValveClosedLimit);
              //               vConsolePrint(buf);
             }
           break;
         }
       case BOIL_VALVE_CLOSING:
         {
-          if (iC== BOIL_VALVE_STOP)
+          if (iC== BOIL_VALVE_CMD_STOP)
             {
-              vBoilValveFunc(BOIL_VALVE_STOP);
+              vBoilValveFunc(BOIL_VALVE_CMD_STOP);
               vConsolePrint("BoilValve STOP while Closing \r\n");
-              ucBoilValveState = BOIL_VALVE_STOPPED;
+              xBoilValveState = BOIL_VALVE_STOPPED;
               iComplete = STEP_COMPLETE;
               iCommandState = 1;
             }
-          else if (iC== BOIL_VALVE_OPEN)
+          else if (iC== BOIL_VALVE_CMD_OPEN)
             {
-              uIn1 = debounce(BOIL_VALVE_OPENED_PORT, BOIL_VALVE_OPENED_PIN);
-              if (uIn1 == 0)
-                {
-                  ucBoilValveState = BOIL_VALVE_OPENED;
+              if (xGetPinState(BoilValveClosedPin) == PIN_LOW)
+              {
+                  xBoilValveState = BOIL_VALVE_OPENED;
                   iComplete = STEP_COMPLETE;
                   iCommandState = 1;
                 }
               else
                 {
-                  vBoilValveFunc(BOIL_VALVE_OPEN);
-                  ucBoilValveState = BOIL_VALVE_OPENING;
+                  vBoilValveFunc(BOIL_VALVE_CMD_OPEN);
+                  xBoilValveState = BOIL_VALVE_OPENING;
                 }
 
             }
-          else// if (xMessage->cDirection == CLOSE)
+          else
             {
+        	  if (xGetPinState(BoilValveClosedPin) == PIN_LOW)
+        	  {
 
-              uIn1 = debounce(BOIL_VALVE_CLOSED_PORT, BOIL_VALVE_CLOSED_PIN);
-              if (uIn1 == 0)
-                {
-                  //vTaskDelay(200);
-                  vBoilValveFunc(BOIL_VALVE_STOP);
+                  vBoilValveFunc(BOIL_VALVE_CMD_STOP);
                   vConsolePrint("BoilValve STOP limit Closing \r\n");
-                  ucBoilValveState = BOIL_VALVE_CLOSED;
+                  xBoilValveState = BOIL_VALVE_CLOSED;
                   iCommandState = 1;
                   iComplete = STEP_COMPLETE;
                 }
@@ -277,33 +272,32 @@ void vTaskBoilValve(void * pvParameters)
       case BOIL_VALVE_STOPPED:
         {
 
-          if (iC == BOIL_VALVE_OPEN)
+          if (iC == BOIL_VALVE_CMD_OPEN)
             {
-              uIn1 = debounce(BOIL_VALVE_OPENED_PORT, BOIL_VALVE_OPENED_PIN);
-              if (uIn1 != 0)
-                {
-                  vBoilValveFunc(BOIL_VALVE_OPEN);
-                  ucBoilValveState = BOIL_VALVE_OPENING;
+
+              if (xGetPinState(BoilValveOpenedPin) == PIN_HIGH)
+               {
+                  vBoilValveFunc(BOIL_VALVE_CMD_OPEN);
+                  xBoilValveState = BOIL_VALVE_OPENING;
                 }
               else
                 {
                   iCommandState = 1;
                   iComplete = STEP_COMPLETE;
-                  ucBoilValveState = BOIL_VALVE_OPENED;
+                  xBoilValveState = BOIL_VALVE_OPENED;
                 }
             }
-          else if (iC== BOIL_VALVE_CLOSE)
+          else if (iC== BOIL_VALVE_CMD_CLOSE)
             {
-              uIn1 = debounce(BOIL_VALVE_CLOSED_PORT, BOIL_VALVE_CLOSED_PIN);
-              if (uIn1 != 0)
-                {
-                  vBoilValveFunc(BOIL_VALVE_CLOSE);
-                  ucBoilValveState = BOIL_VALVE_CLOSING;
+        	  if (xGetPinState(BoilValveClosedPin) == PIN_HIGH)
+        	  {
+                  vBoilValveFunc(BOIL_VALVE_CMD_CLOSE);
+                  xBoilValveState = BOIL_VALVE_CLOSING;
                 }
               else{
                   iCommandState = 1;
                   iComplete = STEP_COMPLETE;
-                  ucBoilValveState = BOIL_VALVE_CLOSED;
+                  xBoilValveState = BOIL_VALVE_CLOSED;
               }
             }
           iC = BOIL_VALVE_STOPPED;
@@ -312,8 +306,8 @@ void vTaskBoilValve(void * pvParameters)
         }
       default:
         {
-          vBoilValveFunc(BOIL_VALVE_STOP); //stop the  on an instant.
-          ucBoilValveState = BOIL_VALVE_STOPPED;
+          vBoilValveFunc(BOIL_VALVE_CMD_STOP); //stop the  on an instant.
+          xBoilValveState = BOIL_VALVE_STOPPED;
           vConsolePrint("Boil Valve in incorrect state!\r\n");
           break;
 
@@ -327,7 +321,7 @@ void vTaskBoilValve(void * pvParameters)
               xToSend->pvMessageContent = (void *)&iTest;
                xQueueSendToBack(xBrewTaskReceiveQueue, &xToSend, 10000);
                iCommandState  = 0;
-               ucBoilValveState = BOIL_VALVE_STOPPED;
+               xBoilValveState = BOIL_VALVE_STOPPED;
              }
 
 
@@ -345,7 +339,7 @@ void vBoilValveAppletDisplay( void *pvParameters){
       //return to the menu system until its returned
 
       //display the state and user info (the state will flash on the screen)
-      switch (ucBoilValveState)
+      switch (xBoilValveState)
       {
       case BOIL_VALVE_OPENING:
         {
@@ -492,7 +486,7 @@ int iBoilValveKey(int xx, int yy){
   static uint16_t last_window = 0;
   static struct GenericMessage * pxMessage;
   pxMessage = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
-  int iOpen= BOIL_VALVE_OPEN, iClose = BOIL_VALVE_CLOSE, iStop = BOIL_VALVE_STOP;
+  int iOpen= BOIL_VALVE_CMD_OPEN, iClose = BOIL_VALVE_CMD_CLOSE, iStop = BOIL_VALVE_CMD_STOP;
   pxMessage->pvMessageContent = &iStop;
 
   if (xx > UP_X1+1 && xx < UP_X2-1 && yy > UP_Y1+1 && yy < UP_Y2-1)

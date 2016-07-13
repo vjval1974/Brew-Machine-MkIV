@@ -42,6 +42,8 @@
 #include "hop_dropper.h"
 #include "main.h"
 #include "boil.h"
+#include "MashWater.h"
+
 
 #define ARRAY_LENGTH( x ) ( sizeof(x)/sizeof(x[0]) ) // not as yet implemented
 
@@ -417,8 +419,11 @@ void vTaskBrew(void * pvParameters)
               case BREW_STEP_COMPLETE:
                 {
                   Brew[xMessage->uiStepNumber].ucComplete = 1;
+
                   sprintf(buf, "Brew Task: Setting Step %d to Complete\r\n", xMessage->uiStepNumber);
                   vConsolePrint(buf);
+
+                  printMashTunState();
                   break;
                 }
               case BREW_STEP_FAILED:
@@ -434,6 +439,8 @@ void vTaskBrew(void * pvParameters)
                 }
               }
             }
+          //TODO: Clean this up.
+          MashWaterStateMachinePoll();
 
           iStepsToComplete = iBrewStepMonitor(iWaiting); // updates elapsed times and monitors timeouts of steps.
 
@@ -1069,6 +1076,21 @@ void vBrewPumpToBoilSetupFunction(int piParameters[5])
       vMashPump(STOP_MASH_PUMP);
       vTaskDelay(BrewParameters.iPumpPrimingTime*1000);
     }
+  MashTunPumpingOut();
+}
+
+//Todo: USE THIS FUNCTION TO SEND A MESSAGE TO THE BOILER FROM SPARGE STEPS TO HEAT AT 50% DUTY.
+bool IsEnoughWaterInBoilerForHeating()
+{
+	if (fGetLitresCurrentlyInBoiler() > 15.0)
+	{
+		// check boil level probe..
+		if (GetBoilerState().level == HIGH)
+		{
+			return TRUE;
+		}
+	  }
+	return FALSE;
 }
 
 void vBrewPumpToBoilPollFunction(int  piParameters[5])
@@ -1079,10 +1101,11 @@ void vBrewPumpToBoilPollFunction(int  piParameters[5])
   //Brew[BrewState.ucStep].uTimeRemaining = (piParameters[1]*60) - Brew[BrewState.ucStep].uElapsedTime;
   if (Brew[BrewState.ucStep].uElapsedTime >= iPumpToBoilTime)
     {
-      //-------------------------------------------------------------------------------------------
+	  MashTunFinishedPumpingOut();
+	  //-------------------------------------------------------------------------------------------
       // ToDo: SHOULD CHECK THE BOIL LEVEL LIMIT HERE SO THAT WE CAN ASSUME THAT THERE WAS NO STUCK SPARGE
-      //-------------------------------------------------------------------------------------------
 
+      //--------------------------------------------------------------------------------------------
       Brew[BrewState.ucStep].ucComplete = 1;
       vMashPump(STOP_MASH_PUMP);
       vValveActuate(MASH_VALVE, CLOSE_VALVE);
@@ -2065,6 +2088,7 @@ static struct BrewStep Brew[] = {
 //    {"Sparge2",               (void *)vBrewSpargeSetupFunction,    (void *)vBrewMashPollFunction,     {0,0,0,0,0},                          25*60,   0,      0, 0, 1},
 //    {"DrainForSparge1",       (void *)vBrewHLTSetupFunction,       NULL,                              {HLT_CMD_DRAIN,SPARGE,0,0,0},       5*60,  0,      0, 0, 1},
 //    {"Sparge2",               (void *)vBrewSpargeSetupFunction,    (void *)vBrewMashPollFunction,     {0,0,0,0,0},                          25*60,   0,      0, 0, 1},
+//    {"Pump to boil",         (void *)vBrewPumpToBoilSetupFunction,(void *)vBrewPumpToBoilPollFunction,{0,60,0,0,0},                        2*60,  0,      0, 0, 1},
 //    {"DrainForSparge1",       (void *)vBrewHLTSetupFunction,       NULL,                              {HLT_CMD_DRAIN,SPARGE,0,0,0},       5*60,  0,      0, 0, 1},
 //    {"Sparge2",               (void *)vBrewSpargeSetupFunction,    (void *)vBrewMashPollFunction,     {0,0,0,0,0},                          25*60,   0,      0, 0, 1},
 //

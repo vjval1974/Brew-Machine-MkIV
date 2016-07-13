@@ -119,7 +119,8 @@ SOURCE=	main.c 	drivers/lcd.c \
 		parameters.c \
 		boil_valve.c \
 		stf_syscalls_minimal.c \
-		io_util.c
+		io_util.c \
+		MashWater.c
 		
 
 # ST Library source files.

@@ -26,6 +26,7 @@
 #include "Flow1.h"
 #include "main.h"
 #include "hlt.h"
+#include "MashWater.h"
 
 volatile char hlt_state = OFF;
 
@@ -304,12 +305,14 @@ vTaskBrewHLT(void * pvParameters)
 						vValveActuate(HLT_VALVE, CLOSE_VALVE);
 						vTaskDelay(500);
 						uiActualLitresDelivered += (unsigned int) (fActualLitresDelivered * 1000);
+						MashTunFillingSetpointReached(fActualLitresDelivered);
 						xMsgCmdCompleteToBrew->ucFromTask = HLT_TASK;
 						xMsgCmdCompleteToBrew->ucToTask = BREW_TASK;
 						xMsgCmdCompleteToBrew->uiStepNumber = rcvdMsg.ucStepNumber;
 						xMsgCmdCompleteToBrew->pvMessageContent = (void *) &STEP_COMPLETE;
 						xQueueSendToBack(xBrewTaskReceiveQueue, &xMsgCmdCompleteToBrew, 0);
 						rcvdMsg.command = HLT_CMD_IDLE;
+						BrewState.ucHLTState = HLT_STATE_IDLE;
 					}
 				}
 				break;

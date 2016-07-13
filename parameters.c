@@ -48,6 +48,7 @@ struct UserParameters
 struct UserParameters UserParametersList[] =
 {
     {&BrewParameters.iGrindTime, INT_TYPE, "Milling Time"},
+    {&BrewParameters.fGrainWeightKilos, INT_TYPE, "Grain Weight"},
     {&BrewParameters.fStrikeTemp, FLOAT_TYPE, "Strike Temp"},
     {&BrewParameters.fStrikeLitres, FLOAT_TYPE, "Strike(l)"},
     {&BrewParameters.fMashOutTemp, FLOAT_TYPE, "Mash Out Temp"},
@@ -85,6 +86,7 @@ void vParametersInit(void)
 
   //Grind
   BrewParameters.iGrindTime = 16;
+  BrewParameters.fGrainWeightKilos = 1.00;
 
   //Mash
   BrewParameters.fHLTMaxLitres = 21.0; // This is the max amount that can be drained
@@ -99,7 +101,7 @@ void vParametersInit(void)
 
   BrewParameters.fStrikeLitres = 20.88;
   BrewParameters.fMashOutLitres = 13.39;
-  BrewParameters.fSpargeLitres = 11.41;
+  BrewParameters.fSpargeLitres = 1.9;
 
   BrewParameters.iMashTime = 45;
   BrewParameters.iPumpTime1 = 15;
@@ -115,7 +117,7 @@ void vParametersInit(void)
   BrewParameters.iMashOutStirTime2 = 0;
 
   //Sparge
-  BrewParameters.iSpargeTime = 15;
+  BrewParameters.iSpargeTime = 1;
   BrewParameters.iSpargePumpTime1 = 5;
   BrewParameters.iSpargeStirTime1 = 5;
   BrewParameters.iSpargePumpTime2 = 5;

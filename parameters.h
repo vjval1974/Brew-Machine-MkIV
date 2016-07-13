@@ -11,6 +11,7 @@
 struct Parameters {
   //Mill
   int iGrindTime; //mins
+  float fGrainWeightKilos;
 
   //Pump
   int iPumpPrimingCycles; // amount of cycles to prime the pump

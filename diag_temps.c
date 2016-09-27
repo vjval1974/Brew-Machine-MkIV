@@ -16,6 +16,7 @@
 #include "semphr.h"
 #include "diag_temps.h"
 #include "ds1820.h"
+#include "boil.h"
 
 #define LCD_FLOAT( x, y, dp , var ) lcd_printf(x, y, 4, "%d.%d", (unsigned int)floor(var), (unsigned int)((var-floor(var))*pow(10, dp)));
 // semaphore that stops the returning from the applet to the menu system until the applet goes into the blocked state.
@@ -83,6 +84,8 @@ void  vTaskDS1820DisplayTemps( void *pvParameters){
 
       lcd_printf(1, 5, 10, "HLT = %u.%u", (unsigned int)floor(fTempHLT), (unsigned int)((fTempHLT-floor(fTempHLT))*pow(10, 3)));
       lcd_printf(1, 6, 10, "MASH = %u.%u", (unsigned int)floor(fTempMash), (unsigned int)((fTempMash-floor(fTempMash))*pow(10, 3)));
+      lcd_printf(1, 7, 10, "LitresinBoiler = %u.%u", (unsigned int)floor(fGetLitresCurrentlyInBoiler()), (unsigned int)((fGetLitresCurrentlyInBoiler()-floor(fGetLitresCurrentlyInBoiler()))*pow(10, 3)));
+      lcd_printf(1, 8, 10, "IsEnoughWater = %s", (GetBoilerState().level == HIGH) ? "True" : "False");
       // lcd_printf(1, 7, 10, "Cabinet = %u.%u", (unsigned int)floor(fTempCabinet), (unsigned int)((fTempCabinet-floor(fTempCabinet))*pow(10, 3)));
 
       xSemaphoreGive(xAppletRunningSemaphore); //give back the semaphore as its safe to return now.

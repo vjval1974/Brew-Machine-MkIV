@@ -212,13 +212,6 @@ void vValveActuate( unsigned char valve, ValveCommand command )
 #define TOGGLE_MASH_VALVE_W (TOGGLE_MASH_VALVE_X2-TOGGLE_MASH_VALVE_X1)
 #define TOGGLE_MASH_VALVE_H (TOGGLE_MASH_VALVE_Y2-TOGGLE_MASH_VALVE_Y1)
 
-#define TOGGLE_BOIL_VALVE_X1 185
-#define TOGGLE_BOIL_VALVE_Y1 30
-#define TOGGLE_BOIL_VALVE_X2 275
-#define TOGGLE_BOIL_VALVE_Y2 100
-#define TOGGLE_BOIL_VALVE_W (TOGGLE_BOIL_VALVE_X2-TOGGLE_BOIL_VALVE_X1)
-#define TOGGLE_BOIL_VALVE_H (TOGGLE_BOIL_VALVE_Y2-TOGGLE_BOIL_VALVE_Y1)
-
 #define TOGGLE_INLET_VALVE_X1 0
 #define TOGGLE_INLET_VALVE_Y1 105
 #define TOGGLE_INLET_VALVE_X2 90
@@ -232,6 +225,14 @@ void vValveActuate( unsigned char valve, ValveCommand command )
 #define TOGGLE_CHILLER_VALVE_Y2 175
 #define TOGGLE_CHILLER_VALVE_W (TOGGLE_CHILLER_VALVE_X2-TOGGLE_CHILLER_VALVE_X1)
 #define TOGGLE_CHILLER_VALVE_H (TOGGLE_CHILLER_VALVE_Y2-TOGGLE_CHILLER_VALVE_Y1)
+
+#define RESET_FLOW_1_X1 185
+#define RESET_FLOW_1_Y1 30
+#define RESET_FLOW_1_X2 275
+#define RESET_FLOW_1_Y2 100
+#define RESET_FLOW_1_W (RESET_FLOW_1_X2-RESET_FLOW_1_X1)
+#define RESET_FLOW_1_H (RESET_FLOW_1_Y2-RESET_FLOW_1_Y1)
+
 
 #define BK_X1 200
 #define BK_Y1 190
@@ -339,6 +340,10 @@ void vValvesAppletDisplay( void *pvParameters){
 
         static ValveState hlt_last = VALVE_CLOSED, mash_last = VALVE_CLOSED, boil_last = VALVE_CLOSED, inlet_last = VALVE_CLOSED;
         static ValveState chiller_last = VALVE_CLOSED;
+        lcd_DrawRect(RESET_FLOW_1_X1, RESET_FLOW_1_Y1, RESET_FLOW_1_X2, RESET_FLOW_1_Y2, Blue);
+        lcd_fill(RESET_FLOW_1_X1+1, RESET_FLOW_1_Y1+1, RESET_FLOW_1_W, RESET_FLOW_1_H, Red);
+        lcd_printf(25,3,13,"RESET");
+        lcd_printf(24,4,13,"Flow Tx 1");
         for(;;)
           {
 
@@ -362,6 +367,7 @@ void vValvesAppletDisplay( void *pvParameters){
                     lcd_DrawRect(TOGGLE_HLT_VALVE_X1, TOGGLE_HLT_VALVE_Y1, TOGGLE_HLT_VALVE_X2, TOGGLE_HLT_VALVE_Y2, Blue);
                     lcd_fill(TOGGLE_HLT_VALVE_X1+1, TOGGLE_HLT_VALVE_Y1+1, TOGGLE_HLT_VALVE_W, TOGGLE_HLT_VALVE_H, Red);
                     lcd_printf(0,4,13,"HLT->MASH");
+
                   }
 
                 else
@@ -469,6 +475,10 @@ int iValvesKey(int xx, int yy)
        {
         vValveActuate(CHILLER_VALVE, TOGGLE_VALVE);
        }
+  else if (xx > RESET_FLOW_1_X1+1 && xx < RESET_FLOW_1_X2-1 && yy > RESET_FLOW_1_Y1+1 && yy < RESET_FLOW_1_Y2-1)
+        {
+         vResetFlow1();
+        }
   else if (xx > BK_X1 && yy > BK_Y1 && xx < BK_X2 && yy < BK_Y2)
     {
       //try to take the semaphore from the display applet. wait here if we cant take it.

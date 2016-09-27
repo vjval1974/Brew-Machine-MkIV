@@ -106,7 +106,7 @@ const char  * pcBrewMessages[3] = {"Step Complete", "Step Failed", "Wait for pre
 
 
 
-
+bool IsEnoughWaterInBoilerForHeating();
 void vBrewAppletDisplay( void *pvParameters);
 void vBrewGraphAppletDisplay(void * pvParameters);
 void vBrewStatsAppletDisplay(void * pvParameters);
@@ -490,6 +490,8 @@ void vTaskBrew(void * pvParameters)
 
     }
 }
+
+
 
 //----------------------------------------------------------------------------------------------------------------------------
 static struct GenericMessage xMessage20;
@@ -972,6 +974,9 @@ static struct GenericMessage xSpargeWarmBoilerMessage;
 
 void vBrewSpargeSetupFunction(int piParameters[5])
 {
+	// Diag Variables can be removed after testing
+	char buf[50];
+
   iMashTime = BrewParameters.iSpargeTime * 60;
   iStirTime1 = BrewParameters.iSpargeStirTime1 * 60;
   iStirTime2 = BrewParameters.iSpargeStirTime2 * 60;
@@ -979,13 +984,22 @@ void vBrewSpargeSetupFunction(int piParameters[5])
   iPumpTime2 = BrewParameters.iSpargePumpTime2 * 60;
 
   // send message to boil at 40% duty cycle to keep warm
-    static struct GenericMessage * xMessage;
-    xMessage = &xSpargeWarmBoilerMessage;
-    xMessage->ucFromTask = BREW_TASK_SPARGESETUP;
-    xMessage->ucToTask = BOIL_TASK;
-    xMessage->pvMessageContent = (void *)&iDuty40PctConst;
-    if (xBoilQueue != NULL)
-      xQueueSendToBack(xBoilQueue, &xMessage, 0);
+  vConsolePrint("Sparge Checking if boiler has enough water");
+  vTaskDelay(200);
+  if (IsEnoughWaterInBoilerForHeating())
+  {
+	  sprintf(buf, "Sparge msg to boil to warm at %d%%\r\n", iDuty40PctConst);
+	  vConsolePrint(buf);
+	  vTaskDelay(200);
+	  static struct GenericMessage * xMessage;
+	  xMessage = &xSpargeWarmBoilerMessage;
+	  xMessage->ucFromTask = BREW_TASK_SPARGESETUP;
+	  xMessage->ucToTask = BOIL_TASK;
+	  xMessage->pvMessageContent = (void *)&iDuty40PctConst;
+	  if (xBoilQueue != NULL)
+		  xQueueSendToBack(xBoilQueue, &xMessage, 0);
+  }
+
 }
 
 
@@ -1104,25 +1118,14 @@ void vBrewPumpToBoilPollFunction(int  piParameters[5])
 	  MashTunFinishedPumpingOut();
 	  //-------------------------------------------------------------------------------------------
       // ToDo: SHOULD CHECK THE BOIL LEVEL LIMIT HERE SO THAT WE CAN ASSUME THAT THERE WAS NO STUCK SPARGE
-
       //--------------------------------------------------------------------------------------------
       Brew[BrewState.ucStep].ucComplete = 1;
       vMashPump(STOP_MASH_PUMP);
       vValveActuate(MASH_VALVE, CLOSE_VALVE);
       vBrewNextStep();
     }
-#ifdef TESTING
-  if (Brew[BrewState.ucStep].uElapsedTime >= 3)
-      {
-        Brew[BrewState.ucStep].ucComplete = 1;
-        vMashPump(STOP_MASH_PUMP);
-        vValveActuate(MASH_VALVE, CLOSE_VALVE);
-        vBrewNextStep();
-      }
-#endif
-
-
 }
+
 #define BOIL_0 0
 #define BOIL_1 1
 #define BOIL_2 2

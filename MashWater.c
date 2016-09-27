@@ -51,6 +51,7 @@ typedef enum
 
 } MashTunWaterState;
 
+
 const char * MashTunWaterStates[] =
 {
 	"Empty",
@@ -197,3 +198,38 @@ float fGetLitresCurrentlyInBoiler()
 {
 	return LitresCurrentlyInBoiler;
 }
+
+
+// ====================================================================================================================
+// todo TEST THIS OUT.. REPLACES ABOVE AND MUCH MORE SIMPLE
+// Note: The HLT should take parameters for the amount of drain litres .. giving the responsibility of the caller to
+// 		state the amount of litres required.
+// ====================================================================================================================
+typedef enum
+{
+	MashTunDry,
+	MashTunWet
+} MashTunWaterState2;
+float fWaterInMash = 0.0;
+
+static MashTunWaterState2 xMashTunWaterState =  MashTunDry;
+
+// adding water
+void MashTunWaterLevelTest(float waterToAdd)
+{
+	if (xMashTunWaterState == MashTunDry)
+	{
+		LitresCurrentlyInMashTun = waterToAdd - (BrewParameters.fGrainWeightKilos * fWaterLossToMash_LitresPerKilo);
+		xMashTunWaterState = MashTunWet;
+	}
+	else fWaterInMash += waterToAdd;
+}
+
+// Pumping Out
+void MashTunWaterLevelTest2()
+{
+	LitresCurrentlyInBoiler = LitresCurrentlyInMashTun;
+	LitresCurrentlyInMashTun = 0.0;
+}
+// ====================================================================================================================
+// ====================================================================================================================

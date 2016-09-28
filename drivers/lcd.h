@@ -13,9 +13,12 @@
 #define Grey             0xF7DE
 #define Blue             0x001F
 #define Blue2            0x051F
+#define Dark_Blue        0x08CD
 #define Red              0xF800
+#define Orange           0xF3A2
 #define Magenta          0xF81F
 #define Green            0x07E0
+#define Dark_Green       0x0A42
 #define Cyan             0x7FFF
 #define Yellow           0xFFE0
 

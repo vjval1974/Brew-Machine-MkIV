@@ -341,7 +341,7 @@ void vValvesAppletDisplay( void *pvParameters){
         static ValveState hlt_last = VALVE_CLOSED, mash_last = VALVE_CLOSED, boil_last = VALVE_CLOSED, inlet_last = VALVE_CLOSED;
         static ValveState chiller_last = VALVE_CLOSED;
         lcd_DrawRect(RESET_FLOW_1_X1, RESET_FLOW_1_Y1, RESET_FLOW_1_X2, RESET_FLOW_1_Y2, Blue);
-        lcd_fill(RESET_FLOW_1_X1+1, RESET_FLOW_1_Y1+1, RESET_FLOW_1_W, RESET_FLOW_1_H, Red);
+        lcd_fill(RESET_FLOW_1_X1+1, RESET_FLOW_1_Y1+1, RESET_FLOW_1_W, RESET_FLOW_1_H, Dark_Blue);
         lcd_printf(25,3,13,"RESET");
         lcd_printf(24,4,13,"Flow Tx 1");
         for(;;)

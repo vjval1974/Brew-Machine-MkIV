@@ -297,6 +297,7 @@ void vBoilStateController(unsigned int uiTimerCompareValue)
     {
       vStopBoilPWM();
       uiBoilState = OFF;
+      break;
     }
   }
 }

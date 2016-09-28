@@ -66,7 +66,7 @@ typedef enum
 void comm_put(char d);
 void comm_puts(const char* s);
 uint8_t comm_get(void);
-void USARTInit(uint16_t tx_pin, uint16_t rx_pin, uint32_t clock);
+void USARTInit(uint16_t tx_pin, uint16_t rx_pin, USART_TypeDef* clock);
 void vSerialHandlerTask( void * pvParameters);
 void vSerialControlCentreTask( void * pvParameters);
 

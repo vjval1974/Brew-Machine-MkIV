@@ -155,7 +155,7 @@ void USARTInit(uint16_t tx_pin, uint16_t rx_pin, USART_TypeDef* usart)
 	vSemaphoreCreateBinary(xSerialHandlerSemaphore);
 #endif
 
-	// comm_puts("TEST\0\r\n");
+	// comm_puts("TEST\0\r\n\0");
 
 
 }
@@ -236,19 +236,19 @@ void vSerialHandlerTask ( void * pvParameters)
 			if (c == '\r' || c == '\n' || index >= BUFFER_SIZE){
 				buf[index] = '\0';
 				strcpy(line, buf);
-				// printf("%s\r\n", buf);
+				// printf("%s\r\n\0", buf);
 				// fflush(stdout);
 				for (index = 0; index < BUFFER_SIZE; index++)
 					buf[index] = 0;
 				index = 0;
-				//printf("Contents of 'line':%s\r\n", line);
+				//printf("Contents of 'line':%s\r\n\0", line);
 				xQueueSend(xCommandQueue, line, portMAX_DELAY);
 			}
 			portEXIT_CRITICAL();
 		}
 		else
 		{
-			vConsolePrint("Failed READING\r\n");
+			vConsolePrint("Failed READING\r\n\0");
 		}
 
 	}
@@ -271,31 +271,31 @@ void vSerialControlCentreTask( void * pvParameters){
 		portENTER_CRITICAL();
 		strcpy (input, buf);
 		result = (strcmp(input, "command\r\0"));
-		//  vConsolePrint("got something\r\n");
+		//  vConsolePrint("got something\r\n\0");
 		if (result == 0)
 		{
-			printf("command received\r\n");
+			printf("command received\r\n\0");
 			fflush(stdout);
 		}
 		if(strcmp(input, "sb\r\0") == 0)
 		{
-			//    printf("Command to start brew!\r\n");
+			//    printf("Command to start brew!\r\n\0");
 			if (!brewStarted)
 			{
 				menu_command(4); //select Brew menu
 				menu_command(-1); // release touch
-				//      printf("Brew Applet entered\r\n");
+				//      printf("Brew Applet entered\r\n\0");
 				vBrewRemoteStart();
 				brewStarted = TRUE;
 			}
 			else
 			{
-				//      printf("Already Started\r\n");
+				//      printf("Already Started\r\n\0");
 			}
 		}
 		else if (strcmp(input, "STOP\r\0") == 0)
 		{
-			vConsolePrint("STOP command from UI\r\n");
+			vConsolePrint("STOP command from UI\r\n\0");
 
 			//code here!
 		}

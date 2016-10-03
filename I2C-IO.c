@@ -267,35 +267,35 @@ void vI2C_TestTask(void *pvParameters)
       uTestMessage = uTestMessage | (uint16_t)(uData & 0x000F);
       if (uDirection)
           uTestMessage |= 1<<4;
-      vConsolePrint("I2C Test Task Start\r\n");
+      vConsolePrint("I2C Test Task Start\r\n\0");
          fflush(stdout);
 
-      printf("===================\r\n");
+      printf("===================\r\n\0");
      fflush(stdout);
       em = iI2C_Receive(uAddress, &uRData);
       if ( em == -1){
           printf("failed %d", em);
           //xQueueSendToBack(xI2C_SendQueue, &uTestMessage, 100);
-          printf("failed, sending again\r\n");
+          printf("failed, sending again\r\n\0");
           fflush(stdout);
         }
 
 
 //
-//      printf("\r\n******I2C Test Task Start\r\n");
-      printf("received = %x\r\n", uRData);
+//      printf("\r\n\0******I2C Test Task Start\r\n\0");
+      printf("received = %x\r\n\0", uRData);
       input1 = cI2cGetInput(PORTV, 1);
-      printf("pin 1 low? %d\r\n", input1);
+      printf("pin 1 low? %d\r\n\0", input1);
       input1 = cI2cGetInput(PORTV, 2);
-           printf("pin 2 low? %d\r\n", input1);
+           printf("pin 2 low? %d\r\n\0", input1);
            input1 = cI2cGetInput(PORTV, 3);
-                printf("pin 3 low? %d\r\n", input1);
+                printf("pin 3 low? %d\r\n\0", input1);
                 input1 = cI2cGetInput(PORTV, 4);
-                     printf("pin 4 low? %d\r\n", input1);
-//      printf("sending message:\r\n");
-//      printf("message = %x\r\n", uTestMessage);
-//      printf("address = %x\r\n", uAddress);
-//      printf("data = %x\r\n", uData);
+                     printf("pin 4 low? %d\r\n\0", input1);
+//      printf("sending message:\r\n\0");
+//      printf("message = %x\r\n\0", uTestMessage);
+//      printf("address = %x\r\n\0", uAddress);
+//      printf("data = %x\r\n\0", uData);
 
 
 //  if (flag == 0){
@@ -308,15 +308,15 @@ void vI2C_TestTask(void *pvParameters)
 //          flag = 0;
 //        }
 
-  vConsolePrint("\r\n******I2C Test Task END\r\n");
-    //printf("=========================\r\n");
+  vConsolePrint("\r\n\0******I2C Test Task END\r\n\0");
+    //printf("=========================\r\n\0");
     fflush(stdout);
     vTaskDelay(1000);
     //xQueueSendToBack(xI2C_SendQueue, &uTestMessage, portMAX_DELAY);
       //xQueueSendToBack(xI2C_SendQueue, &uTestMessage+1, portMAX_DELAY);
       //xQueueSendToBack(xI2C_SendQueue, &uTestMessage+2, portMAX_DELAY);
-      //printf("Message Sent\r\n");
-      //printf("\r\n******I2C Test Task Start\r\n");
+      //printf("Message Sent\r\n\0");
+      //printf("\r\n\0******I2C Test Task Start\r\n\0");
       vTaskDelay(5);
 
     }
@@ -345,11 +345,11 @@ for (;;)
         uDirection = ((uint8_t)message&0xF0)>>4;
 
         // RECEIVE FROM
-        // vConsolePrint("Trying to RECEIVE I2C\r\n");
+        // vConsolePrint("Trying to RECEIVE I2C\r\n\0");
         iRCVStatus = iI2C_Receive(uAddress, &uCurrent);
         while((iRCVStatus == FAIL) && (cnt < 10))
           {
-           // vConsolePrint("Receiving failed, trying again\r\n");
+           // vConsolePrint("Receiving failed, trying again\r\n\0");
             vTaskDelay(100);
             vI2C_Init();
             vTaskDelay(100);
@@ -358,7 +358,7 @@ for (;;)
           }
           if (cnt >= 10)
             {
-              vConsolePrint("Fatal I2C Error, deleting task\r\n");
+              vConsolePrint("Fatal I2C Error, deleting task\r\n\0");
 
               vQueueDelete(xI2C_SendQueue);
               xI2C_SendQueue = NULL;
@@ -373,14 +373,14 @@ for (;;)
 
         cnt = 0;
 
-       //sprintf(pcPrintBuf, "utoSend =  %x\r\n", uToSend);
-       //sprintf(pcPrintBuf, "message =  %x\r\n", message);
+       //sprintf(pcPrintBuf, "utoSend =  %x\r\n\0", uToSend);
+       //sprintf(pcPrintBuf, "message =  %x\r\n\0", message);
        //vConsolePrint(pcPrintBuf);
 
        iSNDStatus = iI2C_Send(uAddress, uToSend);
        while((iSNDStatus == FAIL) && (cnt < 10))
          {
-           vConsolePrint("Sending failed, trying again\r\n");
+           vConsolePrint("Sending failed, trying again\r\n\0");
            vTaskDelay(100);// this MUST stay or errors occur in sending;
            vI2C_Init();
            vTaskDelay(100);
@@ -391,7 +391,7 @@ for (;;)
        if (cnt >= 10)
 
          {
-           vConsolePrint("Fatal I2C Error, deleting task\r\n");
+           vConsolePrint("Fatal I2C Error, deleting task\r\n\0");
 
            vQueueDelete(xI2C_SendQueue);
            xI2C_SendQueue = NULL;
@@ -403,7 +403,7 @@ for (;;)
 
         vTaskDelay(100);
       }
-    else vConsolePrint("fail\r\n");
+    else vConsolePrint("fail\r\n\0");
 
       taskYIELD();
   }
@@ -415,13 +415,13 @@ void vPCF_ResetBits(uint8_t bitnum, uint8_t add){
 
   uMessage = (uint16_t)(add << 8) & 0xFF00;
   uMessage = uMessage | (uint16_t)(bitnum & 0x000F);
-  //printf("addr from pcf = %x\r\n", add);
+  //printf("addr from pcf = %x\r\n\0", add);
 
-  //printf("Bit number = %d\r\n", bitnum);
+  //printf("Bit number = %d\r\n\0", bitnum);
   //vTaskDelay(10);
   if (xI2C_SendQueue ==  NULL)
     {
-      vConsolePrint("FAIL! I2C Task has been deleted\r\n");
+      vConsolePrint("FAIL! I2C Task has been deleted\r\n\0");
       return;
     }
   xQueueSendToBack(xI2C_SendQueue, &uMessage, portMAX_DELAY);
@@ -433,13 +433,13 @@ void vPCF_SetBits(uint8_t bitnum, uint8_t add){
 
   uMessage = (uint16_t)(add << 8) & 0xFF00;
   uMessage = uMessage | (uint16_t)(bitnum & 0x000F);
-  //printf("addr from pcf = %x\r\n", add);
+  //printf("addr from pcf = %x\r\n\0", add);
   uMessage |= 1<<4;
-  //printf("Bit number = %d\r\n", bitnum);
+  //printf("Bit number = %d\r\n\0", bitnum);
   //vTaskDelay(10);
   if (xI2C_SendQueue ==  NULL)
       {
-        vConsolePrint("FAIL! I2C Task has been deleted\r\n");
+        vConsolePrint("FAIL! I2C Task has been deleted\r\n\0");
         return;
       }
 
@@ -462,7 +462,7 @@ char cI2cGetInput(char port, char pin)
     {
       return ERROR;
     }
- // printf("~data = %x\r\n", ~data);
+ // printf("~data = %x\r\n\0", ~data);
   if (((1<<(pin-1)) & ~data)) {
         return TRUE;
   }

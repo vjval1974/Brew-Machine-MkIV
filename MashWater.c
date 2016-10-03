@@ -103,7 +103,7 @@ void MashWaterStateMachinePoll()
 	{
 		case MASH_TUN_EMPTY:
 		{
-			if (BrewState.ucHLTState == HLT_STATE_DRAIN)
+			if (ThisBrewState.xHLTState.hltBrewState == HLT_STATE_DRAIN)
 			{
 				WaterState = MASH_TUN_FILLING_FIRST_TIME;
 			}
@@ -123,7 +123,7 @@ void MashWaterStateMachinePoll()
 			if (LitresCurrentlyInMashTun <= 0.2)
 			{
 				//Something went wrong here
-				vConsolePrint("Mash tun has no water, but state is ContainsWater\r\n");
+				vConsolePrint("Mash tun has no water, but state is ContainsWater\r\n\0");
 			}
 			if (WaterLostToGrainHasBeenSubtracted == FALSE)
 			{
@@ -131,7 +131,7 @@ void MashWaterStateMachinePoll()
 				WaterLostToGrainHasBeenSubtracted = TRUE;
 				LitresCurrentlyInMashTun -= LitresToSubtractForGrainWaterLoss;
 			}
-			if (BrewState.ucHLTState == HLT_STATE_DRAIN)
+			if (ThisBrewState.xHLTState.hltBrewState == HLT_STATE_DRAIN)
 			{
 				WaterState = MASH_TUN_FILLING;
 			}
@@ -171,7 +171,7 @@ void MashWaterStateMachinePoll()
 		case MASH_TUN_EMPTY_WET:
 		{
 
-			if (BrewState.ucHLTState == HLT_STATE_DRAIN)
+			if (ThisBrewState.xHLTState.hltBrewState == HLT_STATE_DRAIN)
 			{
 				WaterState = MASH_TUN_FILLING;
 			}
@@ -185,7 +185,7 @@ static char buf [50];
 
 void printMashTunState()
 {
-	sprintf(buf, "MashTunState = %s, %dml \r\n", MashTunWaterStates[WaterState], (int)(LitresCurrentlyInMashTun*1000));
+	sprintf(buf, "MashTunState = %s, %dml \r\n\0", MashTunWaterStates[WaterState], (int)(LitresCurrentlyInMashTun*1000));
 	vConsolePrint(buf);
 }
 

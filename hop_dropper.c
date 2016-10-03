@@ -97,13 +97,13 @@ void vTaskHops(void * pvParameters){
 
   xHopsQueue = xQueueCreate(5, sizeof(uint8_t));
   if (xHopsQueue == NULL)
-    vConsolePrint("Can't Create Hops Queue\r\n");
+    vConsolePrint("Can't Create Hops Queue\r\n\0");
 
   for (;;)
     {
       if (xQueueReceive(xHopsQueue, &uNext, portMAX_DELAY) == pdPASS)
         {
-          vConsolePrint("Received Message\r\n");
+          vConsolePrint("Received Message\r\n\0");
           vHopsDrive(ON);
           uState = DRIVING_NO_GAP;
           while (uState != STOPPED)
@@ -115,7 +115,7 @@ void vTaskHops(void * pvParameters){
                   if (uDebounce(HOP_DROPPER_LIMIT_PORT, HOP_DROPPER_LIMIT_PIN, OFF))
                     {
                       uState = DRIVING_GAP;
-                      vConsolePrint("State = DRIVING_GAP\r\n");
+                      vConsolePrint("State = DRIVING_GAP\r\n\0");
                     }
 
                   break;
@@ -129,7 +129,7 @@ void vTaskHops(void * pvParameters){
                       vTaskDelay(50); // delay for lining up.
                       //todo: make the delay a parameter.
                       vHopsDrive(OFF);
-                      vConsolePrint("State = STOPPED\r\n");
+                      vConsolePrint("State = STOPPED\r\n\0");
                       uState = STOPPED;
                     }
 

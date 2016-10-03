@@ -104,7 +104,7 @@ void vFlow1Init( void )
 
     vSemaphoreCreateBinary(xFlow1AppletRunningSemaphore);
 
-    printf("Flow Sensor Initialised\r\n");
+    vConsolePrint("Flow Sensor Initialised\r\n\0");
 
 }
 
@@ -112,7 +112,7 @@ void vFlow1Init( void )
 void EXTI4_IRQHandler(void)
 {
   ulBoilFlowPulses++;
-  //printf("external interrupt triggered %f \r\n", 5.3221);
+  //printf("external interrupt triggered %f \r\n\0", 5.3221);
   EXTI_ClearITPendingBit(EXTI_Line4); // need to clear the bit before leaving.
   portEND_SWITCHING_ISR(pdFALSE);
 }
@@ -141,7 +141,7 @@ void vTaskLitresToBoil ( void * pvParameters )
         xStatus = xQueueReceive(xLitresToBoilQueue, &(xMessage), 500); // wait 0.5 seconds for a message (DONT CHANGE)
         if (xStatus == pdTRUE) // message recieved
           {
-           vConsolePrint("FLOW1: received Reset\r\n");
+           vConsolePrint("FLOW1: received Reset\r\n\0");
             ulBoilFlowPulses = 0; // probably what we want to do here
             ulPulsesSinceLast = 0;
             fLitresDeliveredToBoil = 0.00;
@@ -173,7 +173,7 @@ void vTaskLitresToBoil ( void * pvParameters )
             if (ulPulsesSinceLast > 0 && ulPulsesSinceLast <= ulUpperThresh)
               {
                 uBoilFlowState = FLOWING;
-                //sprintf(buf, "last:%d,\r\n", ulPulsesSinceLast);
+                //sprintf(buf, "last:%d,\r\n\0", ulPulsesSinceLast);
                 //vConsolePrint(buf);
               }
             else
@@ -199,7 +199,7 @@ void vTaskLitresToMash ( void * pvParameters )
         xStatus = xQueueReceive(xLitresToMashQueue, &(xMessage), 500); // wait 0.5 seconds for a message (DONT CHANGE)
         if (xStatus == pdTRUE) // message received
           {
-            //printf("received message: %d\r\n", *xMessage);
+            //printf("received message: %d\r\n\0", *xMessage);
             ulMashFlowPulses = 0; // probably what we want to do here
             ulPulsesSinceLast = 0;
             fLitresDeliveredToMash = 0.001;
@@ -257,7 +257,7 @@ void vResetFlow2(void)
 
 float fGetBoilFlowLitres(void)
 {
-  //printf("%2.1f\r\n", fLitresDeliveredToBoil);
+  //printf("%2.1f\r\n\0", fLitresDeliveredToBoil);
   return fLitresDeliveredToBoil;
 }
 
@@ -339,7 +339,7 @@ void vFlow1AppletDisplay( void *pvParameters){
               {
                 if(tog)
                   {
-                    //printf("%u\r\n",uxTaskGetStackHighWaterMark(NULL));
+                    //printf("%u\r\n\0",uxTaskGetStackHighWaterMark(NULL));
                     lcd_fill(1,220, 180,29, Black);
                     //lcd_printf(1,13,15,"FLOWING\n");
 
@@ -356,7 +356,7 @@ void vFlow1AppletDisplay( void *pvParameters){
               {
                 if(tog)
                   {
-                    //printf("%u\r\n",uxTaskGetStackHighWaterMark(NULL));
+                    //printf("%u\r\n\0",uxTaskGetStackHighWaterMark(NULL));
                     lcd_fill(1,210, 180,29, Black);
                     //lcd_printf(1,13,11,"NOT FLOWING\n");
                     lcd_printf(1, 13, 25, "Currently @ %d.%d l", (unsigned int)floor(fGetBoilFlowLitres()), (unsigned int)((fGetBoilFlowLitres()-floor(fGetBoilFlowLitres()))*pow(10, 3)));
@@ -379,7 +379,7 @@ void vFlow1AppletDisplay( void *pvParameters){
 
                 tog = tog ^ 1;
                 lcd_fill(102,99, 35,10, Black);
-              //printf("%d, %d, %d\r\n", (uint8_t)diag_setpoint, (diag_setpoint), ((uint8_t)diag_setpoint*10)%5);
+              //printf("%d, %d, %d\r\n\0", (uint8_t)diag_setpoint, (diag_setpoint), ((uint8_t)diag_setpoint*10)%5);
                // lcd_printf(5,1,25, "Flow 1 = %2.1f Litres", fGetFlow1Litres());
 
                 xSemaphoreGive(xFlow1AppletRunningSemaphore); //give back the semaphore as its safe to return now.
@@ -400,13 +400,13 @@ int iFlow1Key(int xx, int yy)
   if (xx > RESET_FLOW1_X1+1 && xx < RESET_FLOW1_X2-1 && yy > RESET_FLOW1_Y1+1 && yy < RESET_FLOW1_Y2-1)
       {
         vResetFlow1();
-       //printf("Setpoint is now %d\r\n", (uint8_t)diag_setpoint);
+       //printf("Setpoint is now %d\r\n\0", (uint8_t)diag_setpoint);
       }
     else if (xx > RESET_FLOW2_X1+1 && xx < RESET_FLOW2_X2-1 && yy > RESET_FLOW2_Y1+1 && yy < RESET_FLOW2_Y2-1)
 
       {
         vResetFlow2();
-       //printf("Setpoint is now %d\r\n", (uint8_t)diag_setpoint);
+       //printf("Setpoint is now %d\r\n\0", (uint8_t)diag_setpoint);
       }
     else if (xx > BK_X1 && yy > BK_Y1 && xx < BK_X2 && yy < BK_Y2)
     {

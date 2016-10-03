@@ -115,7 +115,7 @@ void TIM3_IRQHandler( void )
     unsigned portBASE_TYPE xStatus, xHPTW = pdFALSE;
 
     //
-//    printf("%u\r\n", TIM2->CNT);
+//    printf("%u\r\n\0", TIM2->CNT);
     //
     TIM_ClearITPendingBit( TIM3, TIM_IT_Update );
     
@@ -129,6 +129,6 @@ void vTimerSetupTask( void * pvParameters)
 
     for (;;)
         vTaskDelete(NULL);
-    // sprintf(buf, "in interrupt at time = %u\r\n\0", TIM2->CNT );
+    // sprintf(buf, "in interrupt at time = %u\r\n\0\0", TIM2->CNT );
     //xStatus = xQueueSendToBackFromISR( xConsoleQueue, &buf, &xHPTW );
 }

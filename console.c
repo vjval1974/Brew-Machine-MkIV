@@ -28,26 +28,31 @@
 #include "main.h"
 
 xQueueHandle xPrintQueue;
+xTaskHandle xPrintTaskHandle;
 
 
 void vConsolePrintTask(void * pvParameters)
 {
   char * pcMessageToPrint;
+  char str[100];
   static char * pcLastMessage;
   for (;;)
     {
       xQueueReceive(xPrintQueue, &pcMessageToPrint, portMAX_DELAY);
-
+     strcpy(str, pcMessageToPrint);
+     vTaskPrioritySet(NULL, tskIDLE_PRIORITY);
       //sprintf(cBuffer,"%s", &pcMessageToPrint);
 
       //if (pcMessageToPrint != pcLastMessage)
         {
           portENTER_CRITICAL();
-          printf(pcMessageToPrint);
-          fflush(stdout);
+          if (strlen(str) > 0)
+        	 comm_puts(str);
+
+//          fflush(stdout);
           portEXIT_CRITICAL();
       //    pcLastMessage = pcMessageToPrint;
-          vTaskDelay(10); //wait for the usart to print before filling it's buffer.
+          vTaskDelay(20); //wait for the usart to print before filling it's buffer.
           //maybe can do something with the interrupt flags here?
         }
     }
@@ -55,11 +60,10 @@ void vConsolePrintTask(void * pvParameters)
 
 }
 
-
-const char * pcX = "ConsolePrint failed\r\n";
+const char * pcX = "ConsolePrint failed\r\n\0";
 void vConsolePrint(const char * format)
 {
-
+	vTaskPrioritySet(xPrintTaskHandle, tskIDLE_PRIORITY+4);
    if ( xQueueSendToBack(xPrintQueue, &format, 30) != pdPASS)
      xQueueSendToBack(xPrintQueue, &pcX, 30);
 

@@ -70,7 +70,6 @@ static void prvSetupHardware( void );
 
 xTaskHandle xLCDTaskHandle, 
 xTouchTaskHandle,
-xPrintTaskHandle,
 xBeepTaskHandle,
 xTimerSetupHandle,
 xDS1820TaskHandle,
@@ -100,8 +99,11 @@ void item_1_callback(unsigned char button_down)
 
 void item_2_callback(unsigned char button_down)
 {
-	printf("Button %d\r\n", button_down);
-	printf("HLT Display Water Mark from main = %u\r\n", uxTaskGetStackHighWaterMark(xHLTAppletDisplayHandle));
+	char buf[30];
+	sprintf(buf, "BrewSteps %d\r\n\0", iMaxBrewSteps());
+	vConsolePrint(buf);
+
+	//printf("HLT Display Water Mark from main = %u\r\n\0", uxTaskGetStackHighWaterMark(xHLTAppletDisplayHandle));
 	vLEDSet(D4_PORT, D4_PIN, button_down);
 }
 
@@ -171,10 +173,10 @@ void vCheckTask(void *pvParameters)
 		heapdiff = uiGetHeapDiff();
 		if (heapdiff != 0)
 		{
-			sprintf(pcCranePosition, "Heap down by %02dBytes\r\n", (int)heapdiff);
+			sprintf(pcCranePosition, "Heap down by %02dBytes\r\n\0", (int)heapdiff);
 			vConsolePrint(pcCranePosition);
 			heapRemaining = xPortGetFreeHeapSize();
-			sprintf(pcHeapRemaining, "Heap:%d\r\n", heapRemaining);
+			sprintf(pcHeapRemaining, "Heap:%d\r\n\0", heapRemaining);
 			vConsolePrint(pcHeapRemaining);
 		}
 
@@ -191,23 +193,23 @@ void vCheckTask(void *pvParameters)
 			((brew_task < low_level) && (brew_task != 0)) )
 
 		{
-			vConsolePrint("=============================\r\n");
-			sprintf(cBuf,"check task: idle ticks = %d\r\n", ulIdleCycleCount);vConsolePrint(cBuf);vTaskDelay(25);
-			sprintf(cBuf, "touchwm = %d\r\n", touch); vConsolePrint(cBuf); vTaskDelay(25);
-			sprintf(cBuf, "DS1820wm = %d\r\n", ds1820); vConsolePrint(cBuf); vTaskDelay(25);
-			sprintf(cBuf, "TimerSetupwm = %d\r\n", timer); vConsolePrint(cBuf); vTaskDelay(25);
-			sprintf(cBuf, "litreswm = %d\r\n", litres); vConsolePrint(cBuf); vTaskDelay(25);
-			sprintf(cBuf, "hopswm = %d\r\n", hops); vConsolePrint(cBuf); vTaskDelay(25);
-			sprintf(cBuf, "check = %d\r\n", check); vConsolePrint(cBuf); vTaskDelay(25);
-			sprintf(cBuf, "serial = %d\r\n", serial); vConsolePrint(cBuf); vTaskDelay(25);
-			sprintf(cBuf, "serialcontrol = %d\r\n", serialcontrol); vConsolePrint(cBuf); vTaskDelay(25);
-			sprintf(cBuf, "brewtask = %d\r\n", brew_task); vConsolePrint(cBuf); vTaskDelay(25);
-			sprintf(cBuf, "stats = %d\r\n", stats_applet); vConsolePrint(cBuf); vTaskDelay(25);
-			sprintf(cBuf, "res = %d\r\n", res_applet); vConsolePrint(cBuf); vTaskDelay(25);
-			sprintf(cBuf, "graph = %d\r\n", graph_applet); vConsolePrint(cBuf); vTaskDelay(25);
-			sprintf(cBuf, "brew_display = %d\r\n", display_applet); vConsolePrint(cBuf); vTaskDelay(25);
-			sprintf(cBuf, "print = %d\r\n", print); vConsolePrint(cBuf);
-			vConsolePrint("=============================\r\n");
+			vConsolePrint("=============================\r\n\0");
+			sprintf(cBuf,"check task: idle ticks = %d\r\n\0", ulIdleCycleCount);vConsolePrint(cBuf);vTaskDelay(25);
+			sprintf(cBuf, "touchwm = %d\r\n\0", touch); vConsolePrint(cBuf); vTaskDelay(25);
+			sprintf(cBuf, "DS1820wm = %d\r\n\0", ds1820); vConsolePrint(cBuf); vTaskDelay(25);
+			sprintf(cBuf, "TimerSetupwm = %d\r\n\0", timer); vConsolePrint(cBuf); vTaskDelay(25);
+			sprintf(cBuf, "litreswm = %d\r\n\0", litres); vConsolePrint(cBuf); vTaskDelay(25);
+			sprintf(cBuf, "hopswm = %d\r\n\0", hops); vConsolePrint(cBuf); vTaskDelay(25);
+			sprintf(cBuf, "check = %d\r\n\0", check); vConsolePrint(cBuf); vTaskDelay(25);
+			sprintf(cBuf, "serial = %d\r\n\0", serial); vConsolePrint(cBuf); vTaskDelay(25);
+			sprintf(cBuf, "serialcontrol = %d\r\n\0", serialcontrol); vConsolePrint(cBuf); vTaskDelay(25);
+			sprintf(cBuf, "brewtask = %d\r\n\0", brew_task); vConsolePrint(cBuf); vTaskDelay(25);
+			sprintf(cBuf, "stats = %d\r\n\0", stats_applet); vConsolePrint(cBuf); vTaskDelay(25);
+			sprintf(cBuf, "res = %d\r\n\0", res_applet); vConsolePrint(cBuf); vTaskDelay(25);
+			sprintf(cBuf, "graph = %d\r\n\0", graph_applet); vConsolePrint(cBuf); vTaskDelay(25);
+			sprintf(cBuf, "brew_display = %d\r\n\0", display_applet); vConsolePrint(cBuf); vTaskDelay(25);
+			sprintf(cBuf, "print = %d\r\n\0", print); vConsolePrint(cBuf);
+			vConsolePrint("=============================\r\n\0");
 			//xTaskResumeAll();
 			vTaskDelay(800);
 
@@ -265,6 +267,7 @@ struct menu main_menu[] =
 /**
  * Main.
  */ 
+
 int main( void )
 {
 	prvSetupHardware();// set up peripherals etc
@@ -275,7 +278,7 @@ int main( void )
 	xPrintQueue = xQueueCreate(15, sizeof(char *));
 	if (xPrintQueue == NULL)
 	{
-		printf("Failed to make print queue\r\n");
+		printf("Failed to make print queue\r\n\0");
 		for (;;);
 	}
 
@@ -426,7 +429,7 @@ int main( void )
 
 
 
-	printf("FAIL\r\n");
+	printf("FAIL\r\n\0");
 
 	/* Will only get here if there was insufficient memory to create the idle
        task. */
@@ -538,7 +541,7 @@ void vApplicationIdleHook(void){
 /* Keep the linker happy. */
 void assert_failed( unsigned portCHAR* pcFile, unsigned portLONG ulLine )
 {
-	printf("FAILED %s %d\r\n", pcFile, ulLine);
+	printf("FAILED %s %d\r\n\0", pcFile, ulLine);
 
 	for( ;; )
 	{

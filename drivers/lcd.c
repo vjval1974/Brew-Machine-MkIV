@@ -146,13 +146,13 @@ void lcd_init(void)
     deviceid = read_reg(0x00); 
     if(deviceid != 0x4532)
     {
-        printf("Invalid LCD ID:%08X\r\n",deviceid);
+        printf("Invalid LCD ID:%08X\r\n\0",deviceid);
         printf("Please check you hardware and configure.");
         while(1);
     }
     else
     {
-       // printf("\r\nLCD Device ID : %04X ",deviceid);
+       // printf("\r\n\0LCD Device ID : %04X ",deviceid);
     }
     
     //SET UP//
@@ -184,7 +184,7 @@ void lcd_init(void)
     Delay(10);
 
 #endif
-    //printf("Lcd_init done\r\n");
+    //printf("Lcd_init done\r\n\0");
 }
 
 //---------------------------------------------------------------------/
@@ -431,7 +431,7 @@ static void lcd_data_bus_test(void)
 {
     unsigned short temp1;
     unsigned short temp2;
-    printf("bus test\r\n");
+    printf("bus test\r\n\0");
 
     /* [5:4]-ID~ID0 [3]-AM-1��ֱ-0ˮƽ */
     write_reg(0x0003,(1<<12)|(1<<5)|(1<<4) | (0<<3) );
@@ -449,12 +449,13 @@ static void lcd_data_bus_test(void)
     temp2 = lcd_read_gram(1,0);
     if( (temp1 == 0x5555) && (temp2 == 0xAAAA) )
     {
-        printf("Data bus test pass!\r\n");
+        printf("Data bus test pass!\r\n\0");
     }
     else
     {
-        printf("Data bus test error: %04X %04X\r\n",temp1,temp2);
+        printf("Data bus test error: %04X %04X\r\n\0",temp1,temp2);
     }
+    fflush(stdout);
 }
 
 static void lcd_gram_test(void)
@@ -463,7 +464,7 @@ static void lcd_gram_test(void)
     unsigned int test_x;
     unsigned int test_y;
 static int i = 1;
-    printf("LCD GRAM test....\r\n");
+    printf("LCD GRAM test....\r\n\0");
 
     /* write */
     temp=0;
@@ -487,14 +488,14 @@ static int i = 1;
 	    {
 		//if (i == 1) // print once
 		  {
-	            printf("LCD GRAM ERR %d, %d!!\r\n", test_x, test_y);
+	            printf("LCD GRAM ERR %d, %d!!\r\n\0", test_x, test_y);
 	            i = 0;
 		  }
 		// while(1);
 	    }
 	}
     }
-    printf("TEST PASS!\r\n");
+    printf("TEST PASS!\r\n\0");
 }
 
 /*******************************************************************************
@@ -517,7 +518,7 @@ void LCD_SetDisplayWindow(uint8_t Xpos, uint16_t Ypos, uint8_t Height, uint16_t 
     }
     else
     {
-	//printf("outside region\r\n");
+	//printf("outside region\r\n\0");
 	write_reg(0x0080, 0);
     }
     /* Horizontal GRAM End Address */
@@ -529,7 +530,7 @@ void LCD_SetDisplayWindow(uint8_t Xpos, uint16_t Ypos, uint8_t Height, uint16_t 
     }
     else
     {
-	//printf("outside region\r\n");
+	//printf("outside region\r\n\0");
 	write_reg(0x0081, 0);
     }
     /* Vertical GRAM End Address */
@@ -720,7 +721,7 @@ void lcd_lock()
 {
     while( xSemaphoreTake( xLcdSemaphore, ( portTickType ) 100 ) != pdTRUE )
     {
-	printf("Waiting a long time for LCD\r\n");
+	printf("Waiting a long time for LCD\r\n\0");
     }
     lcdUsingTask = xTaskGetCurrentTaskHandle();
 }
@@ -744,7 +745,7 @@ void lcd_text_xy(uint16_t Xpos, uint16_t Ypos, const char *str,uint16_t Color, u
     LCD_LOCK;
     uint8_t TempChar;
 	
-//	printf("lcd text %d,%d %s\r\n", Xpos, Ypos, str);
+//	printf("lcd text %d,%d %s\r\n\0", Xpos, Ypos, str);
 	
     while ((TempChar=*str++))
     {

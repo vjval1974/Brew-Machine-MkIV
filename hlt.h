@@ -25,11 +25,13 @@
 #define HEATING 1
 #define OFF 0
 
-#define HLT_STATE_BASE 20
-#define HLT_STATE_IDLE 20
-#define HLT_STATE_FILL_HEAT 21
-#define HLT_STATE_DRAIN 23
-#define HLT_STATE_AT_TEMP 24
+typedef enum
+{
+	HLT_STATE_IDLE,
+	HLT_STATE_FILL_HEAT,
+	HLT_STATE_DRAIN,
+	HLT_STATE_AT_TEMP
+} HltBrewState;
 
 //#define HLT_LEVEL_LOW 0
 //#define HLT_LEVEL_MID 1
@@ -40,7 +42,7 @@
 //#define HLT_ANALOGUE_MAX 1800 // change this value so that it corresponds to 16 litres of water
 //#define HLT_ANALOGUE_MIN 800 // change this so it corresponds with the hlt min litres.
 //float fGetHLTLevel(void);
-void vTaskHeatHLT( void * pvParameters);
+
 void vHLTApplet(int init);
 int  HLTKey(int xx, int yy);
 void hlt_init(void);
@@ -77,13 +79,14 @@ typedef struct
     float fData3;
     float fData4;
     unsigned char ucStepNumber;
-    const char * pcTxt;
+    char pcTxt[32];
 } HltMessage;
 
 typedef struct HltState
 {
   HltLevel level;
   HltHeatingState heatingState;
+  HltBrewState hltBrewState;
   float temp_float;
   int temp_int;
   char levelStr[25];

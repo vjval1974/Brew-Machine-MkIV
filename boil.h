@@ -22,17 +22,22 @@ typedef enum BoilLevel
   LOW
 } BoilLevel;
 
-
-
 typedef struct BoilerState
 {
-  BoilLevel level;
-  char levelStr[25];
-  unsigned int duty;
-  unsigned char dutyStr[6];
-  unsigned char boil_state;
-  char boilStateStr[25];
+		BoilLevel level;
+		char levelStr[25];
+		unsigned int duty;
+		unsigned char dutyStr[6];
+		unsigned char boil_state;
+		char boilStateStr[25];
 } BoilerState;
+
+typedef struct
+{
+		int iDutyCycle;
+		int iBrewStep;
+		unsigned int ucFromTask;
+} BoilMessage;
 
 BoilerState GetBoilerState();
 

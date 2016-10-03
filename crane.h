@@ -38,19 +38,34 @@ int iCraneKey(int x, int y);
 int8_t vGetCraneState(void);
 unsigned char ucGetCranePosition();
 
-// Directions
-#define UP 10
-#define DN 20
-#define DN_INC 30
-#define STOP -1
 
-// Crane States
-#define TOP 1
-#define BOTTOM 2
-#define DRIVING_UP 3
-#define DRIVING_DOWN 4
-#define DRIVING_DOWN_INC 5
-#define STOPPED -1
+
+typedef enum
+{
+	CRANE_UP,
+	CRANE_DOWN,
+	CRANE_DOWN_INCREMENTAL,
+	CRANE_STOP
+} CraneCommand;
+
+
+typedef enum
+{
+	CRANE_AT_TOP,
+	CRANE_AT_BOTTOM,
+	CRANE_DRIVING_UP,
+	CRANE_DRIVING_DOWN,
+	CRANE_DRIVING_DOWN_IN_INCREMENTS,
+	CRANE_STOPPED
+} CraneState;
+
+
+typedef struct
+{
+		CraneCommand xCommand;
+		int iBrewStep;
+		unsigned char ucFromTask;
+} CraneMessage;
 
 extern xTaskHandle xCraneTaskHandle, xCraneAppletDisplayHandle;
 extern xQueueHandle xCraneQueue;

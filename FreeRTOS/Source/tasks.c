@@ -1200,7 +1200,7 @@ unsigned portBASE_TYPE uxTaskGetNumberOfTasks( void )
 			report the task name, state and stack high water mark. */
 
 			pcWriteBuffer[ 0 ] = ( signed char ) 0x00;
-			strcat( ( char * ) pcWriteBuffer, ( const char * ) "\r\n" );
+			strcat( ( char * ) pcWriteBuffer, ( const char * ) "\r\n\0" );
 
 			uxQueue = uxTopUsedPriority + 1;
 
@@ -1265,7 +1265,7 @@ unsigned portBASE_TYPE uxTaskGetNumberOfTasks( void )
 			buffer. */
 
 			pcWriteBuffer[ 0 ] = ( signed char ) 0x00;
-			strcat( ( char * ) pcWriteBuffer, ( const char * ) "\r\n" );
+			strcat( ( char * ) pcWriteBuffer, ( const char * ) "\r\n\0" );
 
 			uxQueue = uxTopUsedPriority + 1;
 
@@ -2041,7 +2041,7 @@ tskTCB *pxNewTCB;
 		{
 			listGET_OWNER_OF_NEXT_ENTRY( pxNextTCB, pxList );
 			usStackRemaining = usTaskCheckFreeStackSpace( ( unsigned char * ) pxNextTCB->pxStack );
-			sprintf( pcStatusString, ( char * ) "%s\t\t%c\t%u\t%u\t%u\r\n", pxNextTCB->pcTaskName, cStatus, ( unsigned int ) pxNextTCB->uxPriority, usStackRemaining, ( unsigned int ) pxNextTCB->uxTCBNumber );
+			sprintf( pcStatusString, ( char * ) "%s\t\t%c\t%u\t%u\t%u\r\n\0", pxNextTCB->pcTaskName, cStatus, ( unsigned int ) pxNextTCB->uxPriority, usStackRemaining, ( unsigned int ) pxNextTCB->uxTCBNumber );
 			strcat( ( char * ) pcWriteBuffer, ( char * ) pcStatusString );
 
 		} while( pxNextTCB != pxFirstTCB );
@@ -2071,7 +2071,7 @@ tskTCB *pxNewTCB;
 				if( pxNextTCB->ulRunTimeCounter == 0 )
 				{
 					/* The task has used no CPU time at all. */
-					sprintf( pcStatsString, ( char * ) "%s\t\t0\t\t0%%\r\n", pxNextTCB->pcTaskName );
+					sprintf( pcStatsString, ( char * ) "%s\t\t0\t\t0%%\r\n\0", pxNextTCB->pcTaskName );
 				}
 				else
 				{
@@ -2081,13 +2081,13 @@ tskTCB *pxNewTCB;
 
 					if( ulStatsAsPercentage > 0UL )
 					{
-						sprintf( pcStatsString, ( char * ) "%s\t\t%u\t\t%u%%\r\n", pxNextTCB->pcTaskName, ( unsigned int ) pxNextTCB->ulRunTimeCounter, ( unsigned int ) ulStatsAsPercentage );
+						sprintf( pcStatsString, ( char * ) "%s\t\t%u\t\t%u%%\r\n\0", pxNextTCB->pcTaskName, ( unsigned int ) pxNextTCB->ulRunTimeCounter, ( unsigned int ) ulStatsAsPercentage );
 					}
 					else
 					{
 						/* If the percentage is zero here then the task has
 						consumed less than 1% of the total run time. */
-						sprintf( pcStatsString, ( char * ) "%s\t\t%u\t\t<1%%\r\n", pxNextTCB->pcTaskName, ( unsigned int ) pxNextTCB->ulRunTimeCounter );
+						sprintf( pcStatsString, ( char * ) "%s\t\t%u\t\t<1%%\r\n\0", pxNextTCB->pcTaskName, ( unsigned int ) pxNextTCB->ulRunTimeCounter );
 					}
 				}
 

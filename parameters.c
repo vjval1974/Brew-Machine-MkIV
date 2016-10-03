@@ -377,7 +377,7 @@ void vParametersApplet(int init){
 			input[ii] = '\0';
 		}
 		input[31] = '\0';
-		//vConsolePrint("%c\r\n", input[1]);
+		//vConsolePrint("%c\r\n\0", input[1]);
 
 		lcd_printf(22,1,30,  "PARAMETERS");
 
@@ -408,7 +408,7 @@ void vParametersApplet(int init){
 				tskIDLE_PRIORITY ,
 				&xParametersAppletDisplayHandle );
 	}
-	vConsolePrint("Parameters Applet\r\n");
+	vConsolePrint("Parameters Applet\r\n\0");
 }
 static int indexToList = 0;
 //lcd_DrawRect(UP_X1, UP_Y1, UP_X2, UP_Y2, GREEN);
@@ -438,7 +438,7 @@ void vParametersAppletDisplay( void *pvParameters){
 
 			case CHAR_TYPE:
 			{
-				printf("char\r\n");
+				vConsolePrint("char\r\n\0");
 				break;
 			}
 			case FLOAT_TYPE:
@@ -482,67 +482,67 @@ int iParametersKey(int xx, int yy)
 	if (xx > ONE_X1 && xx < ONE_X2 && yy > ONE_Y1 && yy < ONE_Y2)
 	{
 		input[indexToChar] = '1';
-		vConsolePrint("ONE\r\n");
+		vConsolePrint("ONE\r\n\0");
 		indexToChar++;
 	}
 	else if (xx > TWO_X1 && xx < TWO_X2 && yy > TWO_Y1 && yy < TWO_Y2)
 	{
 		input[indexToChar] = '2';
-		vConsolePrint("TWO\r\n");
+		vConsolePrint("TWO\r\n\0");
 		indexToChar++;
 	}
 	else if (xx > THREE_X1 && xx < THREE_X2 && yy > THREE_Y1 && yy < THREE_Y2)
 	{
 		input[indexToChar] = '3';
-		vConsolePrint("THREE\r\n");
+		vConsolePrint("THREE\r\n\0");
 		indexToChar++;
 	}
 	else if (xx > FOUR_X1 && xx < FOUR_X2 && yy > FOUR_Y1 && yy < FOUR_Y2)
 	{
 		input[indexToChar] = '4';
-		vConsolePrint("FOUR\r\n");
+		vConsolePrint("FOUR\r\n\0");
 		indexToChar++;
 	}
 	else if (xx > FIVE_X1 && xx < FIVE_X2 && yy > FIVE_Y1 && yy < FIVE_Y2)
 	{
 		input[indexToChar] = '5';
-		vConsolePrint("FIVE\r\n");
+		vConsolePrint("FIVE\r\n\0");
 		indexToChar++;
 	}
 	else if (xx > SIX_X1 && xx < SIX_X2 && yy > SIX_Y1 && yy < SIX_Y2)
 	{
 		input[indexToChar] = '6';
-		vConsolePrint("SIX\r\n");
+		vConsolePrint("SIX\r\n\0");
 		indexToChar++;
 	}
 	else if (xx > SEVEN_X1 && xx < SEVEN_X2 && yy > SEVEN_Y1 && yy < SEVEN_Y2)
 	{
 		input[indexToChar] = '7';
-		vConsolePrint("SEVEN\r\n");
+		vConsolePrint("SEVEN\r\n\0");
 		indexToChar++;
 	}
 	else if (xx > EIGHT_X1 && xx < EIGHT_X2 && yy > EIGHT_Y1 && yy < EIGHT_Y2)
 	{
 		input[indexToChar] = '8';
-		vConsolePrint("EIGHT\r\n");
+		vConsolePrint("EIGHT\r\n\0");
 		indexToChar++;
 	}
 	else if (xx > NINE_X1 && xx < NINE_X2 && yy > NINE_Y1 && yy < NINE_Y2)
 	{
 		input[indexToChar] = '9';
-		vConsolePrint("NINE\r\n");
+		vConsolePrint("NINE\r\n\0");
 		indexToChar++;
 	}
 	else if (xx > ZERO_X1 && xx < ZERO_X2 && yy > ZERO_Y1 && yy < ZERO_Y2)
 	{
 		input[indexToChar] = '0';
-		vConsolePrint("ZERO\r\n");
+		vConsolePrint("ZERO\r\n\0");
 		indexToChar++;
 	}
 	else if (xx > DOT_X1 && xx < DOT_X2 && yy > DOT_Y1 && yy < DOT_Y2)
 	{
 		input[indexToChar] = '.';
-		vConsolePrint("DOT\r\n");
+		vConsolePrint("DOT\r\n\0");
 		indexToChar++;
 	}
 	else if (xx > C_X1 && xx < C_X2 && yy > C_Y1 && yy < C_Y2)
@@ -552,7 +552,7 @@ int iParametersKey(int xx, int yy)
 			input[ii] = '\0';
 		}
 		indexToChar=0;
-		vConsolePrint("C\r\n");
+		vConsolePrint("C\r\n\0");
 	}
 	else if (xx > UP_X1 && xx < UP_X2 && yy > UP_Y1 && yy < UP_Y2)
 	{
@@ -587,7 +587,7 @@ int iParametersKey(int xx, int yy)
 
 		case CHAR_TYPE:
 		{
-			printf("char\r\n");
+			vConsolePrint("char\r\n\0");
 			break;
 		}
 		case FLOAT_TYPE:
@@ -600,7 +600,7 @@ int iParametersKey(int xx, int yy)
 			break;
 		}
 		}
-		vConsolePrint("SUBMIT PRESSED \r\n");
+		vConsolePrint("SUBMIT PRESSED \r\n\0");
 		for (ii = 0; ii < 32; ii++)
 		{
 			input[ii] = '\0';
@@ -628,8 +628,8 @@ int iParametersKey(int xx, int yy)
 
 	}
 	//vConsolePrint(input);
-	//printf("%d\r\n", indexToChar);
-	printf("%s\r\n", input); // SHOULDNT USE... only for debugging
+	//printf("%d\r\n\0", indexToChar);
+	//printf("%s\r\n\0", input); // SHOULDNT USE... only for debugging
 
 	vTaskDelay(10);
 	return 0;

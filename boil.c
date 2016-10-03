@@ -137,7 +137,7 @@ void vBoilInit(void)
 
   vSemaphoreCreateBinary(xAppletRunningSemaphore);
 
-  xBoilQueue = xQueueCreate(1, sizeof(struct GenericMessage *));
+  xBoilQueue = xQueueCreate(1, sizeof(BoilMessage));
 
   if (xBoilQueue != NULL)
     {
@@ -221,8 +221,8 @@ static unsigned int uiTimerCompareController(unsigned char ucMessageSource, int 
       // Only print if there is a change
       if (uiLastADCDuty != uiADCDuty)
         {
-          vConsolePrint("Boil: Msg rcvd from BREW TASK\r\n");
-          sprintf(buf, "BrewBoil:ADC %d \r\n", uiADCDuty);
+          vConsolePrint("Boil: Msg rcvd from BREW TASK\r\n\0");
+          sprintf(buf, "BrewBoil:ADC %d \r\n\0", uiADCDuty);
           vConsolePrint(buf);
         }
       uiLastADCDuty = uiADCDuty;
@@ -240,7 +240,7 @@ static unsigned int uiTimerCompareController(unsigned char ucMessageSource, int 
     }
   case BREW_TASK_RESET:
     {
-      sprintf(buf, "Boil: Received duty cycle of %d, from ID #%d\r\n", iDefaultDuty, ucMessageSource);
+      sprintf(buf, "Boil: Received duty cycle of %d, from ID #%d\r\n\0", iDefaultDuty, ucMessageSource);
       vConsolePrint(buf);
       uiTimerCompareValue = 0;
       uiBoilDuty = 0;  // for UserInterface
@@ -252,7 +252,7 @@ static unsigned int uiTimerCompareController(unsigned char ucMessageSource, int 
       uiBoilDuty = 100;  // for UserInterface
       if (uiLastTimerCompareValue != uiTimerCompareValue)
         {
-          vConsolePrint("Message from B2B, setting 100\r\n");
+          vConsolePrint("Message from B2B, setting 100\r\n\0");
         }
       uiLastTimerCompareValue = uiTimerCompareValue;
       break;
@@ -279,7 +279,7 @@ void vBoilStateController(unsigned int uiTimerCompareValue)
       if (boil_level == LOW)
         {
           uiBoilState = OFF;
-          vConsolePrint("Boil level too low..Boil off.\r\n");
+          vConsolePrint("Boil level too low..Boil off.\r\n\0");
         }
       else
         {
@@ -301,14 +301,13 @@ void vBoilStateController(unsigned int uiTimerCompareValue)
     }
   }
 }
-struct GenericMessage xMessage2;
-volatile  struct GenericMessage * xMessage;
+
 
 void vTaskBoil( void * pvParameters)
 {
   // Generic message struct for message storage.
 
-  xMessage = &xMessage2;
+	BoilMessage xMessage;
   int iDefaultDuty = 0; // receive value from queue.
   int iDuty = 0; // duty in int type
   unsigned int uiADCDuty = 0;
@@ -322,8 +321,8 @@ void vTaskBoil( void * pvParameters)
       if (xStatus == pdPASS) // message received
         {
           //Validate the message contents
-          iDefaultDuty = uiValidateIntegerPct(*(int *)xMessage->pvMessageContent);
-          sprintf(buf, "MSG, duty = %d, st=%d tsk = %d\r\n", iDefaultDuty, xMessage->uiStepNumber, xMessage->ucFromTask);
+          iDefaultDuty = uiValidateIntegerPct(xMessage.iDutyCycle);
+          sprintf(buf, "MSG, duty = %d, st=%d tsk = %d\r\n\0", iDefaultDuty, xMessage.iBrewStep, xMessage.ucFromTask);
           vConsolePrint(buf);
           if (iDefaultDuty > 0)
             {
@@ -339,7 +338,7 @@ void vTaskBoil( void * pvParameters)
 
           if  (uiBoilState == BOILING)
             {
-              uiTimerCompareValue = uiTimerCompareController(xMessage->ucFromTask, iDefaultDuty);
+              uiTimerCompareValue = uiTimerCompareController(xMessage.ucFromTask, iDefaultDuty);
               vBoilStateController(uiTimerCompareValue);
             }
           else
@@ -501,15 +500,14 @@ void vBoilAppletDisplay( void *pvParameters){
     }
 }
 
-struct GenericMessage xMessage1;
+
 
 int iBoilKey(int xx, int yy)
 {
-  static struct GenericMessage * xMessage;
-  xMessage = &xMessage1;
-  xMessage->ucFromTask = 0;
-  xMessage->uiStepNumber = 0;
-  xMessage->ucToTask = BOIL_TASK;
+  static BoilMessage xMessage;
+
+  xMessage.ucFromTask = 0;
+  xMessage.iBrewStep = 0;
   static int zero = 0;
   static uint8_t w = 5,h = 5;
   static uint16_t last_window = 0;
@@ -517,10 +515,10 @@ int iBoilKey(int xx, int yy)
     {
       diag_duty+=1;
 
-      //printf("Duty Cycle is now %d\r\n", diag_duty);
+      //printf("Duty Cycle is now %d\r\n\0", diag_duty);
       if (uiBoilState == BOILING)
         {
-          xMessage->pvMessageContent = (void *)&diag_duty;
+          xMessage.iDutyCycle = diag_duty;
           xQueueSendToBack(xBoilQueue, &xMessage, 0);
         }
     }
@@ -529,21 +527,21 @@ int iBoilKey(int xx, int yy)
       if (diag_duty == 0)
         diag_duty = 0;
       else diag_duty-=1;
-      //printf("Duty Cycle is now %d\r\n", diag_duty);
+      //printf("Duty Cycle is now %d\r\n\0", diag_duty);
       if (uiBoilState == BOILING)
         {
-          xMessage->pvMessageContent = (void *)&diag_duty;
+          xMessage.iDutyCycle = diag_duty;
           xQueueSendToBack(xBoilQueue, &xMessage, 0);
         }
     }
   else if (xx > STOP_HEATING_X1+1 && xx < STOP_HEATING_X2-1 && yy > STOP_HEATING_Y1+1 && yy < STOP_HEATING_Y2-1)
     {
-      xMessage->pvMessageContent = (void*)&zero;
+      xMessage.iDutyCycle = zero;
       xQueueSendToBack(xBoilQueue, &xMessage, 0);
     }
   else if (xx > START_HEATING_X1+1 && xx < START_HEATING_X2-1 && yy > START_HEATING_Y1+1 && yy < START_HEATING_Y2-1)
     {
-      xMessage->pvMessageContent = (void*)&diag_duty;
+      xMessage.iDutyCycle = diag_duty;
       xQueueSendToBack(xBoilQueue, &xMessage, 0);
 
     }

@@ -160,7 +160,7 @@ void Touch_Initializtion()
     GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
     GPIO_Init(GPIOB, &GPIO_InitStructure);
     
-    printf("Touch Hardware Initialised!\r\n");
+   vConsolePrint("Touch Hardware Initialised!\r\n\0");
 
 }
 
@@ -209,7 +209,7 @@ int16_t  Touch_MeasurementX(void)
     for (i=0;i<8;i++)
     {
         p+=Touch_GetPhyY();
-        //printf("in y\r\n");
+        //printf("in y\r\n\0");
         SPI_delay(1000);
     }
     p>>=3;
@@ -262,7 +262,7 @@ void vTouchTask( void *pvParameters )
 		if (x >=0 && x < 320 && y >= 0 && y < 240)
 		{
 
-		   // sprintf(c, "x %d y %d\r\n", x, y);
+		   // sprintf(c, "x %d y %d\r\n\0", x, y);
 		   // vConsolePrint(c);
 			if (!valid)
 				menu_touch(x, y);

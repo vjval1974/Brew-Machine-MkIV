@@ -86,7 +86,7 @@ void vTaskDS1820Convert( void *pvParameters ){
     if (ds1820_reset() ==PRESENCE_ERROR)
     {
         ds1820_error(PRESENCE_ERROR);
-        vConsolePrint("Presence Error, Deleting DS1820 Task\r\n");
+        vConsolePrint("Presence Error, Deleting DS1820 Task\r\n\0");
         vTaskDelete(NULL); // if this task fails... delete it
     }
   
@@ -107,13 +107,13 @@ void vTaskDS1820Convert( void *pvParameters ){
     //if (rom[0] == 0x10)
       if (rom[0] != 0)
       {
-        sprintf(print_buf, "%02x-%02x-%02x-%02x-%02x-%02x-%02x-%02x\r\n",rom[0],
+        sprintf(print_buf, "%02x-%02x-%02x-%02x-%02x-%02x-%02x-%02x\r\n\0",rom[0],
             rom[1], rom[2], rom[3], rom[4], rom[5], rom[6], rom[7]);
         vConsolePrint(print_buf);
       }
     else
       {
-        vConsolePrint("NO SENSOR\r\n");
+        vConsolePrint("NO SENSOR\r\n\0");
       }
 
     for (;;)
@@ -137,7 +137,7 @@ void vTaskDS1820Convert( void *pvParameters ){
               }
             if (fTemp[ii] == 0.0)
               {
-                vConsolePrint("zero values. Temp Bus Resetting\r\n");
+                vConsolePrint("zero values. Temp Bus Resetting\r\n\0");
                 ds1820_power_reset();
                 ds1820_reset();
               }
@@ -165,20 +165,20 @@ void ds1820_error(uint8_t code){
   {
   case PRESENCE_ERROR:
     {
-      sprintf(print_buf, "DS1820 No sensor present on Bus. Bus OK.\r\n");
+      sprintf(print_buf, "DS1820 No sensor present on Bus. Bus OK.\r\n\0");
       vConsolePrint(print_buf);
       break;
     }
   case BUS_ERROR:
     {
-      sprintf(print_buf, "DS1820 Bus Fault\r\n");
+      sprintf(print_buf, "DS1820 Bus Fault\r\n\0");
       vConsolePrint(print_buf);
       break;
     }
   default:
     {
 
-      sprintf(print_buf, "DS1820 Undefined error\r\n");
+      sprintf(print_buf, "DS1820 Undefined error\r\n\0");
       vConsolePrint(print_buf);
       break;
     }
@@ -313,11 +313,11 @@ static void ds1820_write_byte(uint8_t byte){
     for (ii = 0; ii < 8; ii++) {
         if (byte&0x01){
             ds1820_write_bit(1);
-            // printf("1 written\r\n");
+            // printf("1 written\r\n\0");
         }
         else {
             ds1820_write_bit(0);
-            //printf("0 written\r\n");
+            //printf("0 written\r\n\0");
         }
         byte = byte>>1;
     } 
@@ -384,7 +384,7 @@ static uint8_t ds1820_search(){
 #define POW_NEG_4 0.0625
 
 
-//#define CONSOLE_FLOAT_S( dp ,cp, var ) sprintf(cp, "%03d.%03d\r\n", (unsigned int)floor(var), (unsigned int)((var-floor(var))*pow(10, dp)));
+//#define CONSOLE_FLOAT_S( dp ,cp, var ) sprintf(cp, "%03d.%03d\r\n\0", (unsigned int)floor(var), (unsigned int)((var-floor(var))*pow(10, dp)));
 static float ds1820_read_device(uint8_t * rom_code){
     float retval;
     uint16_t ds1820_temperature1 = 10000;
@@ -566,7 +566,7 @@ void ds1820_search_key(uint16_t x, uint16_t y){
 
             memcpy(b[HLT], rom, sizeof(rom)+1);
             sprintf(lcd_string, "COPIED\0");
-            sprintf(console, "%02x-%02x-%02x-%02x-%02x-%02x-%02x-%02x\r\n Assigned to HLT\r\n",rom[0],
+            sprintf(console, "%02x-%02x-%02x-%02x-%02x-%02x-%02x-%02x\r\n\0 Assigned to HLT\r\n\0",rom[0],
                     rom[1], rom[2], rom[3], rom[4], rom[5], rom[6], rom[7]);
             xQueueSendToBack(xConsoleQueue, &console, 0);
         }
@@ -581,7 +581,7 @@ void ds1820_search_key(uint16_t x, uint16_t y){
             memcpy(b[MASH], rom, sizeof(rom)+1);
 
             sprintf(lcd_string, "COPIED\0");
-            sprintf(console, "%02x-%02x-%02x-%02x-%02x-%02x-%02x-%02x\r\n Assigned to MASH\r\n",rom[0],
+            sprintf(console, "%02x-%02x-%02x-%02x-%02x-%02x-%02x-%02x\r\n\0 Assigned to MASH\r\n\0",rom[0],
                     rom[1], rom[2], rom[3], rom[4], rom[5], rom[6], rom[7]);
             xQueueSendToBack(xConsoleQueue, &console, 0);
         }
@@ -594,7 +594,7 @@ void ds1820_search_key(uint16_t x, uint16_t y){
         if (rom[0] == 0x10)  {
             memcpy(b[CABINET], rom, sizeof(rom)+1);
             sprintf(lcd_string, "COPIED\0");
-            sprintf(console, "%02x-%02x-%02x-%02x-%02x-%02x-%02x-%02x\r\n Assigned to CABINET\r\n",rom[0],rom[1], rom[2], rom[3], rom[4], rom[5], rom[6], rom[7]);
+            sprintf(console, "%02x-%02x-%02x-%02x-%02x-%02x-%02x-%02x\r\n\0 Assigned to CABINET\r\n\0",rom[0],rom[1], rom[2], rom[3], rom[4], rom[5], rom[6], rom[7]);
              xQueueSendToBack(xConsoleQueue, &console, 0);
         }
         else sprintf(lcd_string, "NO SENSOR TO COPY\0");
@@ -605,7 +605,7 @@ void ds1820_search_key(uint16_t x, uint16_t y){
         if (rom[0] == 0x10)  {
             memcpy(b[AMBIENT], rom, sizeof(rom)+1);
             sprintf(lcd_string, "COPIED\0");
-            sprintf(console, "%02x-%02x-%02x-%02x-%02x-%02x-%02x-%02x\r\n Assigned to AMBIENT\r\n",rom[0],
+            sprintf(console, "%02x-%02x-%02x-%02x-%02x-%02x-%02x-%02x\r\n\0 Assigned to AMBIENT\r\n\0",rom[0],
                     rom[1], rom[2], rom[3], rom[4], rom[5], rom[6], rom[7]);
             xQueueSendToBack(xConsoleQueue, &console, 0);
         }

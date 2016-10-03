@@ -106,7 +106,7 @@ void vChillerPumpApplet(int init){
                     &xCHILLERPumpAppletDisplayHandle );
         }
   else
-    vConsolePrint("Leaving Chiller Pump Applet\r\n");
+    vConsolePrint("Leaving Chiller Pump Applet\r\n\0");
 
 }
 

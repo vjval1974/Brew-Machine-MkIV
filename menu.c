@@ -90,7 +90,7 @@ static void menu_paint_cell(int index)
 	int offset = g_rows == g_entries ? 55 : 10;
 	uint16_t bgCol = COL_BG_NORM; 
 
-	//printf("ii %d, row %d, xx %d, yy %d\r\n", index, row, xx, yy);
+	//printf("ii %d, row %d, xx %d, yy %d\r\n\0", index, row, xx, yy);
 
 	if (index == g_item)
 	{
@@ -111,7 +111,7 @@ static void menu_two_column()
     g_rows = (g_entries / 2) + ((g_entries % 2) != 0);    
     g_rowh = (LCD_H - CRUMB_H) / g_rows;
 
-    //printf("Rows: %d rowh: %d entries: %d\r\n", g_rows, g_rowh, g_entries);
+    //printf("Rows: %d rowh: %d entries: %d\r\n\0", g_rows, g_rowh, g_entries);
     
     // draw the grid
     lcd_fill(COL_W, CRUMB_H, 1, LCD_H - CRUMB_H, 0xFFFF);
@@ -197,7 +197,7 @@ void menu_set_root(struct menu *root_menu)
 static void menu_back_after_applet()
 {
     void (*callback)(int) = g_menu[g_index][g_item].activate;
-	//printf("Item %d %x\r\n", g_item, callback);
+	//printf("Item %d %x\r\n\0", g_item, callback);
     if (callback)
     	callback(0); // deactivate
 
@@ -222,8 +222,8 @@ void menu_command(unsigned item)
 void menu_touch(int xx, int yy)
 {
   //char c[15];
- // vConsolePrint("Menu Touch Called\r\n");
-  //sprintf(c, "x %d y %d\r\n", xx, yy);
+ // vConsolePrint("Menu Touch Called\r\n\0");
+  //sprintf(c, "x %d y %d\r\n\0", xx, yy);
    //vConsolePrint(c);
 
 
@@ -249,7 +249,7 @@ void menu_touch(int xx, int yy)
       }
       g_incoming_command=0;
 
-   // sprintf(bb, "Item Selected is: %u\r\n", g_item);
+   // sprintf(bb, "Item Selected is: %u\r\n\0", g_item);
   //  vConsolePrint(bb);
   //  fflush(stdout);
     lcd_lock();

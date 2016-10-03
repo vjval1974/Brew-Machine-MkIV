@@ -9,6 +9,7 @@
 #define BREW_H_
 
 #include <queue.h>
+#include "hlt.h"
 
 // Canvas area for brew
 // --------------------
@@ -116,7 +117,14 @@
 #define BUTTON_6 6
 #define QUIT_BUTTON 7
 #define NO_BUTTON 255
-struct State
+
+typedef enum
+{
+	IDLE = 0,
+	RUNNING = 1
+} BrewRunningState;
+
+typedef struct
 {
       unsigned char ucStep;
       portTickType xLastWakeTime;
@@ -124,18 +132,32 @@ struct State
       uint16_t uMinutesElapsed;
       uint16_t uHoursElapsed;
       uint16_t uSecondCounter;
-      unsigned char ucRunningState;
+      BrewRunningState xRunningState;
       unsigned char ucTarget;
       unsigned char ucHopAddition;
       unsigned char ucTargetHLTVolume;
       unsigned char ucTargetHLTTemp;
       unsigned char ucTargetWaterVolume;
-      unsigned char ucHLTState;
-};
 
-extern struct State BrewState;
-extern const char * pcTASKS[6];
-extern const char * pcCraneStates[6];
+      HltState xHLTState;
+
+} BrewState;
+
+typedef enum
+{
+	BREW_STEP_COMPLETE,
+	BREW_STEP_FAILED,
+	BREW_STEP_WAIT
+} BrewStepCommand;
+
+typedef struct
+{
+		BrewStepCommand xCommand;
+		unsigned char ucFromTask;
+		int iBrewStep;
+
+} BrewMessage;
+
 void vTaskBrew(void * pvParameters);
 void vBrewApplet(int init);
 int iBrewKey(int xx, int yy);
@@ -144,32 +166,23 @@ unsigned char ucGetBrewState();
 float fGetNominalMashTemp();
 float fGetNominalSpargeTemp();
 float fGetNominalMashOutTemp();
-extern const int STEP_COMPLETE;
-extern const int STEP_FAILED;
-extern const int STEP_WAIT;
-
-
+int iMaxBrewSteps();
 
 unsigned char ucGetBrewHoursElapsed();
-
-
 unsigned char ucGetBrewMinutesElapsed();
-
 unsigned char ucGetBrewSecondsElapsed();
-
 unsigned char ucGetBrewStepMinutesElapsed();
 unsigned char ucGetBrewStep();
 unsigned char ucGetBrewStepSecondsElapsed();
-
 unsigned int uiGetBrewAppletDisplayHWM();
 unsigned int uiGetBrewResAppletHWM();
 unsigned int uiGetBrewStatsAppletHWM();
 unsigned int uiGetBrewGraphAppletHWM();
 unsigned int uiGetBrewTaskHWM();
 
-
-
-
 extern xQueueHandle xBrewTaskReceiveQueue,  xBrewAppletTextQueue;
+extern BrewState ThisBrewState;
+extern const char * pcTASKS[6];
+extern const char * pcCraneStates[6];
 
 #endif /* BREW_H_ */

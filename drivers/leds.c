@@ -81,7 +81,7 @@ void vStartupLEDTask ( void *pvParameters ) {
                  NULL,
                  tskIDLE_PRIORITY+2,
                  NULL);
-    // printf("LEDStartup HWM = %d1\r\n", uxTaskGetStackHighWaterMark(NULL));
+    // printf("LEDStartup HWM = %d1\r\n\0", uxTaskGetStackHighWaterMark(NULL));
     
         
     vTaskDelete(NULL);
@@ -90,7 +90,7 @@ void vStartupLEDTask ( void *pvParameters ) {
     {
         //Should never get here
         vTaskPrioritySet(NULL, tskIDLE_PRIORITY);
-        // printf("LcdStartup Still Running\r\n");
+        // printf("LcdStartup Still Running\r\n\0");
     }
 }
 

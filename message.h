@@ -21,13 +21,6 @@
 #define BREW_TASK_SPARGESETUP 108
 
 
-struct GenericMessage
-{
-  unsigned char ucFromTask;
-  unsigned char ucToTask;
-  unsigned int uiStepNumber;
-  void * pvMessageContent;
-};
 
 struct HLTMsg {
   const char * pcMsgText;

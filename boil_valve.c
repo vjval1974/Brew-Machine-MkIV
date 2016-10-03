@@ -54,15 +54,15 @@ void vBoilValveInit(void)
 
   vSemaphoreCreateBinary(xAppletRunningSemaphore);
 
-  xBoilValveQueue = xQueueCreate(5,sizeof(struct GenericMessage *));
+  xBoilValveQueue = xQueueCreate(5,sizeof(BoilValveMessage));
 
   if (xBoilValveQueue == NULL)
     {
-      vConsolePrint("Couldn't Create Boil Valve Queue\r\n");
+      vConsolePrint("Couldn't Create Boil Valve Queue\r\n\0");
 
     }
   else
-    vConsolePrint("Created Boil Valve Queue\r\n");
+    vConsolePrint("Created Boil Valve Queue\r\n\0");
 }
 
 typedef enum
@@ -119,41 +119,49 @@ void vBoilValveFunc(BoilValveCommand command)
 
 }
 
+char BoilValveStateText[3][16] =
+{
+	"Open",
+	"Close",
+	"Stop",
+};
 
 void vTaskBoilValve(void * pvParameters)
 {
   // Create Message structures in memory
-  static struct GenericMessage * xMessage, *xLastMessage, *xToSend;
-  xLastMessage = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
-  xMessage = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
-  xToSend = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
-    static int iComplete = 0;
 
-  BoilValveCommand iC = BOIL_VALVE_CMD_STOP;
-  xToSend->ucFromTask = BOIL_VALVE_TASK;
-  xToSend->ucToTask = BREW_TASK;
-  xToSend->pvMessageContent = (void *)&iComplete;
+  BoilValveCommand xLastCommand;
+  BoilValveMessage xMessage;
+
+  BrewMessage xToSend;
+  //static int iComplete = 0;
+
+  BoilValveCommand xCurrentCommand = BOIL_VALVE_CMD_STOP;
+  xToSend.ucFromTask = BOIL_VALVE_TASK;
+  xToSend.xCommand = BREW_STEP_COMPLETE;
   static int iCommandState = 0;
   char buf[40];
-  xLastMessage->pvMessageContent = &iC;
+  xLastCommand = xCurrentCommand;
   uint8_t uValveClosedLimit = 0xFF, uValveOpenedLimit = 0xFF; //neither on or off.
-
 
   for (;;)
     {
       if(xQueueReceive(xBoilValveQueue, &xMessage, 50) != pdPASS)
             {
-              xMessage->pvMessageContent = xLastMessage->pvMessageContent;
+              xMessage.xCommand = xLastCommand;
             }
           else // received successfully
             {
-              vConsolePrint("BoilValve: received message\r\n");
-              sprintf(buf, "BoilValve: xMessage = %d, Step: %d\r\n", *((int *)xMessage->pvMessageContent), xMessage->uiStepNumber);
+        	  if (!&xMessage.iBrewStep)
+        		  xMessage.iBrewStep = 0;
+
+              vConsolePrint("BoilValve: received message\r\n\0");
+              sprintf(buf, "BoilValve: %s, Step: %d\r\n\0", BoilValveStateText[((int)xMessage.xCommand)], (xMessage.iBrewStep));
               vConsolePrint(buf);
-              xLastMessage->pvMessageContent = xMessage->pvMessageContent;
-              iC = *((int*)xMessage->pvMessageContent); //casts to int * and then dereferences.
-              iComplete = 0;
-              xToSend->uiStepNumber = xMessage->uiStepNumber;
+              xLastCommand = xMessage.xCommand;
+              xCurrentCommand = xMessage.xCommand;
+
+              xToSend.iBrewStep = xMessage.iBrewStep;
               iCommandState = 0;
 
             }
@@ -163,43 +171,43 @@ void vTaskBoilValve(void * pvParameters)
       {
       case BOIL_VALVE_OPENED:
         {
-          if (iC == BOIL_VALVE_CMD_CLOSE)
+          if (xCurrentCommand == BOIL_VALVE_CMD_CLOSE)
             {
               vBoilValveFunc(CLOSE);
               xBoilValveState = BOIL_VALVE_CLOSING;
             }
-          else if (iC == BOIL_VALVE_CMD_OPEN)
+          else if (xCurrentCommand == BOIL_VALVE_CMD_OPEN)
             {
               iCommandState = 1;
-              iComplete = STEP_COMPLETE;
+
             }
           break;
         }
       case BOIL_VALVE_CLOSED:
         {
-          if (iC== BOIL_VALVE_CMD_OPEN)
+          if (xCurrentCommand== BOIL_VALVE_CMD_OPEN)
             {
               vBoilValveFunc(BOIL_VALVE_CMD_OPEN);
               xBoilValveState = BOIL_VALVE_OPENING;
             }
-          else if (iC == BOIL_VALVE_CMD_CLOSE)
+          else if (xCurrentCommand == BOIL_VALVE_CMD_CLOSE)
             {
               iCommandState = 1;
-              iComplete = STEP_COMPLETE;
+
             }
           break;
         }
       case BOIL_VALVE_OPENING:
         {
-          if (iC== BOIL_VALVE_CMD_STOP)
+          if (xCurrentCommand== BOIL_VALVE_CMD_STOP)
             {
               vBoilValveFunc(BOIL_VALVE_CMD_STOP);
-              vConsolePrint("BoilValve STOP while Opening \r\n");
+              vConsolePrint("BoilValve STOP while Opening \r\n\0");
               xBoilValveState = BOIL_VALVE_STOPPED;
               iCommandState = 1;
-              iComplete = STEP_COMPLETE;
+
             }
-          else if (iC== BOIL_VALVE_CMD_CLOSE)
+          else if (xCurrentCommand== BOIL_VALVE_CMD_CLOSE)
             {
               if (xGetPinState(BoilValveClosedPin) == PIN_HIGH)
               {
@@ -210,7 +218,7 @@ void vTaskBoilValve(void * pvParameters)
                 {
                   xBoilValveState = BOIL_VALVE_CLOSED;
                   iCommandState = 1;
-                  iComplete = STEP_COMPLETE;
+
                 }
 
             }
@@ -219,32 +227,32 @@ void vTaskBoilValve(void * pvParameters)
         	  if (xGetPinState(BoilValveOpenedPin) == PIN_LOW)
         	  {
                   vBoilValveFunc(BOIL_VALVE_CMD_STOP);
-                  vConsolePrint("BoilValve STOP limit Open \r\n");
+                  vConsolePrint("BoilValve STOP limit Open \r\n\0");
                   xBoilValveState = BOIL_VALVE_OPENED;
-                  iComplete = STEP_COMPLETE;
+
                   iCommandState = 1;
                 }
-             // sprintf(buf, "Opening with open limit = %d\r\n", uValveClosedLimit);
+             // sprintf(buf, "Opening with open limit = %d\r\n\0", uValveClosedLimit);
              //               vConsolePrint(buf);
             }
           break;
         }
       case BOIL_VALVE_CLOSING:
         {
-          if (iC== BOIL_VALVE_CMD_STOP)
+          if (xCurrentCommand== BOIL_VALVE_CMD_STOP)
             {
               vBoilValveFunc(BOIL_VALVE_CMD_STOP);
-              vConsolePrint("BoilValve STOP while Closing \r\n");
+              vConsolePrint("BoilValve STOP while Closing \r\n\0");
               xBoilValveState = BOIL_VALVE_STOPPED;
-              iComplete = STEP_COMPLETE;
+
               iCommandState = 1;
             }
-          else if (iC== BOIL_VALVE_CMD_OPEN)
+          else if (xCurrentCommand== BOIL_VALVE_CMD_OPEN)
             {
               if (xGetPinState(BoilValveClosedPin) == PIN_LOW)
               {
                   xBoilValveState = BOIL_VALVE_OPENED;
-                  iComplete = STEP_COMPLETE;
+
                   iCommandState = 1;
                 }
               else
@@ -260,10 +268,10 @@ void vTaskBoilValve(void * pvParameters)
         	  {
 
                   vBoilValveFunc(BOIL_VALVE_CMD_STOP);
-                  vConsolePrint("BoilValve STOP limit Closing \r\n");
+                  vConsolePrint("BoilValve STOP limit Closing \r\n\0");
                   xBoilValveState = BOIL_VALVE_CLOSED;
                   iCommandState = 1;
-                  iComplete = STEP_COMPLETE;
+
                 }
             }
 
@@ -272,7 +280,7 @@ void vTaskBoilValve(void * pvParameters)
       case BOIL_VALVE_STOPPED:
         {
 
-          if (iC == BOIL_VALVE_CMD_OPEN)
+          if (xCurrentCommand == BOIL_VALVE_CMD_OPEN)
             {
 
               if (xGetPinState(BoilValveOpenedPin) == PIN_HIGH)
@@ -283,11 +291,11 @@ void vTaskBoilValve(void * pvParameters)
               else
                 {
                   iCommandState = 1;
-                  iComplete = STEP_COMPLETE;
+
                   xBoilValveState = BOIL_VALVE_OPENED;
                 }
             }
-          else if (iC== BOIL_VALVE_CMD_CLOSE)
+          else if (xCurrentCommand== BOIL_VALVE_CMD_CLOSE)
             {
         	  if (xGetPinState(BoilValveClosedPin) == PIN_HIGH)
         	  {
@@ -296,11 +304,11 @@ void vTaskBoilValve(void * pvParameters)
                 }
               else{
                   iCommandState = 1;
-                  iComplete = STEP_COMPLETE;
+
                   xBoilValveState = BOIL_VALVE_CLOSED;
               }
             }
-          iC = BOIL_VALVE_STOPPED;
+          xCurrentCommand = BOIL_VALVE_STOPPED;
 
           break;
         }
@@ -308,17 +316,17 @@ void vTaskBoilValve(void * pvParameters)
         {
           vBoilValveFunc(BOIL_VALVE_CMD_STOP); //stop the  on an instant.
           xBoilValveState = BOIL_VALVE_STOPPED;
-          vConsolePrint("Boil Valve in incorrect state!\r\n");
+          vConsolePrint("Boil Valve in incorrect state!\r\n\0");
           break;
 
         }
       }// Switch
 
-      if (iCommandState == 1 && xMessage->ucFromTask == BREW_TASK)
+      if (iCommandState == 1 && xMessage.ucFromTask == BREW_TASK)
              {
               const int iTest = 40;
-              vConsolePrint("BoilValve: Sending Step Complete message\r\n");
-              xToSend->pvMessageContent = (void *)&iTest;
+              vConsolePrint("BoilValve: Sending Step Complete message\r\n\0");
+              xToSend.xCommand = BREW_STEP_COMPLETE;
                xQueueSendToBack(xBrewTaskReceiveQueue, &xToSend, 10000);
                iCommandState  = 0;
                xBoilValveState = BOIL_VALVE_STOPPED;
@@ -481,52 +489,52 @@ void vBoilValveApplet(int init){
 
 int iBoilValveKey(int xx, int yy){
 
-  uint16_t window = 0;
-  static uint8_t w = 5,h = 5;
-  static uint16_t last_window = 0;
-  static struct GenericMessage * pxMessage;
-  pxMessage = (struct GenericMessage *)pvPortMalloc(sizeof(struct GenericMessage));
-  int iOpen= BOIL_VALVE_CMD_OPEN, iClose = BOIL_VALVE_CMD_CLOSE, iStop = BOIL_VALVE_CMD_STOP;
-  pxMessage->pvMessageContent = &iStop;
+	uint16_t window = 0;
+	static uint8_t w = 5,h = 5;
+	static uint16_t last_window = 0;
 
-  if (xx > UP_X1+1 && xx < UP_X2-1 && yy > UP_Y1+1 && yy < UP_Y2-1)
-    {
-      pxMessage->pvMessageContent = &iOpen;
-      xQueueSendToBack( xBoilValveQueue, &pxMessage, 0 );
-    }
-  else if (xx > DN_X1+1 && xx < DN_X2-1 && yy > DN_Y1+1 && yy < DN_Y2-1)
-    {
-      pxMessage->pvMessageContent = &iClose;
-      xQueueSendToBack( xBoilValveQueue, &pxMessage, 0 );
+	BoilValveMessage xMessageStatic;
+	xMessageStatic.iBrewStep = 0;
+	int iOpen= BOIL_VALVE_CMD_OPEN, iClose = BOIL_VALVE_CMD_CLOSE, iStop = BOIL_VALVE_CMD_STOP;
+	xMessageStatic.xCommand= BOIL_VALVE_CMD_STOP;
 
-    }
-  else if (xx > ST_X1+1 && xx < ST_X2-1 && yy > ST_Y1+1 && yy < ST_Y2-1)
-    {
-      pxMessage->pvMessageContent = &iStop;
-      xQueueSendToBack( xBoilValveQueue, &pxMessage, portMAX_DELAY );
+	if (xx > UP_X1+1 && xx < UP_X2-1 && yy > UP_Y1+1 && yy < UP_Y2-1)
+	{
+		xMessageStatic.xCommand = BOIL_VALVE_CMD_OPEN;
+		xQueueSendToBack( xBoilValveQueue, &xMessageStatic, 0 );
+	}
+	else if (xx > DN_X1+1 && xx < DN_X2-1 && yy > DN_Y1+1 && yy < DN_Y2-1)
+	{
+		xMessageStatic.xCommand =BOIL_VALVE_CMD_CLOSE;
+		xQueueSendToBack( xBoilValveQueue, &xMessageStatic, 0 );
 
+	}
+	else if (xx > ST_X1+1 && xx < ST_X2-1 && yy > ST_Y1+1 && yy < ST_Y2-1)
+	{
+		xMessageStatic.xCommand = BOIL_VALVE_CMD_STOP;
+		xQueueSendToBack( xBoilValveQueue, &xMessageStatic, portMAX_DELAY );
 
-    }
-  else if (xx > BAK_X1 && yy > BAK_Y1 && xx < BAK_X2 && yy < BAK_Y2)
-    {
+	}
+	else if (xx > BAK_X1 && yy > BAK_Y1 && xx < BAK_X2 && yy < BAK_Y2)
+	{
 
-      //try to take the semaphore from the display applet. wait here if we cant take it.
-      xSemaphoreTake(xAppletRunningSemaphore, portMAX_DELAY);
-      //delete the display applet task if its been created.
-      if (xBoilValveAppletDisplayHandle != NULL)
-        {
-          vTaskDelete(xBoilValveAppletDisplayHandle);
-          vTaskDelay(100);
-          xBoilValveAppletDisplayHandle = NULL;
-        }
-      //return the semaphore for taking by another task.
-      xSemaphoreGive(xAppletRunningSemaphore);
-      return 1;
+		//try to take the semaphore from the display applet. wait here if we cant take it.
+		xSemaphoreTake(xAppletRunningSemaphore, portMAX_DELAY);
+		//delete the display applet task if its been created.
+		if (xBoilValveAppletDisplayHandle != NULL)
+		{
+			vTaskDelete(xBoilValveAppletDisplayHandle);
+			vTaskDelay(100);
+			xBoilValveAppletDisplayHandle = NULL;
+		}
+		//return the semaphore for taking by another task.
+		xSemaphoreGive(xAppletRunningSemaphore);
+		return 1;
 
-    }
+	}
 
-  vTaskDelay(10);
-  return 0;
+	vTaskDelay(10);
+	return 0;
 
 }
 

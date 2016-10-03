@@ -126,7 +126,7 @@ int _read(int file, char *ptr, int len)
 
 caddr_t _sbrk(int incr)
 {
-    comm_puts("SBRK should be used!\r\n");
+    comm_puts("SBRK should be used!\r\n\0");
     return NULL;
 }
 

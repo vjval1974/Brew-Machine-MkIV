@@ -218,7 +218,7 @@ int iDiagPWMKey(int xx, int yy){
             //TIM_OCInitStruct.TIM_Pulse = 0xF0;  // value loaded into the capture compare register for this channel.
             TIM_OC4Init( TIM3, &TIM_OCInitStruct ); // init OC4
             //TIM_Cmd( TIM3, ENABLE );
-            //printf("%x, %x\r\n", TIM3->PSC, TIM3->ARR );
+            //printf("%x, %x\r\n\0", TIM3->PSC, TIM3->ARR );
 
           vTaskDelay(10);
         return 0; // xx > 200 && yy > 200;

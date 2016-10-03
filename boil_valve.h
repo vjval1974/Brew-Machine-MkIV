@@ -52,6 +52,14 @@ void vBoilValveApplet(int init);
 
 extern xQueueHandle xBoilValveQueue;
 
+typedef struct
+{
+		BoilValveCommand xCommand;
+		int iBrewStep;
+		unsigned char ucFromTask;
+
+} BoilValveMessage;
+
 BoilValveState xGetBoilValveState(void);
 
 

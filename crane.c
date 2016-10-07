@@ -116,7 +116,7 @@ void vTaskCrane(void * pvParameters)
   const int iTest = 40;
   static unsigned char ucDownIncrements = 0;
   uint8_t limit = 0xFF, limit1 = 0xFF; //neither on or off.
-  static int xCurrentCommand = STOP;
+  static int xCurrentCommand = CRANE_STOP;
   static int iCommandState = 0;
   char buf[40];
 
@@ -392,7 +392,7 @@ void vTaskCrane(void * pvParameters)
         }
       default:
         {
-          vCraneFunc(STOP); //stop the crane on an instant.
+          vCraneFunc(CRANE_STOP); //stop the crane on an instant.
           xCraneState = CRANE_STOPPED;
           break;
 

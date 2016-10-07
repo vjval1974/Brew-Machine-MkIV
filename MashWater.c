@@ -38,7 +38,6 @@ const float fLitresRemainingInMashAfterPumpOut = 2.50; //this cant be pumped out
  * Therefore complete loss to mash tun and grain = 8.15l
  */
 
-
 typedef float MashTunLitres;
 typedef enum
 {
@@ -51,23 +50,20 @@ typedef enum
 
 } MashTunWaterState;
 
-
 const char * MashTunWaterStates[] =
-{
-	"Empty",
-	"Filling First",
-	"Contains Water",
-	"Filling",
-	"Pumping Out",
-	"Empty Wet",
-};
-
-
+    {
+        "Empty",
+        "Filling First",
+        "Contains Water",
+        "Filling",
+        "Pumping Out",
+        "Empty Wet",
+    };
 
 MashTunLitres LitresCurrentlyInMashTun = 0.0;
 MashTunLitres LitresCurrentlyInBoiler = 0.0;
 MashTunWaterState WaterState = MASH_TUN_EMPTY;
-volatile bool IsMashTunCompletedFilling= FALSE;
+volatile bool IsMashTunCompletedFilling = FALSE;
 volatile bool IsMashTunPumpingOut = FALSE;
 volatile bool WaterLostToGrainHasBeenSubtracted = FALSE;
 volatile bool WaterLostToMashTunHasBeenSubtracted = FALSE;
@@ -93,8 +89,6 @@ void MashTunFinishedPumpingOut()
 	IsMashTunPumpingOut = FALSE;
 }
 
-
-
 void MashWaterStateMachinePoll()
 {
 	static MashTunLitres LitresToSubtractForGrainWaterLoss = 0.0;
@@ -102,7 +96,7 @@ void MashWaterStateMachinePoll()
 	switch (WaterState)
 	{
 		case MASH_TUN_EMPTY:
-		{
+			{
 			if (ThisBrewState.xHLTState.hltBrewState == HLT_STATE_DRAIN)
 			{
 				WaterState = MASH_TUN_FILLING_FIRST_TIME;
@@ -110,16 +104,16 @@ void MashWaterStateMachinePoll()
 			break;
 		}
 		case MASH_TUN_FILLING_FIRST_TIME:
-		{
+			{
 			if (IsMashTunCompletedFilling == TRUE)
 			{
 				WaterState = MASH_TUN_CONTAINS_WATER;
-				IsMashTunCompletedFilling  = FALSE;
+				IsMashTunCompletedFilling = FALSE;
 			}
 			break;
 		}
 		case MASH_TUN_CONTAINS_WATER:
-		{
+			{
 			if (LitresCurrentlyInMashTun <= 0.2)
 			{
 				//Something went wrong here
@@ -143,16 +137,16 @@ void MashWaterStateMachinePoll()
 			break;
 		}
 		case MASH_TUN_FILLING:
-		{
+			{
 			if (IsMashTunCompletedFilling == TRUE)
 			{
 				WaterState = MASH_TUN_CONTAINS_WATER;
-				IsMashTunCompletedFilling  = FALSE;
+				IsMashTunCompletedFilling = FALSE;
 			}
 			break;
 		}
 		case MASH_TUN_PUMPING_OUT:
-		{
+			{
 			if (IsMashTunPumpingOut == FALSE)
 			{
 				WaterState = MASH_TUN_EMPTY_WET;
@@ -169,7 +163,7 @@ void MashWaterStateMachinePoll()
 			break;
 		}
 		case MASH_TUN_EMPTY_WET:
-		{
+			{
 
 			if (ThisBrewState.xHLTState.hltBrewState == HLT_STATE_DRAIN)
 			{
@@ -181,11 +175,11 @@ void MashWaterStateMachinePoll()
 
 }
 
-static char buf [50];
+static char buf[50];
 
 void printMashTunState()
 {
-	sprintf(buf, "MashTunState = %s, %dml \r\n\0", MashTunWaterStates[WaterState], (int)(LitresCurrentlyInMashTun*1000));
+	sprintf(buf, "MashTunState = %s, %dml \r\n\0", MashTunWaterStates[WaterState], (int) (LitresCurrentlyInMashTun * 1000));
 	vConsolePrint(buf);
 }
 
@@ -199,7 +193,6 @@ float fGetLitresCurrentlyInBoiler()
 	return LitresCurrentlyInBoiler;
 }
 
-
 // ====================================================================================================================
 // todo TEST THIS OUT.. REPLACES ABOVE AND MUCH MORE SIMPLE
 // Note: The HLT should take parameters for the amount of drain litres .. giving the responsibility of the caller to
@@ -212,7 +205,7 @@ typedef enum
 } MashTunWaterState2;
 float fWaterInMash = 0.0;
 
-static MashTunWaterState2 xMashTunWaterState =  MashTunDry;
+static MashTunWaterState2 xMashTunWaterState = MashTunDry;
 
 // adding water
 void MashTunWaterLevelTest(float waterToAdd)
@@ -222,7 +215,8 @@ void MashTunWaterLevelTest(float waterToAdd)
 		LitresCurrentlyInMashTun = waterToAdd - (BrewParameters.fGrainWeightKilos * fWaterLossToMash_LitresPerKilo);
 		xMashTunWaterState = MashTunWet;
 	}
-	else fWaterInMash += waterToAdd;
+	else
+		fWaterInMash += waterToAdd;
 }
 
 // Pumping Out

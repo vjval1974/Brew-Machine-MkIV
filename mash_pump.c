@@ -5,8 +5,6 @@
  *      Author: brad
  */
 
-
-
 //-------------------------------------------------------------------------
 // Included Libraries
 //-------------------------------------------------------------------------
@@ -21,42 +19,41 @@
 #include "semphr.h"
 #include "mash_pump.h"
 
-void vMashPumpAppletDisplay( void *pvParameters);
+void vMashPumpAppletDisplay(void *pvParameters);
 void vMashPumpApplet(int init);
 xTaskHandle xMASHPumpTaskHandle = NULL, xMASHPumpAppletDisplayHandle = NULL;
-// semaphore that stops the returning from the applet to the menu system until the applet goes into the blocked state.
 xSemaphoreHandle xAppletRunningSemaphore;
-
 MashPumpState_t MashPumpState = MASH_PUMP_STOPPED;
 
-
-MashPumpState_t GetMashPumpState(){
+MashPumpState_t GetMashPumpState()
+{
 	return MashPumpState;
 }
 
-void vMashPumpInit(void){
+void vMashPumpInit(void)
+{
 
-  GPIO_InitTypeDef GPIO_InitStructure;
-  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-  GPIO_InitStructure.GPIO_Pin =  MASH_PUMP_PIN;
-  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;// Output - Push Pull
-  GPIO_Init( MASH_PUMP_PORT, &GPIO_InitStructure );
-  GPIO_ResetBits(MASH_PUMP_PORT, MASH_PUMP_PIN); //pull low
-  vSemaphoreCreateBinary(xAppletRunningSemaphore);
+	GPIO_InitTypeDef GPIO_InitStructure;
+	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	GPIO_InitStructure.GPIO_Pin = MASH_PUMP_PIN;
+	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP; // Output - Push Pull
+	GPIO_Init(MASH_PUMP_PORT, &GPIO_InitStructure);
+	GPIO_ResetBits(MASH_PUMP_PORT, MASH_PUMP_PIN ); //pull low
+	vSemaphoreCreateBinary(xAppletRunningSemaphore);
 }
 
-void vMashPump(MashPumpCommand command )
+void vMashPump(MashPumpCommand command)
 {
-  if (command == START_MASH_PUMP)
-    {
-      GPIO_SetBits(MASH_PUMP_PORT, MASH_PUMP_PIN);
-      MashPumpState = MASH_PUMP_PUMPING;
-    }
-  else
-    {
-      GPIO_ResetBits(MASH_PUMP_PORT, MASH_PUMP_PIN);
-      MashPumpState =  MASH_PUMP_STOPPED;
-    }
+	if (command == START_MASH_PUMP)
+	{
+		GPIO_SetBits(MASH_PUMP_PORT, MASH_PUMP_PIN );
+		MashPumpState = MASH_PUMP_PUMPING;
+	}
+	else
+	{
+		GPIO_ResetBits(MASH_PUMP_PORT, MASH_PUMP_PIN );
+		MashPumpState = MASH_PUMP_STOPPED;
+	}
 }
 
 #define START_MASH_PUMP_X1 155
@@ -80,120 +77,123 @@ void vMashPump(MashPumpCommand command )
 #define BK_W (BK_X2-BK_X1)
 #define BK_H (BK_Y2-BK_Y1)
 
-void vMashPumpApplet(int init){
-  if (init)
-        {
-                lcd_DrawRect(STOP_MASH_PUMP_X1, STOP_MASH_PUMP_Y1, STOP_MASH_PUMP_X2, STOP_MASH_PUMP_Y2, Cyan);
-                lcd_fill(STOP_MASH_PUMP_X1+1, STOP_MASH_PUMP_Y1+1, STOP_MASH_PUMP_W, STOP_MASH_PUMP_H, Red);
-                lcd_DrawRect(START_MASH_PUMP_X1, START_MASH_PUMP_Y1, START_MASH_PUMP_X2, START_MASH_PUMP_Y2, Cyan);
-                lcd_fill(START_MASH_PUMP_X1+1, START_MASH_PUMP_Y1+1, START_MASH_PUMP_W, START_MASH_PUMP_H, Green);
-                lcd_DrawRect(BK_X1, BK_Y1, BK_X2, BK_Y2, Cyan);
-                lcd_fill(BK_X1+1, BK_Y1+1, BK_W, BK_H, Magenta);
-                lcd_printf(10,1,18,  "MANUAL MASH_PUMP APPLET");
-                lcd_printf(22,4,13, "START MASH_PUMP");
-                lcd_printf(22,8,12, "STOP MASH_PUMP");
-                lcd_printf(30, 13, 4, "Back");
-                //vTaskDelay(2000);
-                //adc_init();
-                //adc_init();
-                //create a dynamic display task
-                xTaskCreate( vMashPumpAppletDisplay,
-                    ( signed portCHAR * ) "Mill_disp",
-                    configMINIMAL_STACK_SIZE + 500,
-                    NULL,
-                    tskIDLE_PRIORITY ,
-                    &xMASHPumpAppletDisplayHandle );
-        }
+void vMashPumpApplet(int init)
+{
+	if (init)
+	{
+		lcd_DrawRect(STOP_MASH_PUMP_X1, STOP_MASH_PUMP_Y1, STOP_MASH_PUMP_X2, STOP_MASH_PUMP_Y2, Cyan);
+		lcd_fill(STOP_MASH_PUMP_X1 + 1, STOP_MASH_PUMP_Y1 + 1, STOP_MASH_PUMP_W, STOP_MASH_PUMP_H, Red);
+		lcd_DrawRect(START_MASH_PUMP_X1, START_MASH_PUMP_Y1, START_MASH_PUMP_X2, START_MASH_PUMP_Y2, Cyan);
+		lcd_fill(START_MASH_PUMP_X1 + 1, START_MASH_PUMP_Y1 + 1, START_MASH_PUMP_W, START_MASH_PUMP_H, Green);
+		lcd_DrawRect(BK_X1, BK_Y1, BK_X2, BK_Y2, Cyan);
+		lcd_fill(BK_X1 + 1, BK_Y1 + 1, BK_W, BK_H, Magenta);
+		lcd_printf(10, 1, 18, "MANUAL MASH_PUMP APPLET");
+		lcd_printf(22, 4, 13, "START MASH_PUMP");
+		lcd_printf(22, 8, 12, "STOP MASH_PUMP");
+		lcd_printf(30, 13, 4, "Back");
+		//vTaskDelay(2000);
+		//adc_init();
+		//adc_init();
+		//create a dynamic display task
+		xTaskCreate( vMashPumpAppletDisplay,
+		    ( signed portCHAR * ) "Mill_disp",
+		    configMINIMAL_STACK_SIZE + 500,
+		    NULL,
+		    tskIDLE_PRIORITY,
+		    &xMASHPumpAppletDisplayHandle);
+	}
 
 }
 
+void vMashPumpAppletDisplay(void *pvParameters)
+{
+	static char tog = 0; //toggles each loop
+	for (;;)
+	{
 
-void vMashPumpAppletDisplay( void *pvParameters){
-        static char tog = 0; //toggles each loop
-        for(;;)
-        {
+		xSemaphoreTake(xAppletRunningSemaphore, portMAX_DELAY);
+		//take the semaphore so that the key handler wont
+		//return to the menu system until its returned
+		switch (MashPumpState)
+		{
+			case MASH_PUMP_PUMPING:
+				{
+				if (tog)
+				{
+					lcd_fill(1, 220, 180, 29, Black);
+					lcd_printf(1, 13, 15, "MASH_PUMP DRIVING");
+				}
+				else
+				{
+					lcd_fill(1, 210, 180, 17, Black);
+				}
+				break;
+			}
+			case MASH_PUMP_STOPPED:
+				{
+				if (tog)
+				{
+					lcd_fill(1, 210, 180, 29, Black);
+					lcd_printf(1, 13, 11, "MASH_PUMP STOPPED");
+				}
+				else
+				{
+					lcd_fill(1, 210, 180, 17, Black);
+				}
 
-            xSemaphoreTake(xAppletRunningSemaphore, portMAX_DELAY); //take the semaphore so that the key handler wont
-                                                                               //return to the menu system until its returned
-                switch (MashPumpState)
-                {
-                case MASH_PUMP_PUMPING:
-                {
-                        if(tog)
-                        {
-                              lcd_fill(1,220, 180,29, Black);
-                                lcd_printf(1,13,15,"MASH_PUMP DRIVING");
-                        }
-                        else{
-                                lcd_fill(1,210, 180,17, Black);
-                        }
-                        break;
-                }
-                case MASH_PUMP_STOPPED:
-                {
-                        if(tog)
-                        {
-                                lcd_fill(1,210, 180,29, Black);
-                                lcd_printf(1,13,11,"MASH_PUMP STOPPED");
-                        }
-                        else
-                          {
-                                lcd_fill(1,210, 180,17, Black);
-                          }
+				break;
+			}
+			default:
+				{
+				break;
+			}
+		}
 
-                        break;
-                }
-                default:
-                {
-                        break;
-                }
-                }
+		tog = tog ^ 1;
+		xSemaphoreGive(xAppletRunningSemaphore);
+		//give back the semaphore as its safe to return now.
+		vTaskDelay(500);
 
-                tog = tog ^ 1;
-                xSemaphoreGive(xAppletRunningSemaphore); //give back the semaphore as its safe to return now.
-                vTaskDelay(500);
-
-
-        }
+	}
 }
 
 int iMashPumpKey(int xx, int yy)
 {
 
-  uint16_t window = 0;
-  static uint8_t w = 5,h = 5;
-  static uint16_t last_window = 0;
+	uint16_t window = 0;
+	static uint8_t w = 5, h = 5;
+	static uint16_t last_window = 0;
 
-  if (xx > STOP_MASH_PUMP_X1+1 && xx < STOP_MASH_PUMP_X2-1 && yy > STOP_MASH_PUMP_Y1+1 && yy < STOP_MASH_PUMP_Y2-1)
-    {
-      vMashPump(STOP_MASH_PUMP);
-      MashPumpState = MASH_PUMP_STOPPED;
-    }
-  else if (xx > START_MASH_PUMP_X1+1 && xx < START_MASH_PUMP_X2-1 && yy > START_MASH_PUMP_Y1+1 && yy < START_MASH_PUMP_Y2-1)
-    {
-      vMashPump(START_MASH_PUMP);
-      MashPumpState = MASH_PUMP_PUMPING;
-    }
-  else if (xx > BK_X1 && yy > BK_Y1 && xx < BK_X2 && yy < BK_Y2)
-    {
-      //try to take the semaphore from the display applet. wait here if we cant take it.
-      xSemaphoreTake(xAppletRunningSemaphore, portMAX_DELAY);
-      //delete the display applet task if its been created.
-      if (xMASHPumpAppletDisplayHandle != NULL)
-        {
-          vTaskDelete(xMASHPumpAppletDisplayHandle);
-          vTaskDelay(100);
-          xMASHPumpAppletDisplayHandle = NULL;
-        }
+	if (xx > STOP_MASH_PUMP_X1 + 1 && xx < STOP_MASH_PUMP_X2 - 1 && yy > STOP_MASH_PUMP_Y1 + 1 && yy < STOP_MASH_PUMP_Y2 - 1)
+	{
+		vMashPump(STOP_MASH_PUMP);
+		MashPumpState = MASH_PUMP_STOPPED;
+	}
+	else if (xx > START_MASH_PUMP_X1 + 1 && xx < START_MASH_PUMP_X2 - 1 && yy > START_MASH_PUMP_Y1 + 1 && yy < START_MASH_PUMP_Y2 - 1)
+	{
+		vMashPump(START_MASH_PUMP);
+		MashPumpState = MASH_PUMP_PUMPING;
+	}
+	else if (xx > BK_X1 && yy > BK_Y1 && xx < BK_X2 && yy < BK_Y2)
+	{
+		//try to take the semaphore from the display applet. wait here if we cant take it.
+		xSemaphoreTake(xAppletRunningSemaphore, portMAX_DELAY);
+		//delete the display applet task if its been created.
+		if (xMASHPumpAppletDisplayHandle != NULL )
+		{
+			vTaskDelete(xMASHPumpAppletDisplayHandle);
+			vTaskDelay(100);
+			xMASHPumpAppletDisplayHandle = NULL;
+		}
 
-      //return the semaphore for taking by another task.
-      xSemaphoreGive(xAppletRunningSemaphore);
-      return 1;
+		//return the semaphore for taking by another task.
+		xSemaphoreGive(xAppletRunningSemaphore);
+		return 1;
 
-    }
+	}
 
-  vTaskDelay(10);
-  return 0;
+	vTaskDelay(10);
+	return 0;
 
 }
 

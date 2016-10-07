@@ -8,11 +8,7 @@
 #ifndef HOP_DROPPER_H_
 #define HOP_DROPPER_H_
 
-
-
 #include "queue.h"
-
-
 
 #define HOP_DROPPER_LIMIT_PORT GPIOA
 #define HOP_DROPPER_LIMIT_PIN GPIO_Pin_11

@@ -14,12 +14,6 @@
 #define INLET_VALVE 3
 #define CHILLER_VALVE 4
 
-//#define CLOSED 11
-//#define OPENED 10
-//#define OPEN 0
-//#define CLOSE 1
-
-
 typedef enum
 {
     VALVE_STATE_NOT_DEFINED,

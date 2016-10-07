@@ -173,7 +173,7 @@ void vTaskBoilValve(void * pvParameters)
         {
           if (xCurrentCommand == BOIL_VALVE_CMD_CLOSE)
             {
-              vBoilValveFunc(CLOSE);
+              vBoilValveFunc(BOIL_VALVE_CMD_CLOSE);
               xBoilValveState = BOIL_VALVE_CLOSING;
             }
           else if (xCurrentCommand == BOIL_VALVE_CMD_OPEN)

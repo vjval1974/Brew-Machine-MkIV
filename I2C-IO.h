@@ -12,13 +12,13 @@
 #define ERROR 255
 
 void vI2C_Init(void);
-//void vI2C_Send(char address, char data);
 void vPCF_SetBits(uint8_t bitnum, uint8_t add);
 void vPCF_ResetBits(uint8_t bitnum, uint8_t add);
-//extern xQueueHandle xI2C_SendQueue;
+
 void vI2C_SendTask(void * pvParameters);
 void vI2C_TestTask(void *pvParameters);
 char cI2cGetInput(char port, char pin);
+
 #define I2C_SLAVE_ADDRESS0 0x70
 #define I2C_SLAVE_ADDRESS1 0x72
 #define I2C_SLAVE_ADDRESS2 0x74

@@ -8,6 +8,7 @@
 #ifndef CONSOLE_H_
 #define CONSOLE_H_
 #include "task.h"
+#include "queue.h"
 void vConsolePrintTask( void * pvParameters);
 void vConsolePrint(const char * format);
 extern xQueueHandle xPrintQueue;

@@ -25,6 +25,8 @@
 
 #define ON  1
 #define OFF 0
+#include "stm32f10x.h"
+#include "FreeRTOS.h"
 
 
 void vLEDSet( GPIO_TypeDef *GPIO_PORT , 

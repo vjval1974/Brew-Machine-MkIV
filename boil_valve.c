@@ -65,11 +65,6 @@ void vBoilValveInit(void)
     vConsolePrint("Created Boil Valve Queue\r\n\0");
 }
 
-typedef enum
-{
-	PIN_LOW,
-	PIN_HIGH
-} PinState;
 
 typedef struct
 {
@@ -83,8 +78,8 @@ Input BoilValveOpenedPin = { BOIL_VALVE_OPENED_PORT, BOIL_VALVE_OPENED_PIN };
 PinState xGetPinState( Input input)
 {
 	if (debounce(input.Port, input.Pin) == 1)
-		return PIN_HIGH;
-	return PIN_LOW;
+		return PIN_STATE_HIGH;
+	return PIN_STATE_LOW;
 }
 
 
@@ -209,7 +204,7 @@ void vTaskBoilValve(void * pvParameters)
             }
           else if (xCurrentCommand== BOIL_VALVE_CMD_CLOSE)
             {
-              if (xGetPinState(BoilValveClosedPin) == PIN_HIGH)
+              if (xGetPinState(BoilValveClosedPin) == PIN_STATE_HIGH)
               {
                   vBoilValveFunc(BOIL_VALVE_CMD_CLOSE);
                   xBoilValveState = BOIL_VALVE_CLOSING;
@@ -224,7 +219,7 @@ void vTaskBoilValve(void * pvParameters)
             }
           else
             {
-        	  if (xGetPinState(BoilValveOpenedPin) == PIN_LOW)
+        	  if (xGetPinState(BoilValveOpenedPin) == PIN_STATE_LOW)
         	  {
                   vBoilValveFunc(BOIL_VALVE_CMD_STOP);
                   vConsolePrint("BoilValve STOP limit Open \r\n\0");
@@ -249,7 +244,7 @@ void vTaskBoilValve(void * pvParameters)
             }
           else if (xCurrentCommand== BOIL_VALVE_CMD_OPEN)
             {
-              if (xGetPinState(BoilValveClosedPin) == PIN_LOW)
+              if (xGetPinState(BoilValveClosedPin) == PIN_STATE_LOW)
               {
                   xBoilValveState = BOIL_VALVE_OPENED;
 
@@ -264,7 +259,7 @@ void vTaskBoilValve(void * pvParameters)
             }
           else
             {
-        	  if (xGetPinState(BoilValveClosedPin) == PIN_LOW)
+        	  if (xGetPinState(BoilValveClosedPin) == PIN_STATE_LOW)
         	  {
 
                   vBoilValveFunc(BOIL_VALVE_CMD_STOP);
@@ -283,7 +278,7 @@ void vTaskBoilValve(void * pvParameters)
           if (xCurrentCommand == BOIL_VALVE_CMD_OPEN)
             {
 
-              if (xGetPinState(BoilValveOpenedPin) == PIN_HIGH)
+              if (xGetPinState(BoilValveOpenedPin) == PIN_STATE_HIGH)
                {
                   vBoilValveFunc(BOIL_VALVE_CMD_OPEN);
                   xBoilValveState = BOIL_VALVE_OPENING;
@@ -297,7 +292,7 @@ void vTaskBoilValve(void * pvParameters)
             }
           else if (xCurrentCommand== BOIL_VALVE_CMD_CLOSE)
             {
-        	  if (xGetPinState(BoilValveClosedPin) == PIN_HIGH)
+        	  if (xGetPinState(BoilValveClosedPin) == PIN_STATE_HIGH)
         	  {
                   vBoilValveFunc(BOIL_VALVE_CMD_CLOSE);
                   xBoilValveState = BOIL_VALVE_CLOSING;

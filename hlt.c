@@ -269,11 +269,9 @@ vTaskBrewHLT(void * pvParameters)
 					GPIO_WriteBit(HLT_SSR_PORT, HLT_SSR_PIN, 0); //make sure its off
 					fLitresToDrain = rcvdMsg.fData3;
 					vConsolePrint("HLT: Entered DRAIN State\r\n\0");
-					//TODO:  The following code is wrong, why display temp setpoint during drain?
-					// Use the BrewApplet Text Queue and send the litres to drain. Could also send the
-					// actual litres delivered to the lcd as well down below here
-					LCD_FLOAT(10, 10, 1, fTempSetpoint);
-					lcd_printf(1, 10, 10, "Setpoint:");
+					//Todo: Send this message to the LCD via the text message queue
+					LCD_FLOAT(10, 10, 1, fLitresToDrain * 1000);
+					lcd_printf(1, 10, 10, "Draining:");
 					vValveActuate(HLT_VALVE, OPEN_VALVE);
 					IsValveOpening = TRUE;
 					vResetFlow1();

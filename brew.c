@@ -969,8 +969,6 @@ void vBrewWaitingPollFunction(int piParameters[5])
 //===================================================================================================================================================
 // BOILING
 //===================================================================================================================================================
-
-//Todo: USE THIS FUNCTION TO SEND A MESSAGE TO THE BOILER FROM SPARGE STEPS TO HEAT AT 50% DUTY.
 bool IsEnoughWaterInBoilerForHeating()
 {
 	if (fGetLitresCurrentlyInBoiler() > 15.0)

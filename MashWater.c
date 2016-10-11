@@ -181,7 +181,9 @@ void printMashTunState()
 {
 	sprintf(buf, "MashTunState = %s, %dml \r\n\0", MashTunWaterStates[WaterState], (int) (LitresCurrentlyInMashTun * 1000));
 	vConsolePrint(buf);
+	vTaskDelay(50);
 }
+
 
 float fGetLitresCurrentlyInMashTun()
 {

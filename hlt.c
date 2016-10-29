@@ -196,10 +196,6 @@ vTaskBrewHLT(void * pvParameters)
 	char cHltLevelReached = 0;
 	char cHltTempReached = 0;
 
-	const int STEP_COMPLETE = 40;
-	const int STEP_FAILED = 41;
-	const int STEP_TIMEOUT = 45;
-
 	HltMessage rcvdMsg;
 
 	for (;;)
@@ -255,7 +251,7 @@ vTaskBrewHLT(void * pvParameters)
 						ThisBrewState.xHLTState.hltBrewState = HLT_STATE_AT_TEMP;
 						xMsgCmdCompleteToBrew.ucFromTask = HLT_TASK;
 						xMsgCmdCompleteToBrew.iBrewStep = rcvdMsg.ucStepNumber;
-						xMsgCmdCompleteToBrew.xCommand = STEP_COMPLETE;
+						xMsgCmdCompleteToBrew.xCommand = BREW_STEP_COMPLETE;
 						xQueueSendToBack(xBrewTaskReceiveQueue, &xMsgCmdCompleteToBrew, 0);
 						ucHeatAndFillMessageSent = 1;
 					}
@@ -309,7 +305,7 @@ vTaskBrewHLT(void * pvParameters)
 						MashTunFillingSetpointReached(fActualLitresDelivered);
 						xMsgCmdCompleteToBrew.ucFromTask = HLT_TASK;
 						xMsgCmdCompleteToBrew.iBrewStep = rcvdMsg.ucStepNumber;
-						xMsgCmdCompleteToBrew.xCommand = STEP_COMPLETE;
+						xMsgCmdCompleteToBrew.xCommand = BREW_STEP_COMPLETE;
 						xQueueSendToBack(xBrewTaskReceiveQueue, &xMsgCmdCompleteToBrew, 0);
 						rcvdMsg.command = HLT_CMD_IDLE;
 						ThisBrewState.xHLTState.hltBrewState = HLT_STATE_IDLE;

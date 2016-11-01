@@ -33,11 +33,11 @@ void vStirInit(void)
 
 void vStir(StirState state)
 {
-	if (state == STIR_DRIVING)
+	if (state == STIR_DRIVING && xGetStirState() != STIR_DRIVING)
 	{
 		vPCF_SetBits(STIR_PIN, STIR_PORT);
 	}
-	else
+	else if ( state == STIR_STOPPED && xGetStirState() != STIR_STOPPED )
 	{
 		vPCF_ResetBits(STIR_PIN, STIR_PORT);
 	}

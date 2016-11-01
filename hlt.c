@@ -309,6 +309,7 @@ vTaskBrewHLT(void * pvParameters)
 						xQueueSendToBack(xBrewTaskReceiveQueue, &xMsgCmdCompleteToBrew, 0);
 						rcvdMsg.command = HLT_CMD_IDLE;
 						ThisBrewState.xHLTState.hltBrewState = HLT_STATE_IDLE;
+						WaterAddedToMashTun(fActualLitresDelivered);
 					}
 				}
 				break;

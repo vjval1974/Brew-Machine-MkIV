@@ -348,9 +348,9 @@ void vI2C_SendTask(void *pvParameters)
 			while ((iSNDStatus == FAIL) && (cnt < 10))
 			{
 				vConsolePrint("Sending failed, trying again\r\n\0");
-				vTaskDelay(100);        // this MUST stay or errors occur in sending;
+				vTaskDelay(300);        // this MUST stay or errors occur in sending;
 				vI2C_Init();
-				vTaskDelay(100);
+				vTaskDelay(300);
 				iSNDStatus = iI2C_Send(uAddress, uToSend);
 				cnt++;
 

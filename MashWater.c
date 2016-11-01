@@ -89,91 +89,91 @@ void MashTunFinishedPumpingOut()
 	IsMashTunPumpingOut = FALSE;
 }
 
-void MashWaterStateMachinePoll()
-{
-	static MashTunLitres LitresToSubtractForGrainWaterLoss = 0.0;
-	static MashTunLitres LitresToSubtractForMashTunLoss = 0.0;
-	switch (WaterState)
-	{
-		case MASH_TUN_EMPTY:
-			{
-			if (ThisBrewState.xHLTState.hltBrewState == HLT_STATE_DRAIN)
-			{
-				WaterState = MASH_TUN_FILLING_FIRST_TIME;
-			}
-			break;
-		}
-		case MASH_TUN_FILLING_FIRST_TIME:
-			{
-			if (IsMashTunCompletedFilling == TRUE)
-			{
-				WaterState = MASH_TUN_CONTAINS_WATER;
-				IsMashTunCompletedFilling = FALSE;
-			}
-			break;
-		}
-		case MASH_TUN_CONTAINS_WATER:
-			{
-			if (LitresCurrentlyInMashTun <= 0.2)
-			{
-				//Something went wrong here
-				vConsolePrint("Mash tun has no water, but state is ContainsWater\r\n\0");
-			}
-			if (WaterLostToGrainHasBeenSubtracted == FALSE)
-			{
-				LitresToSubtractForGrainWaterLoss = CalculateWaterLossFromGrainWeight();
-				WaterLostToGrainHasBeenSubtracted = TRUE;
-				LitresCurrentlyInMashTun -= LitresToSubtractForGrainWaterLoss;
-			}
-			if (ThisBrewState.xHLTState.hltBrewState == HLT_STATE_DRAIN)
-			{
-				WaterState = MASH_TUN_FILLING;
-			}
-			if (IsMashTunPumpingOut == TRUE)
-			{
-				WaterState = MASH_TUN_PUMPING_OUT;
-
-			}
-			break;
-		}
-		case MASH_TUN_FILLING:
-			{
-			if (IsMashTunCompletedFilling == TRUE)
-			{
-				WaterState = MASH_TUN_CONTAINS_WATER;
-				IsMashTunCompletedFilling = FALSE;
-			}
-			break;
-		}
-		case MASH_TUN_PUMPING_OUT:
-			{
-			if (IsMashTunPumpingOut == FALSE)
-			{
-				WaterState = MASH_TUN_EMPTY_WET;
-				if (WaterLostToMashTunHasBeenSubtracted == FALSE)
-				{
-					LitresCurrentlyInBoiler += LitresCurrentlyInMashTun - fLitresRemainingInMashAfterPumpOut;
-					WaterLostToMashTunHasBeenSubtracted = TRUE;
-				}
-				else
-					LitresCurrentlyInBoiler += LitresCurrentlyInMashTun;
-
-				LitresCurrentlyInMashTun = 0.0; // disregarding the 2.5l that we cant pump out.
-			}
-			break;
-		}
-		case MASH_TUN_EMPTY_WET:
-			{
-
-			if (ThisBrewState.xHLTState.hltBrewState == HLT_STATE_DRAIN)
-			{
-				WaterState = MASH_TUN_FILLING;
-			}
-			break;
-		}
-	}
-
-}
+//void MashWaterStateMachinePoll()
+//{
+//	static MashTunLitres LitresToSubtractForGrainWaterLoss = 0.0;
+//	static MashTunLitres LitresToSubtractForMashTunLoss = 0.0;
+//	switch (WaterState)
+//	{
+//		case MASH_TUN_EMPTY:
+//			{
+//			if (ThisBrewState.xHLTState.hltBrewState == HLT_STATE_DRAIN)
+//			{
+//				WaterState = MASH_TUN_FILLING_FIRST_TIME;
+//			}
+//			break;
+//		}
+//		case MASH_TUN_FILLING_FIRST_TIME:
+//			{
+//			if (IsMashTunCompletedFilling == TRUE)
+//			{
+//				WaterState = MASH_TUN_CONTAINS_WATER;
+//				IsMashTunCompletedFilling = FALSE;
+//			}
+//			break;
+//		}
+//		case MASH_TUN_CONTAINS_WATER:
+//			{
+//			if (LitresCurrentlyInMashTun <= 0.2)
+//			{
+//				//Something went wrong here
+//				vConsolePrint("Mash tun has no water, but state is ContainsWater\r\n\0");
+//			}
+//			if (WaterLostToGrainHasBeenSubtracted == FALSE)
+//			{
+//				LitresToSubtractForGrainWaterLoss = CalculateWaterLossFromGrainWeight();
+//				WaterLostToGrainHasBeenSubtracted = TRUE;
+//				LitresCurrentlyInMashTun -= LitresToSubtractForGrainWaterLoss;
+//			}
+//			if (ThisBrewState.xHLTState.hltBrewState == HLT_STATE_DRAIN)
+//			{
+//				WaterState = MASH_TUN_FILLING;
+//			}
+//			if (IsMashTunPumpingOut == TRUE)
+//			{
+//				WaterState = MASH_TUN_PUMPING_OUT;
+//
+//			}
+//			break;
+//		}
+//		case MASH_TUN_FILLING:
+//			{
+//			if (IsMashTunCompletedFilling == TRUE)
+//			{
+//				WaterState = MASH_TUN_CONTAINS_WATER;
+//				IsMashTunCompletedFilling = FALSE;
+//			}
+//			break;
+//		}
+//		case MASH_TUN_PUMPING_OUT:
+//			{
+//			if (IsMashTunPumpingOut == FALSE)
+//			{
+//				WaterState = MASH_TUN_EMPTY_WET;
+//				if (WaterLostToMashTunHasBeenSubtracted == FALSE)
+//				{
+//					LitresCurrentlyInBoiler += LitresCurrentlyInMashTun - fLitresRemainingInMashAfterPumpOut;
+//					WaterLostToMashTunHasBeenSubtracted = TRUE;
+//				}
+//				else
+//					LitresCurrentlyInBoiler += LitresCurrentlyInMashTun;
+//
+//				LitresCurrentlyInMashTun = 0.0; // disregarding the 2.5l that we cant pump out.
+//			}
+//			break;
+//		}
+//		case MASH_TUN_EMPTY_WET:
+//			{
+//
+//			if (ThisBrewState.xHLTState.hltBrewState == HLT_STATE_DRAIN)
+//			{
+//				WaterState = MASH_TUN_FILLING;
+//			}
+//			break;
+//		}
+//	}
+//
+//}
 
 static char buf[50];
 
@@ -210,7 +210,7 @@ float fWaterInMash = 0.0;
 static MashTunWaterState2 xMashTunWaterState = MashTunDry;
 
 // adding water
-void MashTunWaterLevelTest(float waterToAdd)
+void WaterAddedToMashTun(float waterToAdd)
 {
 	if (xMashTunWaterState == MashTunDry)
 	{
@@ -222,7 +222,7 @@ void MashTunWaterLevelTest(float waterToAdd)
 }
 
 // Pumping Out
-void MashTunWaterLevelTest2()
+void MashTunHasBeenDrained()
 {
 	LitresCurrentlyInBoiler = LitresCurrentlyInMashTun;
 	LitresCurrentlyInMashTun = 0.0;

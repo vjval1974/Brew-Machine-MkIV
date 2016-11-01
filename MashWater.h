@@ -19,4 +19,6 @@ void printMashTunState(); // prints to console.
 float fGetLitresCurrentlyInMashTun();
 float fGetLitresCurrentlyInBoiler();
 
+void MashTunHasBeenDrained();
+void WaterAddedToMashTun(float waterToAdd);
 #endif /* MASHWATER_H_ */

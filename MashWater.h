@@ -13,12 +13,14 @@ void MashTunFillingSetpointReached(float litresDelivered);
 
 void MashTunPumpingOut();
 void MashTunFinishedPumpingOut();
-void MashWaterStateMachinePoll(); // dodgy but called from brew task atm
+
 void printMashTunState(); // prints to console.
+void printLitresCurrentlyInBoiler();
 
 float fGetLitresCurrentlyInMashTun();
 float fGetLitresCurrentlyInBoiler();
 
 void MashTunHasBeenDrained();
 void WaterAddedToMashTun(float waterToAdd);
+void vClearMashAndBoilLitres();
 #endif /* MASHWATER_H_ */

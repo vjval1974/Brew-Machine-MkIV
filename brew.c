@@ -334,6 +334,8 @@ void vTaskBrew(void * pvParameters)
 			}
 			case RUNNING:
 				{
+					//TODO: Log the brew time at certain intervals, say 5mins so that the log can be read better.
+					// Also think about quizzing another micro that has a RTC on board. Or... get motivated and add an 12C rtc ... the code is almost there for it.
 				if (xQueueReceive(xBrewTaskReceiveQueue, &xMessage, 0) == pdPASS)
 				{
 					iContent = xMessage.xCommand; //casts to int * and then dereferences.
@@ -351,8 +353,6 @@ void vTaskBrew(void * pvParameters)
 
 							sprintf(buf, "Brew Task: Setting Step %d to Complete\r\n\0", xMessage.iBrewStep);
 							vConsolePrint(buf);
-
-							//printMashTunState();
 							break;
 						}
 						case BREW_STEP_FAILED:
@@ -384,6 +384,7 @@ void vTaskBrew(void * pvParameters)
 						iWaiting = 0;
 						ThisBrewState.ucStep++;
 						printMashTunState();
+						printLitresCurrentlyInBoiler();
 						vBrewRunStep();
 					}
 				}
@@ -887,12 +888,12 @@ void vBrewPreChillPollFunction(int piParameters[5])
 void vBrewChillSetupFunction(int piParameters[5])
 {
 	vBrewBoilValveCheckClose();
-	vChillerPump(START_CHILLER_PUMP); //Pump.
 	vValveActuate(CHILLER_VALVE, OPEN_VALVE);
 }
 
 void vBrewChillPollFunction(int piParameters[5])
 {
+	//todo: Every minute or so, run the pump for about 10 seconds.
 	if (BrewSteps[ThisBrewState.ucStep].uElapsedTime >= BrewParameters.uiChillTime * 60)
 	{
 		BrewSteps[ThisBrewState.ucStep].ucComplete = 1;
@@ -913,6 +914,8 @@ void vBrewPumpToFermenterSetupFunction(int piParameters[5])
 
 void vBrewPumpToFermenterPollFunction(int piParameters[5])
 {
+	//TODO: Add parameter for pump out.. not chill time
+
 	if (BrewSteps[ThisBrewState.ucStep].uElapsedTime >= BrewParameters.uiChillTime * 60)
 	{
 		vChillerPump(STOP_CHILLER_PUMP); //Pump.
@@ -935,7 +938,7 @@ void vBrewPumpToBoilSetupFunction(int piParameters[5])
 		vMashPump(STOP_MASH_PUMP);
 		vTaskDelay(BrewParameters.iPumpPrimingTime * 1000);
 	}
-	MashTunPumpingOut();
+
 }
 
 void vBrewPumpToBoilPollFunction(int piParameters[5])
@@ -946,7 +949,6 @@ void vBrewPumpToBoilPollFunction(int piParameters[5])
 	//Brew[BrewState.ucStep].uTimeRemaining = (piParameters[1]*60) - Brew[BrewState.ucStep].uElapsedTime;
 	if (BrewSteps[ThisBrewState.ucStep].uElapsedTime >= iPumpToBoilTime)
 	{
-		MashTunFinishedPumpingOut(); // this may be redundant.
 		MashTunHasBeenDrained(); //new
 		//-------------------------------------------------------------------------------------------
 		// ToDo: SHOULD CHECK THE BOIL LEVEL LIMIT HERE SO THAT WE CAN ASSUME THAT THERE WAS NO STUCK SPARGE
@@ -1931,67 +1933,67 @@ int iBrewKey(int xx, int yy)
 // 11 seconds per litre pumping to the mash.
 
 // NO Mash out Brew Test - WORKS
-static BrewStep BrewSteps[] = {
-    // TEXT                       SETUP                           		POLL                                   PARMS                          			TIMEOUT   START 	ELAPSED COMPLETE WAIT
-    {"Waiting",              NULL,                                	(void *)vBrewWaitingPollFunction , 		{3,0,0,0,0},                          		20,    		 0,      0, 	0, 		0},
-    {"Raise Crane",          (void *)vBrewCraneSetupFunction,    	NULL,                              		{CRANE_UP,0,0,0,0},                	        25,     	 0,      0, 	0, 		0},
-    {"Close D-Valves",       (void *)vBrewCloseDiscreteValves,   	NULL,                              		{0,0,0,0,0},                          		1,      	 0,      0, 	0, 		0},
-    {"Close BoilValve",      (void *)vBrewBoilValveSetupFunction, 	NULL,                             		 {BOIL_VALVE_CMD_CLOSE,0,0,0,0},          	20,     	 0,      0, 	0, 		1},
-    {"Fill+Heat:Strike",     (void *)vBrewHLTSetupFunction,       	NULL,                              		{HLT_CMD_HEAT_AND_FILL,STRIKE,0,0,0},   	40*60,  	 0,      0, 	0, 		0},
-    {"Grind Grains",         (void *)vBrewMillSetupFunction,      	(void *)vBrewMillPollFunction,     		{0,0,0,0,0},                          		20*60,   	 0,      0, 	0, 		0},
-    {"DrainHLTForMash",      (void *)vBrewHLTSetupFunction,       	NULL,                             		 {HLT_CMD_DRAIN,STRIKE,0,0,0},       		5*60,   	 0,      0, 	0, 		1},
-    {"Lower Crane",          (void *)vBrewCraneSetupFunction,     	NULL,                              		{CRANE_DOWN_INCREMENTAL,0,0,0,0},   	    2*60,     	 0,      0, 	0, 		1},
-    {"Fill+Heat:Sparge1",    (void *)vBrewHLTSetupFunction,       	NULL,                              		{HLT_CMD_HEAT_AND_FILL,SPARGE,0,0,0},   	40*60,  	 0,      0, 	0, 		1},
-    {"Mash",                 (void *)vBrewMashSetupFunction,      	(void *)vBrewMashPollFunction,     		{0,0,0,0,0},                          		60*60,  	 0,      0, 	0, 		0},
-    {"MashPumpToBoil",       (void *)vBrewPumpToBoilSetupFunction,	(void *)vBrewPumpToBoilPollFunction,	{0,4*60,0,0,0},                      		11*60,  	 0,      0, 	0, 		0},
-    {"DrainForSparge1",      (void *)vBrewHLTSetupFunction,       	NULL,                              		{HLT_CMD_DRAIN,SPARGE,0,0,0},       		5*60,  		 0,      0, 	0, 		1},
-    {"Fill+Heat:Sparge2",    (void *)vBrewHLTSetupFunction,       	NULL,                              		{HLT_CMD_HEAT_AND_FILL,SPARGE,0,0,0},   	40*60,  	 0,      0, 	0, 		1},
-    {"Sparge1",              (void *)vBrewSpargeSetupFunction,    	(void *)vBrewMashPollFunction,     		{0,0,0,0,0},                          		25*60,   	 0,      0, 	0, 		0},
-    {"Pump to boil1",        (void *)vBrewPumpToBoilSetupFunction,	(void *)vBrewPumpToBoilPollFunction,	{0,3*60,0,0,0},                      		11*60,  	 0,      0, 	0, 		0},
-    {"DrainForSparge2",      (void *)vBrewHLTSetupFunction,       	NULL,                              		{HLT_CMD_DRAIN,SPARGE,0,0,0},       		5*60,  		 0,      0, 	0, 		1},
-    {"Sparge2",              (void *)vBrewSpargeSetupFunction,    	(void *)vBrewMashPollFunction,     		{0,0,0,0,0},                          		25*60,   	 0,      0, 	0, 		1},
-    {"Pump to boil2",        (void *)vBrewPumpToBoilSetupFunction,	(void *)vBrewPumpToBoilPollFunction,	{0,3*60,0,0,0},                      		11*60,  	 0,      0, 	0, 		1},
-    {"Raise Crane",          (void *)vBrewCraneSetupFunction,     	NULL,                              		{CRANE_UP,0,0,0,0},                         25,     	 0,      0, 	0, 		1},
-    {"Fill+Heat:Clean ",     (void *)vBrewHLTSetupFunction,       	NULL,                              		{HLT_CMD_HEAT_AND_FILL, CLEAN,0,0,0},   	40*60,  	 0,      0, 	0, 		0},
-    {"BringToBoil",          (void *)vBrewBoilSetupFunction,      	(void *)vBrewBoilPollFunction ,    		{22,100,0,0,0},                       		30*60,  	 0,      0, 	0, 		0},
-    {"Pump to boil",         (void *)vBrewPumpToBoilSetupFunction,	(void *)vBrewPumpToBoilPollFunction,	{0,10,0,0,0},                        		2*60,  	  	 0,      0, 	0, 		1},
-    {"Boil",                 (void *)vBrewBoilSetupFunction,      	(void *)vBrewBoilPollFunction ,    		{60,55,1,0,0},                        		90*60,  	 0,      0, 	0, 		1},
-    {"SettlingBefChill",     (void *)vBrewPreChillSetupFunction,  	(void *)vBrewPreChillPollFunction,  	{6*60,0,0,0,0},                      		10*60,   	 0,      0, 	0, 		1},
-    {"Chill",                (void *)vBrewChillSetupFunction,     	(void *)vBrewChillPollFunction ,   		{0,0,0,0,0},                          		10*60,  	 0,      0, 	0, 		1},
-    {"Pump Out",    (void *)vBrewPumpToFermenterSetupFunction,     	(void *)vBrewPumpToFermenterPollFunction,{8,0,0,0,0},                    			10*60,  	 0,      0, 	0, 		1},
-    {"BREW FINISHED",        NULL,                                	(void *)vBrewWaitingPollFunction,  		{1,0,0,0,0},                          		2,      	 0,      0, 	0, 		1},
-    {NULL,                   NULL,                                	NULL,                              		{0,0,0,0,0},                          		0,      	 0,      0, 	0, 		0}
-};
-
 //static BrewStep BrewSteps[] = {
-//    // TEXT                       SETUP                           POLL                                   PARMS                          TIMEOUT   START ELAPSED COMPLETE WAIT
-//    {"Waiting",              NULL,                                (void *)vBrewWaitingPollFunction , {3,0,0,0,0},                          20,     0,      0, 0, 0},
-//    {"Raise Crane",          (void *)vBrewCraneSetupFunction,     NULL,                              {CRANE_UP,0,0,0,0},                         25,     0,      0, 0, 0},
-//    {"Close D-Valves",       (void *)vBrewCloseDiscreteValves,    NULL,                              {0,0,0,0,0},                          1,      0,      0, 0, 0},
-//    {"Close BoilValve",      (void *)vBrewBoilValveSetupFunction, NULL,                              {BOIL_VALVE_CMD_CLOSE,0,0,0,0},           20,      0,      0, 0, 1},
-//    {"Fill+Heat:Strike",     (void *)vBrewHLTSetupFunction,       NULL,                              {HLT_CMD_HEAT_AND_FILL,CLEAN,0,0,0},   40*60,  0,      0, 0, 0},
-//    {"DrainHLTForMash",      (void *)vBrewHLTSetupFunction,       NULL,                              {HLT_CMD_DRAIN,STRIKE,0,0,0},       5*60,   0,      0, 0, 1},
-//    {"Lower Crane",          (void *)vBrewCraneSetupFunction,     NULL,                              {CRANE_DOWN_INCREMENTAL,0,0,0,0},                     2*60,     0,      0, 0, 1},
-//    {"Fill+Heat:Sparge1",    (void *)vBrewHLTSetupFunction,       NULL,                              {HLT_CMD_HEAT_AND_FILL,CLEAN,0,0,0},   40*60,  0,      0, 0, 1},
-//    {"Mash",                 (void *)vBrewMashSetupFunction,      (void *)vBrewMashPollFunction,     {0,0,0,0,0},                          60*60,  0,      0, 0, 0},
-//    {"MashPumpToBoil",        (void *)vBrewPumpToBoilSetupFunction,(void *)vBrewPumpToBoilPollFunction,{0,4*60,0,0,0},                      11*60,  0,      0, 0, 0},
-//    {"DrainForSparge1",       (void *)vBrewHLTSetupFunction,       NULL,                              {HLT_CMD_DRAIN,SPARGE,0,0,0},       5*60,  0,      0, 0, 1},
-//    {"Fill+Heat:Sparge2",     (void *)vBrewHLTSetupFunction,       NULL,                              {HLT_CMD_HEAT_AND_FILL,CLEAN,0,0,0},   40*60,  0,      0, 0, 1},
-//    {"Sparge1",               (void *)vBrewSpargeSetupFunction,    (void *)vBrewMashPollFunction,     {0,0,0,0,0},                          25*60,   0,      0, 0, 0},
-//    {"Pump to boil1",         (void *)vBrewPumpToBoilSetupFunction,(void *)vBrewPumpToBoilPollFunction,{0,3*60,0,0,0},                      11*60,  0,      0, 0, 0},
-//    {"DrainForSparge2",       (void *)vBrewHLTSetupFunction,       NULL,                              {HLT_CMD_DRAIN,SPARGE,0,0,0},       5*60,  0,      0, 0, 1},
-//    {"Sparge2",               (void *)vBrewSpargeSetupFunction,    (void *)vBrewMashPollFunction,     {0,0,0,0,0},                          25*60,   0,      0, 0, 1},
-//    {"Pump to boil2",         (void *)vBrewPumpToBoilSetupFunction,(void *)vBrewPumpToBoilPollFunction,{0,3*60,0,0,0},                      11*60,  0,      0, 0, 1},
-//    {"Raise Crane",          (void *)vBrewCraneSetupFunction,     NULL,                              {CRANE_UP,0,0,0,0},                         25,     0,      0, 0, 1},
-//    {"Fill+Heat:Clean ",     (void *)vBrewHLTSetupFunction,       NULL,                              {HLT_CMD_HEAT_AND_FILL, CLEAN,0,0,0},   40*60,  0,      0, 0, 0},
-//    {"BringToBoil",          (void *)vBrewBoilSetupFunction,      (void *)vBrewBoilPollFunction ,    {5,100,0,0,0},                       30*60,  0,      0, 0, 0},
-//    {"Pump to boil",         (void *)vBrewPumpToBoilSetupFunction,(void *)vBrewPumpToBoilPollFunction,{0,10,0,0,0},                        2*60,  0,      0, 0, 1},
-//    {"Boil",                 (void *)vBrewBoilSetupFunction,      (void *)vBrewBoilPollFunction ,    {60,55,1,0,0},                        90*60,  0,      0, 0, 1},
-//    {"SettlingBefChill",     (void *)vBrewPreChillSetupFunction,  (void *)vBrewPreChillPollFunction,  {1*60,0,0,0,0},                      10*60,   0,      0, 0, 1},
-//    {"Pump Out",    (void *)vBrewPumpToFermenterSetupFunction,     (void *)vBrewPumpToFermenterPollFunction ,   {8,0,0,0,0},                          10*60,  0,      0, 0, 1},
-//    {"BREW FINISHED",        NULL,                                (void *)vBrewWaitingPollFunction,  {1,0,0,0,0},                          2,      0,      0, 0, 0},
-//    {NULL,                   NULL,                                NULL,                              {0,0,0,0,0},                          0,      0,      0, 0, 0}
+//    // TEXT                       SETUP                           		POLL                                   PARMS                          			TIMEOUT   START 	ELAPSED COMPLETE WAIT
+//    {"Waiting",              NULL,                                	(void *)vBrewWaitingPollFunction , 		{3,0,0,0,0},                          		20,    		 0,      0, 	0, 		0},
+//    {"Raise Crane",          (void *)vBrewCraneSetupFunction,    	NULL,                              		{CRANE_UP,0,0,0,0},                	        25,     	 0,      0, 	0, 		0},
+//    {"Close D-Valves",       (void *)vBrewCloseDiscreteValves,   	NULL,                              		{0,0,0,0,0},                          		1,      	 0,      0, 	0, 		0},
+//    {"Close BoilValve",      (void *)vBrewBoilValveSetupFunction, 	NULL,                             		 {BOIL_VALVE_CMD_CLOSE,0,0,0,0},          	20,     	 0,      0, 	0, 		1},
+//    {"Fill+Heat:Strike",     (void *)vBrewHLTSetupFunction,       	NULL,                              		{HLT_CMD_HEAT_AND_FILL,STRIKE,0,0,0},   	40*60,  	 0,      0, 	0, 		0},
+//    {"Grind Grains",         (void *)vBrewMillSetupFunction,      	(void *)vBrewMillPollFunction,     		{0,0,0,0,0},                          		20*60,   	 0,      0, 	0, 		0},
+//    {"DrainHLTForMash",      (void *)vBrewHLTSetupFunction,       	NULL,                             		 {HLT_CMD_DRAIN,STRIKE,0,0,0},       		5*60,   	 0,      0, 	0, 		1},
+//    {"Lower Crane",          (void *)vBrewCraneSetupFunction,     	NULL,                              		{CRANE_DOWN_INCREMENTAL,0,0,0,0},   	    2*60,     	 0,      0, 	0, 		1},
+//    {"Fill+Heat:Sparge1",    (void *)vBrewHLTSetupFunction,       	NULL,                              		{HLT_CMD_HEAT_AND_FILL,SPARGE,0,0,0},   	40*60,  	 0,      0, 	0, 		1},
+//    {"Mash",                 (void *)vBrewMashSetupFunction,      	(void *)vBrewMashPollFunction,     		{0,0,0,0,0},                          		60*60,  	 0,      0, 	0, 		0},
+//    {"MashPumpToBoil",       (void *)vBrewPumpToBoilSetupFunction,	(void *)vBrewPumpToBoilPollFunction,	{0,4*60,0,0,0},                      		11*60,  	 0,      0, 	0, 		0},
+//    {"DrainForSparge1",      (void *)vBrewHLTSetupFunction,       	NULL,                              		{HLT_CMD_DRAIN,SPARGE,0,0,0},       		5*60,  		 0,      0, 	0, 		1},
+//    {"Fill+Heat:Sparge2",    (void *)vBrewHLTSetupFunction,       	NULL,                              		{HLT_CMD_HEAT_AND_FILL,SPARGE,0,0,0},   	40*60,  	 0,      0, 	0, 		1},
+//    {"Sparge1",              (void *)vBrewSpargeSetupFunction,    	(void *)vBrewMashPollFunction,     		{0,0,0,0,0},                          		25*60,   	 0,      0, 	0, 		0},
+//    {"Pump to boil1",        (void *)vBrewPumpToBoilSetupFunction,	(void *)vBrewPumpToBoilPollFunction,	{0,2*60,0,0,0},                      		11*60,  	 0,      0, 	0, 		0},
+//    {"DrainForSparge2",      (void *)vBrewHLTSetupFunction,       	NULL,                              		{HLT_CMD_DRAIN,SPARGE,0,0,0},       		5*60,  		 0,      0, 	0, 		1},
+//    {"Sparge2",              (void *)vBrewSpargeSetupFunction,    	(void *)vBrewMashPollFunction,     		{0,0,0,0,0},                          		25*60,   	 0,      0, 	0, 		1},
+//    {"Pump to boil2",        (void *)vBrewPumpToBoilSetupFunction,	(void *)vBrewPumpToBoilPollFunction,	{0,2*60,0,0,0},                      		11*60,  	 0,      0, 	0, 		1},
+//    {"Raise Crane",          (void *)vBrewCraneSetupFunction,     	NULL,                              		{CRANE_UP,0,0,0,0},                         25,     	 0,      0, 	0, 		1},
+//    {"Fill+Heat:Clean ",     (void *)vBrewHLTSetupFunction,       	NULL,                              		{HLT_CMD_HEAT_AND_FILL, CLEAN,0,0,0},   	40*60,  	 0,      0, 	0, 		0},
+//    {"BringToBoil",          (void *)vBrewBoilSetupFunction,      	(void *)vBrewBoilPollFunction ,    		{22,100,0,0,0},                       		30*60,  	 0,      0, 	0, 		0},
+//    {"Pump to boil",         (void *)vBrewPumpToBoilSetupFunction,	(void *)vBrewPumpToBoilPollFunction,	{0,10,0,0,0},                        		2*60,  	  	 0,      0, 	0, 		1},
+//    {"Boil",                 (void *)vBrewBoilSetupFunction,      	(void *)vBrewBoilPollFunction ,    		{60,55,1,0,0},                        		90*60,  	 0,      0, 	0, 		1},
+//    {"SettlingBefChill",     (void *)vBrewPreChillSetupFunction,  	(void *)vBrewPreChillPollFunction,  	{6*60,0,0,0,0},                      		10*60,   	 0,      0, 	0, 		1},
+//    {"Chill",                (void *)vBrewChillSetupFunction,     	(void *)vBrewChillPollFunction ,   		{0,0,0,0,0},                          		10*60,  	 0,      0, 	0, 		1},
+//    {"Pump Out",    (void *)vBrewPumpToFermenterSetupFunction,     	(void *)vBrewPumpToFermenterPollFunction,{8,0,0,0,0},                    			10*60,  	 0,      0, 	0, 		1},
+//    {"BREW FINISHED",        NULL,                                	(void *)vBrewWaitingPollFunction,  		{1,0,0,0,0},                          		2,      	 0,      0, 	0, 		1},
+//    {NULL,                   NULL,                                	NULL,                              		{0,0,0,0,0},                          		0,      	 0,      0, 	0, 		0}
 //};
+
+static BrewStep BrewSteps[] = {
+    // TEXT                       SETUP                           POLL                                   PARMS                          TIMEOUT   START ELAPSED COMPLETE WAIT
+    {"Waiting",              NULL,                                (void *)vBrewWaitingPollFunction , {3,0,0,0,0},                          20,     0,      0, 0, 0},
+    {"Raise Crane",          (void *)vBrewCraneSetupFunction,     NULL,                              {CRANE_UP,0,0,0,0},                         25,     0,      0, 0, 0},
+    {"Close D-Valves",       (void *)vBrewCloseDiscreteValves,    NULL,                              {0,0,0,0,0},                          1,      0,      0, 0, 0},
+    {"Close BoilValve",      (void *)vBrewBoilValveSetupFunction, NULL,                              {BOIL_VALVE_CMD_CLOSE,0,0,0,0},           20,      0,      0, 0, 1},
+    {"Fill+Heat:Strike",     (void *)vBrewHLTSetupFunction,       NULL,                              {HLT_CMD_HEAT_AND_FILL,CLEAN,0,0,0},   40*60,  0,      0, 0, 0},
+    {"DrainHLTForMash",      (void *)vBrewHLTSetupFunction,       NULL,                              {HLT_CMD_DRAIN,STRIKE,0,0,0},       5*60,   0,      0, 0, 1},
+    {"Lower Crane",          (void *)vBrewCraneSetupFunction,     NULL,                              {CRANE_DOWN_INCREMENTAL,0,0,0,0},                     2*60,     0,      0, 0, 1},
+    {"Fill+Heat:Sparge1",    (void *)vBrewHLTSetupFunction,       NULL,                              {HLT_CMD_HEAT_AND_FILL,CLEAN,0,0,0},   40*60,  0,      0, 0, 1},
+    {"Mash",                 (void *)vBrewMashSetupFunction,      (void *)vBrewMashPollFunction,     {0,0,0,0,0},                          60*60,  0,      0, 0, 0},
+    {"MashPumpToBoil",        (void *)vBrewPumpToBoilSetupFunction,(void *)vBrewPumpToBoilPollFunction,{0,2*60,0,0,0},                      11*60,  0,      0, 0, 0},
+    {"DrainForSparge1",       (void *)vBrewHLTSetupFunction,       NULL,                              {HLT_CMD_DRAIN,SPARGE,0,0,0},       5*60,  0,      0, 0, 1},
+    {"Fill+Heat:Sparge2",     (void *)vBrewHLTSetupFunction,       NULL,                              {HLT_CMD_HEAT_AND_FILL,CLEAN,0,0,0},   40*60,  0,      0, 0, 1},
+    {"Sparge1",               (void *)vBrewSpargeSetupFunction,    (void *)vBrewMashPollFunction,     {0,0,0,0,0},                          25*60,   0,      0, 0, 0},
+    {"Pump to boil1",         (void *)vBrewPumpToBoilSetupFunction,(void *)vBrewPumpToBoilPollFunction,{0,1*60,0,0,0},                      11*60,  0,      0, 0, 0},
+    {"DrainForSparge2",       (void *)vBrewHLTSetupFunction,       NULL,                              {HLT_CMD_DRAIN,SPARGE,0,0,0},       5*60,  0,      0, 0, 1},
+    {"Sparge2",               (void *)vBrewSpargeSetupFunction,    (void *)vBrewMashPollFunction,     {0,0,0,0,0},                          25*60,   0,      0, 0, 1},
+    {"Pump to boil2",         (void *)vBrewPumpToBoilSetupFunction,(void *)vBrewPumpToBoilPollFunction,{0,1*60,0,0,0},                      11*60,  0,      0, 0, 1},
+    {"Raise Crane",          (void *)vBrewCraneSetupFunction,     NULL,                              {CRANE_UP,0,0,0,0},                         25,     0,      0, 0, 1},
+    {"Fill+Heat:Clean ",     (void *)vBrewHLTSetupFunction,       NULL,                              {HLT_CMD_HEAT_AND_FILL, CLEAN,0,0,0},   40*60,  0,      0, 0, 0},
+    {"BringToBoil",          (void *)vBrewBoilSetupFunction,      (void *)vBrewBoilPollFunction ,    {5,100,0,0,0},                       30*60,  0,      0, 0, 0},
+    {"Pump to boil",         (void *)vBrewPumpToBoilSetupFunction,(void *)vBrewPumpToBoilPollFunction,{0,10,0,0,0},                        2*60,  0,      0, 0, 1},
+    {"Boil",                 (void *)vBrewBoilSetupFunction,      (void *)vBrewBoilPollFunction ,    {60,55,1,0,0},                        90*60,  0,      0, 0, 1},
+    {"SettlingBefChill",     (void *)vBrewPreChillSetupFunction,  (void *)vBrewPreChillPollFunction,  {1*60,0,0,0,0},                      10*60,   0,      0, 0, 1},
+    {"Pump Out",    (void *)vBrewPumpToFermenterSetupFunction,     (void *)vBrewPumpToFermenterPollFunction ,   {8,0,0,0,0},                          10*60,  0,      0, 0, 1},
+    {"BREW FINISHED",        NULL,                                (void *)vBrewWaitingPollFunction,  {1,0,0,0,0},                          2,      0,      0, 0, 0},
+    {NULL,                   NULL,                                NULL,                              {0,0,0,0,0},                          0,      0,      0, 0, 0}
+};
 
  int iMaxBrewSteps(void)
 {

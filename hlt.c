@@ -302,7 +302,7 @@ vTaskBrewHLT(void * pvParameters)
 						vValveActuate(HLT_VALVE, CLOSE_VALVE);
 						vTaskDelay(500);
 						uiActualLitresDelivered += (unsigned int) (fActualLitresDelivered * 1000);
-						MashTunFillingSetpointReached(fActualLitresDelivered);
+
 						xMsgCmdCompleteToBrew.ucFromTask = HLT_TASK;
 						xMsgCmdCompleteToBrew.iBrewStep = rcvdMsg.ucStepNumber;
 						xMsgCmdCompleteToBrew.xCommand = BREW_STEP_COMPLETE;

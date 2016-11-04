@@ -112,7 +112,6 @@ void vFlow1Init( void )
 void EXTI4_IRQHandler(void)
 {
   ulBoilFlowPulses++;
-  //printf("external interrupt triggered %f \r\n\0", 5.3221);
   EXTI_ClearITPendingBit(EXTI_Line4); // need to clear the bit before leaving.
   portEND_SWITCHING_ISR(pdFALSE);
 }
@@ -125,116 +124,114 @@ void EXTIX_IRQHandler(void)
   //  portEND_SWITCHING_ISR(pdFALSE);
 }
 
-void vTaskLitresToBoil ( void * pvParameters )
+void vTaskLitresToBoil(void * pvParameters)
 {
-  unsigned long * xMessage;
-  static unsigned long ulPulsesLast = 0;
-  unsigned long ulPulsesSinceLast;
-  char buf[50];
+	unsigned long * xMessage;
+	static unsigned long ulPulsesLast = 0;
+	unsigned long ulPulsesSinceLast;
+	char buf[50];
 
-//
+	portBASE_TYPE xStatus;
+	for (;;)
+	{
+		// check the queue for a message
+		//TODO: why not use a delayuntil pattern here?
+		xStatus = xQueueReceive(xLitresToBoilQueue, &(xMessage), 500); // wait 0.5 seconds for a message (DONT CHANGE)
+		if (xStatus == pdTRUE) // message received
+		{
+			vConsolePrint("FLOW1: received Reset\r\n\0");
+			ulBoilFlowPulses = 0; // probably what we want to do here
+			ulPulsesSinceLast = 0;
+			fLitresDeliveredToBoil = 0.00;
+		}
+		else // no message
+		{
+			ulPulsesSinceLast = ulBoilFlowPulses - ulPulsesLast;
+			ulPulsesLast = ulBoilFlowPulses;
 
-    portBASE_TYPE xStatus;
-    for (;;)
-      {
-        // check the queue for a message
-        xStatus = xQueueReceive(xLitresToBoilQueue, &(xMessage), 500); // wait 0.5 seconds for a message (DONT CHANGE)
-        if (xStatus == pdTRUE) // message recieved
-          {
-           vConsolePrint("FLOW1: received Reset\r\n\0");
-            ulBoilFlowPulses = 0; // probably what we want to do here
-            ulPulsesSinceLast = 0;
-            fLitresDeliveredToBoil = 0.00;
-            //vTaskDelay(1000);
+			// Calculates the accumulated litres delivered by deriving the amount of pulses
+			// that have occurred in the last half second, then determining which multiplier to
+			// use to make the next calculation depending on the rate of flow.
+			if (ulPulsesSinceLast <= ulLowerThresh)
+			{
+				fLitresDeliveredToBoil = fLitresDeliveredToBoil + ((float) ulPulsesSinceLast * fBoilLitresPerPulseL);
+			}
+			else if (ulPulsesSinceLast > ulLowerThresh && ulPulsesSinceLast <= ulUpperThresh)
+			{
+				fLitresDeliveredToBoil = fLitresDeliveredToBoil + ((float) ulPulsesSinceLast * fBoilLitresPerPulseH);
+			}
+			else // we have recorded a bad value, put in the average now.
+			{
+				//expect to see this line rarely, if at all.
+				vConsolePrint("Bad Value Received, See Flow.c:164\r\n\0");
 
-          }
-        else // no message
-          {
-            ulPulsesSinceLast = ulBoilFlowPulses - ulPulsesLast;
-            ulPulsesLast = ulBoilFlowPulses;
+				fLitresDeliveredToBoil = fLitresDeliveredToBoil + (15.0 * fBoilLitresPerPulseH);
+			}
+			if (fLitresDeliveredToBoil < 0.01 || fLitresDeliveredToBoil > 50000)
+				fLitresDeliveredToBoil = 0.000;
+			if (ulPulsesSinceLast > 0 && ulPulsesSinceLast <= ulUpperThresh)
+			{
+				uBoilFlowState = FLOWING;
+				//sprintf(buf, "last:%d,\r\n\0", ulPulsesSinceLast);
+				//vConsolePrint(buf);
+			}
+			else
+				uBoilFlowState = NOT_FLOWING;
+		}
+		taskYIELD();
 
-            // Calculates the accumulated litres delivered by deriving the amount of pulses
-            // that have occurred in the last half second, then determining which multiplier to
-            // use to make the next calculation depending on the rate of flow.
-            if (ulPulsesSinceLast <= ulLowerThresh)
-              {
-                fLitresDeliveredToBoil = fLitresDeliveredToBoil + ((float)ulPulsesSinceLast * fBoilLitresPerPulseL);
-              }
-            else if (ulPulsesSinceLast > ulLowerThresh && ulPulsesSinceLast <= ulUpperThresh)
-              {
-                fLitresDeliveredToBoil = fLitresDeliveredToBoil + ((float)ulPulsesSinceLast * fBoilLitresPerPulseH);
-              }
-            else // we have recorded a bad value, put in the average now.
-              {
-                fLitresDeliveredToBoil = fLitresDeliveredToBoil + (15.0 * fBoilLitresPerPulseH);
-              }
-            if (fLitresDeliveredToBoil < 0.01 || fLitresDeliveredToBoil > 50000)
-              fLitresDeliveredToBoil = 0.000;
-            if (ulPulsesSinceLast > 0 && ulPulsesSinceLast <= ulUpperThresh)
-              {
-                uBoilFlowState = FLOWING;
-                //sprintf(buf, "last:%d,\r\n\0", ulPulsesSinceLast);
-                //vConsolePrint(buf);
-              }
-            else
-              uBoilFlowState = NOT_FLOWING;
-          }
-        taskYIELD();
-
-      }
+	}
 
 }
 
-void vTaskLitresToMash ( void * pvParameters )
+void vTaskLitresToMash(void * pvParameters)
 {
-  unsigned long * xMessage;
-  static unsigned long ulPulsesLast = 0;
-  unsigned long ulPulsesSinceLast;
+	unsigned long * xMessage;
+	static unsigned long ulPulsesLast = 0;
+	unsigned long ulPulsesSinceLast;
 //
 
-    portBASE_TYPE xStatus;
-    for (;;)
-      {
-        // check the queue for a message
-        xStatus = xQueueReceive(xLitresToMashQueue, &(xMessage), 500); // wait 0.5 seconds for a message (DONT CHANGE)
-        if (xStatus == pdTRUE) // message received
-          {
-            //printf("received message: %d\r\n\0", *xMessage);
-            ulMashFlowPulses = 0; // probably what we want to do here
-            ulPulsesSinceLast = 0;
-            fLitresDeliveredToMash = 0.001;
-            //vTaskDelay(1000);
+	portBASE_TYPE xStatus;
+	for (;;)
+	{
+		// check the queue for a message
+		xStatus = xQueueReceive(xLitresToMashQueue, &(xMessage), 500); // wait 0.5 seconds for a message (DONT CHANGE)
+		if (xStatus == pdTRUE) // message received
+		{
+			//printf("received message: %d\r\n\0", *xMessage);
+			ulMashFlowPulses = 0; // probably what we want to do here
+			ulPulsesSinceLast = 0;
+			fLitresDeliveredToMash = 0.001;
+			//vTaskDelay(1000);
 
-          }
-        else // no message
-          {
-            ulPulsesSinceLast = ulMashFlowPulses - ulPulsesLast;
-            ulPulsesLast = ulMashFlowPulses;
+		}
+		else // no message
+		{
+			ulPulsesSinceLast = ulMashFlowPulses - ulPulsesLast;
+			ulPulsesLast = ulMashFlowPulses;
 
-            // Calculates the accumulated litres delivered by deriving the amount of ulBoilFlowPulses
-            // that have occurred in the last half second, then determining which multiplier to
-            // use to make the next calculation depending on the rate of flow.
-            if (ulPulsesSinceLast <= ulLowerThresh)
-              {
-                fLitresDeliveredToMash = fLitresDeliveredToMash + ((float)ulPulsesSinceLast * fMashLitresPerPulseL);
-              }
-            else
-              {
-                fLitresDeliveredToMash = fLitresDeliveredToMash + ((float)ulPulsesSinceLast * fMashLitresPerPulseH);
-              }
-            if (fLitresDeliveredToMash < 0.01 || fLitresDeliveredToMash > 50000)
-              fLitresDeliveredToMash = 0.001;
-            if (ulPulsesSinceLast > 0)
-              uMashFlowState = FLOWING;
-            else
-              uMashFlowState = NOT_FLOWING;
-          }
-        vTaskDelay(50);
-        taskYIELD();
+			// Calculates the accumulated litres delivered by deriving the amount of ulBoilFlowPulses
+			// that have occurred in the last half second, then determining which multiplier to
+			// use to make the next calculation depending on the rate of flow.
+			if (ulPulsesSinceLast <= ulLowerThresh)
+			{
+				fLitresDeliveredToMash = fLitresDeliveredToMash + ((float) ulPulsesSinceLast * fMashLitresPerPulseL);
+			}
+			else
+			{
+				fLitresDeliveredToMash = fLitresDeliveredToMash + ((float) ulPulsesSinceLast * fMashLitresPerPulseH);
+			}
+			if (fLitresDeliveredToMash < 0.01 || fLitresDeliveredToMash > 50000)
+				fLitresDeliveredToMash = 0.001;
+			if (ulPulsesSinceLast > 0)
+				uMashFlowState = FLOWING;
+			else
+				uMashFlowState = NOT_FLOWING;
+		}
+		vTaskDelay(50);
+		taskYIELD();
 
-
-
-      }
+	}
 
 }
 
@@ -242,6 +239,7 @@ void vTaskLitresToMash ( void * pvParameters )
 void vResetFlow1(void)
 {
   // just some test code to do with lockups etc.
+	// 2016/11/02 Doesnt matter a fuck what the message content is, it always resets and doesnt even check the content of the message
  int x = 1;
  int * xx = &x;
 

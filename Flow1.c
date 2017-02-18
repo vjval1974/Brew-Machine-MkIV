@@ -28,10 +28,10 @@ xQueueHandle xLitresToMashQueue, xLitresToBoilQueue;
 
 //globals
 volatile unsigned long ulBoilFlowPulses = 0, ulMashFlowPulses;
-const float fBoilLitresPerPulseL = (0.0033);
-const float fMashLitresPerPulseL = (0.0033);
-const float fBoilLitresPerPulseH = (0.0042);
-const float fMashLitresPerPulseH = (0.0042);
+const float fBoilLitresPerPulseL = (0.0038); //0.0033
+const float fMashLitresPerPulseL = (0.0038); //0.0033
+const float fBoilLitresPerPulseH = (0.0047); //0.0042
+const float fMashLitresPerPulseH = (0.0047); //0.0042 //changed 12/11/16 because of higher volumes experienced
 const unsigned long ulLowerThresh = 13; //26 pulses per second is the thresh, but we use 0.5seconds
 const unsigned long ulUpperThresh = 30; //if we are over this, there is a problem.. dont record
 float fLitresDeliveredToBoil = 0, fLitresDeliveredToMash = 0;

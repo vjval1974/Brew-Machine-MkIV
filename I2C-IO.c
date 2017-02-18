@@ -35,6 +35,7 @@ static int iI2C_Send(char address, char data);
 
 void vI2C_Init(void)
 {
+	portENTER_CRITICAL(); //added in the case that this is interrupted by a call to send on another task. (somehow)
 	static int first = 1;
 	GPIO_InitTypeDef GPIO_InitStructure;
 	I2C_InitTypeDef I2C_InitStructure;
@@ -72,6 +73,7 @@ void vI2C_Init(void)
 	if (first == 1)
 		xI2C_SendQueue = xQueueCreate(20, sizeof(uint16_t));
 	first = 0;
+	portEXIT_CRITICAL();
 }
 
 static int iI2C_Send(char address, char data)
@@ -162,7 +164,13 @@ static int iI2C_Send(char address, char data)
 	portEXIT_CRITICAL();
 	return 1;
 }
-
+typedef enum
+{
+	I2C_RECEIVE_ERROR_NO_RESPONSE,
+	I2C_RECEIVE_ERROR_RECEIVER_MODE_NOT_ACKNOWLEDGED,
+	I2C_RECEIVE_ERROR_MASTER_BYTE_RECEIVED_EVENT_NOT_RECEIVED,
+	I2C_RECEIVE_ERROR
+};
 
 static int iI2C_Receive(char address, char * data)
 {

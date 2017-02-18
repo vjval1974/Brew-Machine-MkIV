@@ -24,10 +24,16 @@
 struct Parameters BrewParameters;
 void vParametersAppletDisplay(void *pvParameters);
 
-#define LCD_FLOAT( x, y, dp , var ) lcd_printf(x, y, 4, "%d.%d", (unsigned int)floor(var), (unsigned int)((var-floor(var))*pow(10, dp)));
+#define LCD_FLOAT( x, y, dp , var ) lcd_printf(x, y, 4, "%d.%d", (unsigned int)floor(var), ((((var-floor(var))*pow(10, dp)) < 0.1 && ((var-floor(var))*pow(10, dp)) > 0.0001 ) ? 1 :(unsigned int)((var-floor(var))*pow(10, dp))));
 
 xTaskHandle xParametersAppletDisplayHandle = NULL;
 xSemaphoreHandle xAppletRunningSemaphore;
+
+
+void test(float var, int dp, int x, int y)
+{
+	lcd_printf(x, y, 4, "%d.%d", (unsigned int)round(var),  (((var-floor(var))*pow(10, dp)) < 0.1 ? 0.1 :(unsigned int)((var-floor(var))*pow(10, dp))));
+}
 
 // NEW CODE
 typedef enum
@@ -49,9 +55,11 @@ typedef struct
 UserParameters UserParametersList[] =
     {
         { &BrewParameters.iGrindTime, INT_TYPE, "Milling Time" },
-        { &BrewParameters.fGrainWeightKilos, INT_TYPE, "Grain Weight" },
+        { &BrewParameters.fGrainWeightKilos, FLOAT_TYPE, "Grain Weight" },
         { &BrewParameters.fStrikeTemp, FLOAT_TYPE, "Strike Temp" },
+        { &BrewParameters.fMashStage2Temp, FLOAT_TYPE, "Mash Stg2 Temp" },
         { &BrewParameters.fStrikeLitres, FLOAT_TYPE, "Strike(l)" },
+        { &BrewParameters.fMashStage2Litres, FLOAT_TYPE, "Mash Stg2 (l)" },
         { &BrewParameters.fMashOutTemp, FLOAT_TYPE, "Mash Out Temp" },
         { &BrewParameters.fMashOutLitres, FLOAT_TYPE, "Mash Out(l)" },
         { &BrewParameters.fSpargeTemp, FLOAT_TYPE, "Sparge1 Temp" },
@@ -59,6 +67,8 @@ UserParameters UserParametersList[] =
         { &BrewParameters.fSpargeTemp3, FLOAT_TYPE, "Sparge3 Temp" },
         { &BrewParameters.fSpargeLitres, FLOAT_TYPE, "Sparge1(l)" },
         { &BrewParameters.iMashTime, INT_TYPE, "Mash Time" },
+        { &BrewParameters.iMashStage2Time, INT_TYPE, "Mash2 Time" },
+        { &BrewParameters.uiCurrentMashStage, INT_TYPE, "CurrentMash Stage" },
         { &BrewParameters.iMashOutTime, INT_TYPE, "Mash Out Time" },
         { &BrewParameters.iSpargeTime, INT_TYPE, "Sparge Time" },
         { &BrewParameters.uiBoilTime, INT_TYPE, "Boil Time" },
@@ -77,35 +87,33 @@ UserParameters UserParametersList[] =
 // BREW PARAMETERS
 void vParametersInit(void)
 {
-#ifdef TESTING
-	//
-	//IF THIS AREA IS NOT GREYED OUT, THEN YOU ARE IN TESTING MODE
-	//
-#endif
 
 	//Grind
-	BrewParameters.iGrindTime = 1; //16;
+	BrewParameters.iGrindTime = 16; //16; 1
 	BrewParameters.fGrainWeightKilos = 3.0;
 
 	//Mash
 	BrewParameters.fHLTMaxLitres = 21.0; // This is the max amount that can be drained
-	BrewParameters.fStrikeTemp = 32.0;//78.5;
+	BrewParameters.fStrikeTemp = 76.4; // first mash temp (added 1 degree for test, target temp with 15.79 litres is 62deg)
+	BrewParameters.fMashStage2Temp = 99.9; // for second mash rest
 	BrewParameters.fMashOutTemp = 99.0;
 
-	BrewParameters.fSpargeTemp = 32.0;//90.0;
-	BrewParameters.fSpargeTemp2 = 32.0;//90.0;
-	BrewParameters.fSpargeTemp3 = 32.0;//90.0;
+	BrewParameters.fSpargeTemp = 75.6;//90.0;
+	BrewParameters.fSpargeTemp2 = 75.6;//90.0;
+	BrewParameters.fSpargeTemp3 = 75.6;//90.0;
 
-	BrewParameters.fCleanTemp = 40.0;
+	BrewParameters.fCleanTemp = 32.34; //50
 
-	BrewParameters.fStrikeLitres = 10.0;//20.79;
-	BrewParameters.fMashOutLitres = 15.00;
-	BrewParameters.fSpargeLitres = 6.0;//11.28;
+	BrewParameters.fStrikeLitres = 15.79;//20.79;
+	BrewParameters.fMashStage2Litres = 9.00;// added 1 litre
+ 	BrewParameters.fMashOutLitres = 15.00;
+	BrewParameters.fSpargeLitres = 8.86;//11.28;
 
-	BrewParameters.iMashTime = 1;//60;
+	BrewParameters.iMashTime = 30;//60;
+	BrewParameters.iMashStage2Time = 30;//60;
 	BrewParameters.iPumpTime1 = 10;
 	BrewParameters.iStirTime1 = 10;
-	BrewParameters.iPumpTime2 = 3;
+	BrewParameters.iPumpTime2 = 5;
 	BrewParameters.iStirTime2 = 0;
 
 	//Mash Out
@@ -116,10 +124,10 @@ void vParametersInit(void)
 	BrewParameters.iMashOutStirTime2 = 0;
 
 	//Sparge
-	BrewParameters.iSpargeTime = 1;//20;
+	BrewParameters.iSpargeTime = 15;//20;
 	BrewParameters.iSpargePumpTime1 = 5;
 	BrewParameters.iSpargeStirTime1 = 5;
-	BrewParameters.iSpargePumpTime2 = 2;
+	BrewParameters.iSpargePumpTime2 = 5;
 	BrewParameters.iSpargeStirTime2 = 0;
 
 	//Pump
@@ -127,8 +135,8 @@ void vParametersInit(void)
 	BrewParameters.iPumpPrimingTime = 1;
 
 	//Boil
-	BrewParameters.uiBoilTime = 1;//60; //60;
-	BrewParameters.uiBringToBoilTime = 1;//24; //based off last brew.. 40% duty cycle at sparge 2. large boil volume, maybe 38-40l
+	BrewParameters.uiBoilTime = 60;//60; //60;
+	BrewParameters.uiBringToBoilTime = 24;//24; //based off last brew.. 40% duty cycle at sparge 2. large boil volume, maybe 38-40l
 										 // TODO: Make sure the elbow is in the boiler for the end of the boil to stop splashing
 
 	BrewParameters.uiHopTimes[0] = 60;
@@ -141,10 +149,12 @@ void vParametersInit(void)
 	BrewParameters.uiSettlingRecircTime = 1; //mins
 	BrewParameters.uiSettlingTime = 1; //mins
 
-	BrewParameters.uiChillTime = 1;//20; //mins
+	BrewParameters.uiChillTime = 15;//20; //mins
 
 	BrewParameters.uiChillerPumpPrimingCycles = 5;
 	BrewParameters.uiChillerPumpPrimingTime = 1; //seconds
+
+	BrewParameters.uiCurrentMashStage = 0; // so we can change it from the params screen.
 
 }
 

@@ -20,18 +20,21 @@ struct Parameters {
   //HLT
   float fHLTMaxLitres; // Maximum amount of litres at high level probe
   float fStrikeTemp;
+  float fMashStage2Temp;
   float fMashOutTemp;
   float fSpargeTemp;
   float fSpargeTemp2;
   float fSpargeTemp3;
   float fCleanTemp;
   float fStrikeLitres;
+  float fMashStage2Litres;
   float fMashOutLitres;
   float fSpargeLitres;
 
 
   //Mash
   int iMashTime; // Minutes
+  int iMashStage2Time; //
   int iPumpTime1; // How long to pump for at the start of the mash
   int iPumpTime2; // "             "             end       "
   int iStirTime1; // "           stir     "       start     "
@@ -63,6 +66,8 @@ struct Parameters {
   unsigned int uiChillerPumpPrimingCycles;
   unsigned int uiChillerPumpPrimingTime;
   unsigned int uiChillTime; //time it takes to run through the chiller. mins
+
+  unsigned int uiCurrentMashStage;
 
 };
 

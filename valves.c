@@ -120,7 +120,6 @@ void vValveActuate(unsigned char valve, ValveCommand command)
 			{
 				current = GPIO_ReadInputDataBit(HLT_VALVE_PORT, HLT_VALVE_PIN );
 				GPIO_WriteBit(HLT_VALVE_PORT, HLT_VALVE_PIN, current ^ 1);
-
 			}
 			else if (command == OPEN_VALVE)
 			{
@@ -130,6 +129,11 @@ void vValveActuate(unsigned char valve, ValveCommand command)
 			{
 				GPIO_WriteBit(HLT_VALVE_PORT, HLT_VALVE_PIN, 0);
 			}
+			if (ucGetHltValveState() == VALVE_OPENED)
+			{
+				vSetBoilFlowMeasuringState(MEASURING_FLOW);
+			}
+			else vSetBoilFlowMeasuringState(NOT_MEASURING_FLOW);
 			break;
 		}
 		case MASH_VALVE:

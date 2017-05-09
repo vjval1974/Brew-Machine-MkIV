@@ -20,6 +20,7 @@
 #include "I2C-IO.h"
 #include "stir.h"
 #include "stirApplet.h"
+#include "console.h"
 
 volatile StirState xStirState;
 
@@ -35,10 +36,12 @@ void vStir(StirState state)
 {
 	if (state == STIR_DRIVING && xGetStirState() != STIR_DRIVING)
 	{
+		vConsolePrint("Starting Stirrer\r\n\0");
 		vPCF_SetBits(STIR_PIN, STIR_PORT);
 	}
 	else if ( state == STIR_STOPPED && xGetStirState() != STIR_STOPPED )
 	{
+		vConsolePrint("Stopping Stirrer\r\n\0");
 		vPCF_ResetBits(STIR_PIN, STIR_PORT);
 	}
 	xStirState = state;

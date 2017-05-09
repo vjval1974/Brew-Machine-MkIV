@@ -21,21 +21,23 @@
 xSemaphoreHandle xFlow1AppletRunningSemaphore;
 
 xQueueHandle xLitresToMashQueue, xLitresToBoilQueue;
+FlowState_t FlowState = NOT_MEASURING_FLOW;
 
-#define FLOWING 1
-#define NOT_FLOWING 0
+
 
 
 //globals
 volatile unsigned long ulBoilFlowPulses = 0, ulMashFlowPulses;
-const float fBoilLitresPerPulseL = (0.0038); //0.0033
-const float fMashLitresPerPulseL = (0.0038); //0.0033
-const float fBoilLitresPerPulseH = (0.0047); //0.0042
-const float fMashLitresPerPulseH = (0.0047); //0.0042 //changed 12/11/16 because of higher volumes experienced
+const float fBoilLitresPerPulseL = (0.0043); //0.0033 -> 0.0038 --> 0.0043
+const float fMashLitresPerPulseL = (0.0043); //0.0033
+const float fBoilLitresPerPulseH = (0.0052); //0.0042 -->0.0047 --> 0.0052
+const float fMashLitresPerPulseH = (0.0052); //0.0042 //changed 12/11/16 because of higher volumes experienced
 const unsigned long ulLowerThresh = 13; //26 pulses per second is the thresh, but we use 0.5seconds
 const unsigned long ulUpperThresh = 30; //if we are over this, there is a problem.. dont record
 float fLitresDeliveredToBoil = 0, fLitresDeliveredToMash = 0;
-volatile uint8_t uBoilFlowState = NOT_FLOWING, uMashFlowState = NOT_FLOWING;
+volatile FlowState_t xBoilFlowState = NOT_FLOWING, xMashFlowState = NOT_FLOWING;
+FlowMeasuringState_t xBoilFlowMeasuringState = NOT_MEASURING_FLOW, xMashFlowMeasuringState = NOT_MEASURING_FLOW;
+
 
 
 
@@ -47,6 +49,15 @@ void vFlow1AppletDisplay( void *pvParameters);
 void vResetFlow1( void );
 void vResetFlow2( void );
 
+void vSetBoilFlowMeasuringState(FlowMeasuringState_t state)
+{
+	xBoilFlowMeasuringState = state;
+}
+
+FlowMeasuringState_t xGetBoilFlowMeasuringState()
+{
+	return xBoilFlowMeasuringState;
+}
 
 void vFlow1Init( void )
 {
@@ -135,48 +146,47 @@ void vTaskLitresToBoil(void * pvParameters)
 	for (;;)
 	{
 		// check the queue for a message
-		//TODO: why not use a delayuntil pattern here?
 		xStatus = xQueueReceive(xLitresToBoilQueue, &(xMessage), 500); // wait 0.5 seconds for a message (DONT CHANGE)
 		if (xStatus == pdTRUE) // message received
 		{
 			vConsolePrint("FLOW1: received Reset\r\n\0");
-			ulBoilFlowPulses = 0; // probably what we want to do here
+			ulBoilFlowPulses = 0;
 			ulPulsesSinceLast = 0;
 			fLitresDeliveredToBoil = 0.00;
 		}
 		else // no message
 		{
-			ulPulsesSinceLast = ulBoilFlowPulses - ulPulsesLast;
-			ulPulsesLast = ulBoilFlowPulses;
+			if (xBoilFlowMeasuringState == MEASURING_FLOW)
+			{
+				ulPulsesSinceLast = ulBoilFlowPulses - ulPulsesLast;
+				ulPulsesLast = ulBoilFlowPulses;
 
-			// Calculates the accumulated litres delivered by deriving the amount of pulses
-			// that have occurred in the last half second, then determining which multiplier to
-			// use to make the next calculation depending on the rate of flow.
-			if (ulPulsesSinceLast <= ulLowerThresh)
-			{
-				fLitresDeliveredToBoil = fLitresDeliveredToBoil + ((float) ulPulsesSinceLast * fBoilLitresPerPulseL);
+				// Calculates the accumulated litres delivered by deriving the amount of pulses
+				// that have occurred in the last half second, then determining which multiplier to
+				// use to make the next calculation depending on the rate of flow.
+				if (ulPulsesSinceLast <= ulLowerThresh)
+				{
+					fLitresDeliveredToBoil = fLitresDeliveredToBoil + ((float) ulPulsesSinceLast * fBoilLitresPerPulseL);
+				}
+				else if (ulPulsesSinceLast > ulLowerThresh && ulPulsesSinceLast <= ulUpperThresh)
+				{
+					fLitresDeliveredToBoil = fLitresDeliveredToBoil + ((float) ulPulsesSinceLast * fBoilLitresPerPulseH);
+				}
+				else // we have recorded a bad value, put in the average now.
+				{
+					// this happens when we get noise such as when the mill is driving
+					fLitresDeliveredToBoil = fLitresDeliveredToBoil + (15.0 * fBoilLitresPerPulseH);
+				}
+				if (fLitresDeliveredToBoil < 0.01 || fLitresDeliveredToBoil > 50000)
+					fLitresDeliveredToBoil = 0.000;
+				if (ulPulsesSinceLast > 0 && ulPulsesSinceLast <= ulUpperThresh)
+				{
+					xBoilFlowState = FLOWING;
+				}
+				else
+					xBoilFlowState = NOT_FLOWING;
 			}
-			else if (ulPulsesSinceLast > ulLowerThresh && ulPulsesSinceLast <= ulUpperThresh)
-			{
-				fLitresDeliveredToBoil = fLitresDeliveredToBoil + ((float) ulPulsesSinceLast * fBoilLitresPerPulseH);
-			}
-			else // we have recorded a bad value, put in the average now.
-			{
-				//expect to see this line rarely, if at all.
-				vConsolePrint("Bad Value Received, See Flow.c:164\r\n\0");
-
-				fLitresDeliveredToBoil = fLitresDeliveredToBoil + (15.0 * fBoilLitresPerPulseH);
-			}
-			if (fLitresDeliveredToBoil < 0.01 || fLitresDeliveredToBoil > 50000)
-				fLitresDeliveredToBoil = 0.000;
-			if (ulPulsesSinceLast > 0 && ulPulsesSinceLast <= ulUpperThresh)
-			{
-				uBoilFlowState = FLOWING;
-				//sprintf(buf, "last:%d,\r\n\0", ulPulsesSinceLast);
-				//vConsolePrint(buf);
-			}
-			else
-				uBoilFlowState = NOT_FLOWING;
+			else xBoilFlowState = NOT_FLOWING;
 		}
 		taskYIELD();
 
@@ -224,9 +234,9 @@ void vTaskLitresToMash(void * pvParameters)
 			if (fLitresDeliveredToMash < 0.01 || fLitresDeliveredToMash > 50000)
 				fLitresDeliveredToMash = 0.001;
 			if (ulPulsesSinceLast > 0)
-				uMashFlowState = FLOWING;
+				xMashFlowState = FLOWING;
 			else
-				uMashFlowState = NOT_FLOWING;
+				xMashFlowState = NOT_FLOWING;
 		}
 		vTaskDelay(50);
 		taskYIELD();
@@ -238,19 +248,18 @@ void vTaskLitresToMash(void * pvParameters)
 
 void vResetFlow1(void)
 {
-  // just some test code to do with lockups etc.
-	// 2016/11/02 Doesnt matter a fuck what the message content is, it always resets and doesnt even check the content of the message
- int x = 1;
- int * xx = &x;
+	int x = 1;
+	int * xx = &x;
+	//Message content is irrelevant as we just look for a received message to reset the count
 
-
- xQueueSendToBack(xLitresToBoilQueue, xx, portMAX_DELAY);
+	xQueueSendToBack(xLitresToBoilQueue, xx, portMAX_DELAY);
 }
 
 void vResetFlow2(void)
 {
-  int xx = 1;
-  xQueueSendToBack(xLitresToMashQueue, &xx, portMAX_DELAY);
+	int x = 1;
+	int * xx = &x;
+	xQueueSendToBack(xLitresToMashQueue, &xx, portMAX_DELAY);
 }
 
 float fGetBoilFlowLitres(void)
@@ -331,7 +340,7 @@ void vFlow1AppletDisplay( void *pvParameters){
             ml = fLitresDeliveredToBoil * 1000;
             mlu = (unsigned long)ml;
 
-            switch (uBoilFlowState)
+            switch (xBoilFlowState)
             {
             case FLOWING:
               {

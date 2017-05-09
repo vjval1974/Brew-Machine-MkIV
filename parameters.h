@@ -39,6 +39,12 @@ struct Parameters {
   int iPumpTime2; // "             "             end       "
   int iStirTime1; // "           stir     "       start     "
   int iStirTime2; // "            "               end
+  unsigned int uiInitialMixingTime;
+  unsigned int uiClearingTime;
+  unsigned int uiMixOnTime;
+  unsigned int uiMixOffTime;
+
+
 
 
   //Mash out
@@ -58,6 +64,7 @@ struct Parameters {
   //Boil
   unsigned int uiBoilTime;
   unsigned int uiBringToBoilTime;
+  unsigned int uiHopDropperStopDelayms;
   unsigned int uiHopTimes[6];
 
   //Chill etc
@@ -66,6 +73,11 @@ struct Parameters {
   unsigned int uiChillerPumpPrimingCycles;
   unsigned int uiChillerPumpPrimingTime;
   unsigned int uiChillTime; //time it takes to run through the chiller. mins
+  unsigned int uiChillingPumpRecircOnTime;  // We turn on and off the chiller pump during chilling with valve closed.
+  unsigned int uiChillingPumpRecircOffTime;
+  unsigned int uiPumpToBoilRecycleOnTime;
+  unsigned int uiPumpToBoilRecycleOffTime;
+  unsigned int uiPumpToFermenterTime;
 
   unsigned int uiCurrentMashStage;
 

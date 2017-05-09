@@ -47,13 +47,15 @@ void vChillerPumpInit(void){
 
 void vChillerPump(ChillerPumpCommand command )
 {
-  if (command == START_CHILLER_PUMP)
+  if (command == START_CHILLER_PUMP && ChillerPumpState != CHILLER_PUMP_PUMPING)
     {
+	  vConsolePrint("Starting Chiller Pump\r\n\0");
       GPIO_SetBits(CHILLER_PUMP_PORT, CHILLER_PUMP_PIN);
       ChillerPumpState = CHILLER_PUMP_PUMPING;
     }
-  else
+  else if (command == STOP_CHILLER_PUMP && ChillerPumpState != CHILLER_PUMP_STOPPED)
     {
+	  vConsolePrint("Stopping Chiller Pump\r\n\0");
       GPIO_ResetBits(CHILLER_PUMP_PORT, CHILLER_PUMP_PIN); //pull low
       ChillerPumpState = CHILLER_PUMP_STOPPED;
     }

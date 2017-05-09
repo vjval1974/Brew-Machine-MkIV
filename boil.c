@@ -153,11 +153,11 @@ void vBoilInit(void)
 BoilLevel uGetBoilLevel(void)
 {
   // **************OVERRIDDEN *************************
- // return HIGH;
+  return HIGH;// TODO: Fix/Check boil level probe
 
-  if (GPIO_ReadInputDataBit(BOIL_LEVEL_PORT, BOIL_LEVEL_PIN) == 0)
-    return HIGH;
-  return LOW;
+//  if (GPIO_ReadInputDataBit(BOIL_LEVEL_PORT, BOIL_LEVEL_PIN) == 0)
+//    return HIGH;
+//  return LOW;
 
 }
 

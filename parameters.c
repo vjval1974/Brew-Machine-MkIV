@@ -72,6 +72,7 @@ UserParameters UserParametersList[] =
         { &BrewParameters.iMashOutTime, INT_TYPE, "Mash Out Time" },
         { &BrewParameters.iSpargeTime, INT_TYPE, "Sparge Time" },
         { &BrewParameters.uiBoilTime, INT_TYPE, "Boil Time" },
+        { &BrewParameters.uiHopDropperStopDelayms, INT_TYPE, "HopDropper delay ms" },
         { &BrewParameters.uiHopTimes[0], INT_TYPE, "Hop Time 1" },
         { &BrewParameters.uiHopTimes[1], INT_TYPE, "Hop Time 2" },
         { &BrewParameters.uiHopTimes[2], INT_TYPE, "Hop Time 3" },
@@ -79,6 +80,7 @@ UserParameters UserParametersList[] =
         { &BrewParameters.uiHopTimes[4], INT_TYPE, "Hop Time 5" },
         { &BrewParameters.uiHopTimes[5], INT_TYPE, "Hop Time 6" },
         { &BrewParameters.uiChillTime, INT_TYPE, "Chill Time " },
+        { &BrewParameters.uiPumpToFermenterTime, INT_TYPE, "PumpToFermenter Time " },
         { (int *) NULL, (int) NULL, (char *) NULL }
     };
 
@@ -90,31 +92,37 @@ void vParametersInit(void)
 
 	//Grind
 	BrewParameters.iGrindTime = 16; //16; 1
-	BrewParameters.fGrainWeightKilos = 3.0;
+	BrewParameters.fGrainWeightKilos = 7.6;
 
 	//Mash
 	BrewParameters.fHLTMaxLitres = 21.0; // This is the max amount that can be drained
-	BrewParameters.fStrikeTemp = 76.4; // first mash temp (added 1 degree for test, target temp with 15.79 litres is 62deg)
-	BrewParameters.fMashStage2Temp = 99.9; // for second mash rest
+	BrewParameters.fStrikeTemp = 79.9; // first mash temp (added 1 degree for test, target temp with 15.79 litres is 62deg)
+	BrewParameters.fMashStage2Temp = 99.3; // for second mash rest
 	BrewParameters.fMashOutTemp = 99.0;
 
-	BrewParameters.fSpargeTemp = 75.6;//90.0;
-	BrewParameters.fSpargeTemp2 = 75.6;//90.0;
+	BrewParameters.fSpargeTemp = 90.0;//90.0;
+	BrewParameters.fSpargeTemp2 = 90.0;//90.0;
 	BrewParameters.fSpargeTemp3 = 75.6;//90.0;
 
 	BrewParameters.fCleanTemp = 32.34; //50
 
-	BrewParameters.fStrikeLitres = 15.79;//20.79;
-	BrewParameters.fMashStage2Litres = 9.00;// added 1 litre
+	BrewParameters.fStrikeLitres = 19.75;//20.79;
+	BrewParameters.fMashStage2Litres = 1.00;
  	BrewParameters.fMashOutLitres = 15.00;
-	BrewParameters.fSpargeLitres = 8.86;//11.28;
+	BrewParameters.fSpargeLitres = 12.23;//11.28;
 
-	BrewParameters.iMashTime = 30;//60;
-	BrewParameters.iMashStage2Time = 30;//60;
+	BrewParameters.iMashTime = 60;//60;
+	BrewParameters.iMashStage2Time = 5;//60;
 	BrewParameters.iPumpTime1 = 10;
 	BrewParameters.iStirTime1 = 10;
 	BrewParameters.iPumpTime2 = 5;
 	BrewParameters.iStirTime2 = 0;
+
+	BrewParameters.uiInitialMixingTime = 8;
+	BrewParameters.uiClearingTime = 5;
+	BrewParameters.uiMixOnTime=1;
+	BrewParameters.uiMixOffTime=5;
+
 
 	//Mash Out
 	BrewParameters.iMashOutTime = 10;
@@ -135,24 +143,31 @@ void vParametersInit(void)
 	BrewParameters.iPumpPrimingTime = 1;
 
 	//Boil
-	BrewParameters.uiBoilTime = 60;//60; //60;
+	BrewParameters.uiBoilTime = 90;//60; //60;
 	BrewParameters.uiBringToBoilTime = 24;//24; //based off last brew.. 40% duty cycle at sparge 2. large boil volume, maybe 38-40l
 										 // TODO: Make sure the elbow is in the boiler for the end of the boil to stop splashing
 
 	BrewParameters.uiHopTimes[0] = 60;
-	BrewParameters.uiHopTimes[1] = 30;
+	BrewParameters.uiHopTimes[1] = 60;
 	BrewParameters.uiHopTimes[2] = 15;
 	BrewParameters.uiHopTimes[3] = 15;
 	BrewParameters.uiHopTimes[4] = 5;
 	BrewParameters.uiHopTimes[5] = 1;
+	BrewParameters.uiHopDropperStopDelayms = 50;
 
 	BrewParameters.uiSettlingRecircTime = 1; //mins
 	BrewParameters.uiSettlingTime = 1; //mins
 
-	BrewParameters.uiChillTime = 15;//20; //mins
+	BrewParameters.uiChillTime = 15;//20; //mins to pump and recirc in boiler after flame out.
+	BrewParameters.uiPumpToFermenterTime = 7;
 
 	BrewParameters.uiChillerPumpPrimingCycles = 5;
 	BrewParameters.uiChillerPumpPrimingTime = 1; //seconds
+	BrewParameters.uiChillingPumpRecircOffTime = 60;
+	BrewParameters.uiChillingPumpRecircOnTime = 20;
+	BrewParameters.uiPumpToBoilRecycleOnTime = 30;
+	BrewParameters.uiPumpToBoilRecycleOffTime = 300;
+
 
 	BrewParameters.uiCurrentMashStage = 0; // so we can change it from the params screen.
 

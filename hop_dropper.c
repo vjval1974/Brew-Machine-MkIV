@@ -19,6 +19,7 @@
 #include "queue.h"
 #include "console.h"
 #include "main.h"
+#include "parameters.h"
 
 typedef enum
 {
@@ -107,8 +108,8 @@ void vTaskHops(void * pvParameters)
 						if (uDebounce(HOP_DROPPER_LIMIT_PORT, HOP_DROPPER_LIMIT_PIN, PIN_STATE_HIGH))
 
 						{
-							vTaskDelay(50); // delay for lining up.
-							//todo: make the delay a parameter.
+							vTaskDelay(BrewParameters.uiHopDropperStopDelayms); // delay for lining up.
+
 							vHopsDrive(HOP_DROPPER_STOP);
 							vConsolePrint("State = STOPPED\r\n\0");
 							uState = STOPPED;

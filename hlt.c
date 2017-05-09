@@ -272,6 +272,7 @@ vTaskBrewHLT(void * pvParameters)
 					IsValveOpening = TRUE;
 					vResetFlow1();
 					ThisBrewState.xHLTState.hltBrewState = HLT_STATE_DRAIN;
+					ucLitresDeliveredDisplayCtr = 0;
 
 				}
 				if (IsValveOpening == TRUE) // cheap timer
@@ -310,6 +311,7 @@ vTaskBrewHLT(void * pvParameters)
 						rcvdMsg.command = HLT_CMD_IDLE;
 						ThisBrewState.xHLTState.hltBrewState = HLT_STATE_IDLE;
 						WaterAddedToMashTun(fActualLitresDelivered);
+
 					}
 				}
 				break;

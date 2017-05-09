@@ -18,6 +18,7 @@
 #include "leds.h"
 #include "semphr.h"
 #include "mash_pump.h"
+#include "console.h"
 
 void vMashPumpAppletDisplay(void *pvParameters);
 void vMashPumpApplet(int init);
@@ -44,13 +45,15 @@ void vMashPumpInit(void)
 
 void vMashPump(MashPumpCommand command)
 {
-	if (command == START_MASH_PUMP)
+	if (command == START_MASH_PUMP && MashPumpState != MASH_PUMP_PUMPING)
 	{
+		vConsolePrint("Mash Pump Starting\r\n\0");
 		GPIO_SetBits(MASH_PUMP_PORT, MASH_PUMP_PIN );
 		MashPumpState = MASH_PUMP_PUMPING;
 	}
-	else
+	else if (command == STOP_MASH_PUMP && MashPumpState != MASH_PUMP_STOPPED)
 	{
+		vConsolePrint("Mash Pump Stopping\r\n\0");
 		GPIO_ResetBits(MASH_PUMP_PORT, MASH_PUMP_PIN );
 		MashPumpState = MASH_PUMP_STOPPED;
 	}

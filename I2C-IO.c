@@ -25,6 +25,9 @@
 #define I2C_SDA_PIN GPIO_Pin_8 // these are back to front.. when changed it doesnt work for some reason.. too tired to work out
 #define I2C_CLK_PIN GPIO_Pin_9 // No theyre not.. its only used in init... swap and try it!
 
+#define I2C_POWER_PORT GPIOA
+#define I2C_POWER_PIN GPIO_Pin_1
+
 #define FAIL -1
 #define PASS 1
 
@@ -73,7 +76,25 @@ void vI2C_Init(void)
 	if (first == 1)
 		xI2C_SendQueue = xQueueCreate(20, sizeof(uint16_t));
 	first = 0;
+
+	// set up power pin
+	  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+	  GPIO_InitStructure.GPIO_Pin =  I2C_POWER_PIN;
+	  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP;
+	  GPIO_Init( I2C_POWER_PORT, &GPIO_InitStructure );
+	  GPIO_SetBits(I2C_POWER_PORT, I2C_POWER_PIN); //turn on
+
 	portEXIT_CRITICAL();
+}
+
+ void vI2C_RecyclePower()
+{
+	  GPIO_ResetBits(I2C_POWER_PORT, I2C_POWER_PIN); // turn off
+	vTaskDelay(2000);
+	  GPIO_SetBits(I2C_POWER_PORT, I2C_POWER_PIN); // turn on
+	  vTaskDelay(1000);
+	  vI2C_Init();
+	  vConsolePrint("I2C reset and init'd\r\n\0");
 }
 
 static int iI2C_Send(char address, char data)
@@ -85,7 +106,7 @@ static int iI2C_Send(char address, char data)
 	while (I2C_GetFlagStatus(I2C1, I2C_FLAG_BUSY ))
 	{
 		i++;
-		if (i == 7200)
+		if (i >= 7200)
 		{
 			portEXIT_CRITICAL();
 			return -1;
@@ -99,7 +120,7 @@ static int iI2C_Send(char address, char data)
 	while (!I2C_GetFlagStatus(I2C1, I2C_FLAG_SB ))
 	{
 		i++;
-		if (i == 7200)
+		if (i >= 7200)
 		{
 			portEXIT_CRITICAL();
 			return -1;
@@ -113,7 +134,7 @@ static int iI2C_Send(char address, char data)
 	while (!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_TRANSMITTER_MODE_SELECTED ))
 	{
 		i++;
-		if (i == 7200)
+		if (i >= 7200)
 		{
 			portEXIT_CRITICAL();
 			return -1;
@@ -126,7 +147,7 @@ static int iI2C_Send(char address, char data)
 	while (!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_TRANSMITTED ))
 	{
 		i++;
-		if (i == 7200)
+		if (i >= 7200)
 		{
 			portEXIT_CRITICAL();
 			return -1;
@@ -140,7 +161,7 @@ static int iI2C_Send(char address, char data)
 	while (I2C_GetFlagStatus(I2C1, I2C_FLAG_STOPF ))
 	{
 		i++;
-		if (i == 7200)
+		if (i >= 7200)
 		{
 			portEXIT_CRITICAL();
 			return -1;
@@ -152,7 +173,7 @@ static int iI2C_Send(char address, char data)
 	while (I2C_GetFlagStatus(I2C1, I2C_FLAG_BUSY ))
 	{
 		i++;
-		if (i == 7200)
+		if (i >= 7200)
 		{
 			portEXIT_CRITICAL();
 			return -1;
@@ -164,13 +185,13 @@ static int iI2C_Send(char address, char data)
 	portEXIT_CRITICAL();
 	return 1;
 }
-typedef enum
-{
-	I2C_RECEIVE_ERROR_NO_RESPONSE,
-	I2C_RECEIVE_ERROR_RECEIVER_MODE_NOT_ACKNOWLEDGED,
-	I2C_RECEIVE_ERROR_MASTER_BYTE_RECEIVED_EVENT_NOT_RECEIVED,
-	I2C_RECEIVE_ERROR
-};
+//typedef enum
+//{
+//	I2C_RECEIVE_ERROR_NO_RESPONSE,
+//	I2C_RECEIVE_ERROR_RECEIVER_MODE_NOT_ACKNOWLEDGED,
+//	I2C_RECEIVE_ERROR_MASTER_BYTE_RECEIVED_EVENT_NOT_RECEIVED,
+//	I2C_RECEIVE_ERROR
+//};
 
 static int iI2C_Receive(char address, char * data)
 {
@@ -185,7 +206,7 @@ static int iI2C_Receive(char address, char * data)
 	while (!I2C_GetFlagStatus(I2C1, I2C_FLAG_SB ))
 	{
 		i++;
-		if (i == 7200)
+		if (i >= 7200)
 		{
 			portEXIT_CRITICAL();
 			return -1;
@@ -199,7 +220,7 @@ static int iI2C_Receive(char address, char * data)
 	while (!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_RECEIVER_MODE_SELECTED ))
 	{
 		i++;
-		if (i == 7200)
+		if (i >= 7200)
 		{
 			portEXIT_CRITICAL();
 			return -1;
@@ -211,7 +232,7 @@ static int iI2C_Receive(char address, char * data)
 	while (!I2C_CheckEvent(I2C1, I2C_EVENT_MASTER_BYTE_RECEIVED ))
 	{
 		i++;
-		if (i == 7200)
+		if (i >= 7200)
 		{
 			portEXIT_CRITICAL();
 			return -1;
@@ -226,7 +247,7 @@ static int iI2C_Receive(char address, char * data)
 	while (I2C_GetFlagStatus(I2C1, I2C_FLAG_STOPF ))
 	{
 		i++;
-		if (i == 7200)
+		if (i >= 7200)
 		{
 			portEXIT_CRITICAL();
 			return -1;
@@ -238,7 +259,7 @@ static int iI2C_Receive(char address, char * data)
 	while (I2C_GetFlagStatus(I2C1, I2C_FLAG_BUSY ))
 	{
 		i++;
-		if (i == 7200)
+		if (i >= 7200)
 		{
 			portEXIT_CRITICAL();
 			return -1;
@@ -306,6 +327,8 @@ void vI2C_SendTask(void *pvParameters)
 {
 	portBASE_TYPE xStatus = pdFAIL;
 	int iRCVStatus = PASS;
+	int iRcvResetStatus = FAIL;
+	int iSndResetStatus = PASS;
 	int iSNDStatus = PASS;
 	uint16_t message;
 	static uint8_t cnt = 0;
@@ -325,25 +348,27 @@ void vI2C_SendTask(void *pvParameters)
 
 			// RECEIVE FROM
 			// vConsolePrint("Trying to RECEIVE I2C\r\n\0");
-			iRCVStatus = iI2C_Receive(uAddress, &uCurrent);
-			while ((iRCVStatus == FAIL) && (cnt < 10))
-			{
-				// vConsolePrint("Receiving failed, trying again\r\n\0");
-				vTaskDelay(100);
-				vI2C_Init();
-				vTaskDelay(100);
-				iRCVStatus = iI2C_Receive(uAddress, &uCurrent);
-				cnt++;
-			}
-			if (cnt >= 10)
-			{
-				vConsolePrint("Fatal I2C Error, deleting task\r\n\0");
 
-				vQueueDelete(xI2C_SendQueue);
-				xI2C_SendQueue = NULL;
-				vTaskDelete(NULL );
-				taskYIELD();
-			}
+
+				iRCVStatus = iI2C_Receive(uAddress, &uCurrent);
+				while ((iRCVStatus == FAIL) )
+				{
+					// vConsolePrint("Receiving failed, trying again\r\n\0");
+					vTaskDelay(100);
+					vI2C_Init();
+					vTaskDelay(100);
+					iRCVStatus = iI2C_Receive(uAddress, &uCurrent);
+					if (cnt++ >= 10)
+					{
+						//reset the bus
+						cnt = 0;
+						vConsolePrint("Fatal I2C Error, Recycling Power\r\n\0");
+					    vI2C_RecyclePower();
+					}
+
+
+				}
+
 
 			if (uDirection == 1)
 				uToSend = uCurrent &= ~(1 << uBitNum);
@@ -353,26 +378,22 @@ void vI2C_SendTask(void *pvParameters)
 			cnt = 0;
 
 			iSNDStatus = iI2C_Send(uAddress, uToSend);
-			while ((iSNDStatus == FAIL) && (cnt < 10))
+			while ((iSNDStatus == FAIL) )
 			{
 				vConsolePrint("Sending failed, trying again\r\n\0");
 				vTaskDelay(300);        // this MUST stay or errors occur in sending;
 				vI2C_Init();
 				vTaskDelay(300);
 				iSNDStatus = iI2C_Send(uAddress, uToSend);
-				cnt++;
+				if(cnt++ >= 10)
+				{
+					cnt = 0;
+					vConsolePrint("Fatal I2C Error, Recycling Power\r\n\0");
+					vI2C_RecyclePower();
+				}
 
 			}
-			if (cnt >= 10)
 
-			{
-				vConsolePrint("Fatal I2C Error, deleting task\r\n\0");
-
-				vQueueDelete(xI2C_SendQueue);
-				xI2C_SendQueue = NULL;
-				vTaskDelete(NULL );
-				taskYIELD();
-			}
 			cnt = 0;
 
 			vTaskDelay(100);

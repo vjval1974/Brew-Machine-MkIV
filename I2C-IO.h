@@ -14,6 +14,7 @@
 void vI2C_Init(void);
 void vPCF_SetBits(uint8_t bitnum, uint8_t add);
 void vPCF_ResetBits(uint8_t bitnum, uint8_t add);
+void vI2C_RecyclePower();
 
 void vI2C_SendTask(void * pvParameters);
 void vI2C_TestTask(void *pvParameters);

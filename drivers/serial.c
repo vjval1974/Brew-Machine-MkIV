@@ -150,7 +150,7 @@ void USARTInit(uint16_t tx_pin, uint16_t rx_pin, USART_TypeDef* usart)
 	//disable Transmit Data Register empty interrupt
 	USART_ITConfig(USART1, USART_IT_TXE, DISABLE);
 	//enable Receive Data register not empty interrupt
-	USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);
+	//USART_ITConfig(USART1, USART_IT_RXNE, ENABLE);
 
 	vSemaphoreCreateBinary(xSerialHandlerSemaphore);
 #endif

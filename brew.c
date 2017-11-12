@@ -711,16 +711,17 @@ void vMashMixing(int *onCount, int *offCount)
 	StirState stirState = xGetStirState();
 	MashPumpState_t mashPumpState = GetMashPumpState();
 
-	if (elapsed < initialMixingTime)
-	{
-		vMashPump(START_MASH_PUMP);
-		vStir(STIR_DRIVING);
-	}
-	else if (elapsed > mashTime - clearingTime)
+	if (elapsed > mashTime - clearingTime)
 	{
 		vStir(STIR_STOPPED);
 		vMashPump(START_MASH_PUMP);
 	}
+	else if (elapsed < initialMixingTime)
+	{
+		vMashPump(START_MASH_PUMP);
+		vStir(STIR_DRIVING);
+	}
+
 	else
 	{
 		if (*offCount < mixOffTime)
@@ -1145,6 +1146,7 @@ void vPumpToBoilRecycler(int onTimeInSeconds, int offTimeInSeconds)
 	{
 		if (pumpOnCounter < onTimeInSeconds)
 		{
+			vValveActuate(MASH_VALVE, OPEN_VALVE);
 			vMashPump(START_MASH_PUMP);
 			pumpOnCounter++;
 		}

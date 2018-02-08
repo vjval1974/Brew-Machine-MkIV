@@ -40,10 +40,7 @@
 volatile int8_t cs = CRANE_STOPPED;
 CraneState xCraneState = CRANE_STOPPED;
 
-unsigned char ucGetCranePosition()
-{
-return xCraneState;
-}
+
 
 xQueueHandle xCraneQueue = NULL;
 xSemaphoreHandle xAppletRunningSemaphore;
@@ -51,8 +48,12 @@ xTaskHandle xCraneTaskHandle = NULL, xCraneAppletDisplayHandle = NULL;
 
 void vTaskCrane(void * pvParameters);
 
-int8_t vGetCraneState(void)
+CraneState xGetCraneState(void)
 {
+	if(cI2cGetInput(CRANE_LOWER_LIMIT_PORT, CRANE_LOWER_LIMIT_PIN) == 1)
+		return CRANE_AT_BOTTOM;
+	if(cI2cGetInput(CRANE_UPPER_LIMIT_PORT, CRANE_UPPER_LIMIT_PIN) == 1)
+		return CRANE_AT_TOP;
   return xCraneState;
 }
 

@@ -35,7 +35,7 @@ void vCraneRun(uint16_t speed);
 void vTaskCrane(void * pvParameters);
 void vCraneApplet(int init);
 int iCraneKey(int x, int y);
-int8_t vGetCraneState(void);
+
 unsigned char ucGetCranePosition();
 
 
@@ -66,6 +66,8 @@ typedef struct
 		int iBrewStep;
 		unsigned char ucFromTask;
 } CraneMessage;
+
+CraneState xGetCraneState(void);
 
 extern xTaskHandle xCraneTaskHandle, xCraneAppletDisplayHandle;
 extern xQueueHandle xCraneQueue;

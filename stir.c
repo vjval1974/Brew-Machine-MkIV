@@ -21,6 +21,8 @@
 #include "stir.h"
 #include "stirApplet.h"
 #include "console.h"
+#include "brew.h"
+#include "crane.h"
 
 volatile StirState xStirState;
 
@@ -32,12 +34,31 @@ void vStirInit(void)
 	vSemaphoreCreateBinary(xStirAppletRunningSemaphore);
 }
 
+int OkToStir() // gotta be in auto and either at the bottom or driving down for start of mash.
+{
+	CraneState craneState = xGetCraneState();
+	if((ThisBrewState.xRunningState == RUNNING && (craneState == CRANE_DRIVING_DOWN_IN_INCREMENTS || craneState == CRANE_AT_BOTTOM)) ||	ThisBrewState.xRunningState == IDLE	)
+	{
+		return 1;
+	}
+	return 0;
+}
+
 void vStir(StirState state)
 {
+
 	if (state == STIR_DRIVING && xGetStirState() != STIR_DRIVING)
 	{
-		vConsolePrint("Starting Stirrer\r\n\0");
-		vPCF_SetBits(STIR_PIN, STIR_PORT);
+		if (OkToStir())
+		{
+			vConsolePrint("Starting Stirrer\r\n\0");
+			vPCF_SetBits(STIR_PIN, STIR_PORT);
+		}
+		else
+		{
+			vConsolePrint("Stir: NOT OK to stir!\r\n\0");
+		}
+
 	}
 	else if ( state == STIR_STOPPED && xGetStirState() != STIR_STOPPED )
 	{

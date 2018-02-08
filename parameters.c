@@ -96,7 +96,7 @@ void vParametersInit(void)
 
 	//Mash
 	BrewParameters.fHLTMaxLitres = 21.0; // This is the max amount that can be drained
-	BrewParameters.fStrikeTemp = 79.9; // first mash temp (added 1 degree for test, target temp with 15.79 litres is 62deg)
+	BrewParameters.fStrikeTemp = 76.9; // first mash temp (added 1 degree for test, target temp with 15.79 litres is 62deg)
 	BrewParameters.fMashStage2Temp = 95.0; // for second mash rest
 	BrewParameters.fMashOutTemp = 99.0;
 
@@ -106,12 +106,12 @@ void vParametersInit(void)
 
 	BrewParameters.fCleanTemp = 32.34; //50
 
-	BrewParameters.fStrikeLitres = 20.75;//20.79;
-	BrewParameters.fMashStage2Litres = 1.00;
+	BrewParameters.fStrikeLitres = 21.00;//20.79;
+	BrewParameters.fMashStage2Litres = 0.2;
  	BrewParameters.fMashOutLitres = 15.00;
-	BrewParameters.fSpargeLitres = 11.59;//11.28;
+	BrewParameters.fSpargeLitres = 11.33;//11.28;
 
-	BrewParameters.iMashTime = 20;//60;
+	BrewParameters.iMashTime = 60;//60;
 	BrewParameters.iMashStage2Time = 5;//60;
 	BrewParameters.iPumpTime1 = 10;
 	BrewParameters.iStirTime1 = 10;
@@ -143,13 +143,13 @@ void vParametersInit(void)
 	BrewParameters.iPumpPrimingTime = 1;
 
 	//Boil
-	BrewParameters.uiBoilTime = 60;//60; //60;
+	BrewParameters.uiBoilTime = 60;
 	BrewParameters.uiBringToBoilTime = 24;//24; //based off last brew.. 40% duty cycle at sparge 2. large boil volume, maybe 38-40l
 										 // TODO: Make sure the elbow is in the boiler for the end of the boil to stop splashing
 
 	BrewParameters.uiHopTimes[0] = 60;
 	BrewParameters.uiHopTimes[1] = 60;
-	BrewParameters.uiHopTimes[2] = 15;
+	BrewParameters.uiHopTimes[2] = 30;
 	BrewParameters.uiHopTimes[3] = 15;
 	BrewParameters.uiHopTimes[4] = 5;
 	BrewParameters.uiHopTimes[5] = 1;

@@ -40,7 +40,7 @@
 
 //Default Temp Sensor Addresses
 #define HLT_TEMP_SENSOR  "\x28\xC6\x52\xB6\x04\x00\x00\x23"
-#define MASH_TEMP_SENSOR "\x28\x3C\xE7\xB5\x04\x00\x00\x8B"
+#define MASH_TEMP_SENSOR "\x28\xD7\xC6\xB5\x04\x00\x00\x6F"
 //#define CABINET_TEMP_SENSOR "\x10\x83\xc5\x1e\x02\x08\x00\xAC"
 
 // BUS COMMANDS

@@ -19,6 +19,8 @@
 #include "semphr.h"
 #include "mash_pump.h"
 #include "console.h"
+#include "brew.h"
+#include "crane.h"
 
 void vMashPumpAppletDisplay(void *pvParameters);
 void vMashPumpApplet(int init);
@@ -42,14 +44,32 @@ void vMashPumpInit(void)
 	GPIO_ResetBits(MASH_PUMP_PORT, MASH_PUMP_PIN ); //pull low
 	vSemaphoreCreateBinary(xAppletRunningSemaphore);
 }
+int OkToPump() // crane has gotta be at the bottom, unless valve is opened.
+{
+	CraneState craneState = xGetCraneState();
+	if((ThisBrewState.xRunningState == RUNNING && (craneState == CRANE_AT_BOTTOM || ucGetMashValveState() == VALVE_OPENED)) ||	ThisBrewState.xRunningState == IDLE	)
+	{
+		return 1;
+	}
+	return 0;
+}
+
 
 void vMashPump(MashPumpCommand command)
 {
 	if (command == START_MASH_PUMP && MashPumpState != MASH_PUMP_PUMPING)
 	{
-		vConsolePrint("Mash Pump Starting\r\n\0");
-		GPIO_SetBits(MASH_PUMP_PORT, MASH_PUMP_PIN );
-		MashPumpState = MASH_PUMP_PUMPING;
+		if (OkToPump()) // this could have issues if called from setup step. Test!
+		{
+			vConsolePrint("Mash Pump Starting\r\n\0");
+			GPIO_SetBits(MASH_PUMP_PORT, MASH_PUMP_PIN );
+			MashPumpState = MASH_PUMP_PUMPING;
+		}
+		else
+		{
+			vConsolePrint("Mash Pump NOT OK to pump\r\n\0");
+		}
+
 	}
 	else if (command == STOP_MASH_PUMP && MashPumpState != MASH_PUMP_STOPPED)
 	{
@@ -99,11 +119,11 @@ void vMashPumpApplet(int init)
 		//adc_init();
 		//create a dynamic display task
 		xTaskCreate( vMashPumpAppletDisplay,
-		    ( signed portCHAR * ) "Mill_disp",
-		    configMINIMAL_STACK_SIZE + 500,
-		    NULL,
-		    tskIDLE_PRIORITY,
-		    &xMASHPumpAppletDisplayHandle);
+			( signed portCHAR * ) "Mill_disp",
+			configMINIMAL_STACK_SIZE + 500,
+			NULL,
+			tskIDLE_PRIORITY,
+			&xMASHPumpAppletDisplayHandle);
 	}
 
 }
@@ -120,7 +140,7 @@ void vMashPumpAppletDisplay(void *pvParameters)
 		switch (MashPumpState)
 		{
 			case MASH_PUMP_PUMPING:
-				{
+			{
 				if (tog)
 				{
 					lcd_fill(1, 220, 180, 29, Black);
@@ -133,7 +153,7 @@ void vMashPumpAppletDisplay(void *pvParameters)
 				break;
 			}
 			case MASH_PUMP_STOPPED:
-				{
+			{
 				if (tog)
 				{
 					lcd_fill(1, 210, 180, 29, Black);
@@ -147,7 +167,7 @@ void vMashPumpAppletDisplay(void *pvParameters)
 				break;
 			}
 			default:
-				{
+			{
 				break;
 			}
 		}

@@ -68,7 +68,7 @@ static void lcd_gram_test(void);
 static void lcd_port_init(void);
 static void power_SET(void);
 static unsigned short deviceid=0;
-
+void lcd_clear_text(uint16_t col, uint16_t row, uint16_t width);
 lcd_inline void write_cmd(unsigned short cmd)
 {
     LCD_REG = cmd;
@@ -795,21 +795,39 @@ void lcd_printf(uint8_t col, uint8_t row, uint8_t ww, const char *fmt, ...)
     LCD_LOCK;
 
     char message[31];
+
+
+
+
+    //get message from format
     va_list ap;
     va_start(ap, fmt);
     int len = vsnprintf(message, sizeof(message) - 1, fmt, ap);
     va_end(ap);
 
-    while (len < ww && len < sizeof(message) - 2)
-    {
-    	message[len++] = ' ';
-    }
-    message[len] = 0;
+    lcd_clear_text(col, row, ww);
+//    //clear message space
+//    for (i = 0; i < len; i++)
+//       	message[i] = ' ';
+//
+//       lcd_text(col, row, message);
+//    // clear until end of line
+//    while (len < ww && len < sizeof(message) - 2)
+//    {
+//    	message[len++] = '';
+//    }
+//    message[len] = 0;
 
+    // print message
     lcd_text(col, row, message);
 
     LCD_UNLOCK;
 
+}
+
+void lcd_clear_text(uint16_t col, uint16_t row, uint16_t width)
+{
+	 lcd_fill(col * 8, row * 16, width * 8, 16, bg_col);
 }
 
 void lcd_clear(uint16_t Color)
@@ -825,9 +843,11 @@ void lcd_clear(uint16_t Color)
     LCD_UNLOCK;
 }
 
-void lcd_background(uint16_t color)
+uint16_t lcd_background(uint16_t color)
 {
+	uint16_t old = bg_col;
     bg_col = color;
+    return old;
 }
 
 void lcd_DrawRect(int x1, int y1, int x2, int y2, int col)

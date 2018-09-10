@@ -121,7 +121,7 @@ static void menu_update(void)
 	uint16_t bgCol = COL_BG_NORM;
 
 	lcd_lock();
-	lcd_background(0X4567);
+	lcd_background(Black);
 
 	// clear menu bg
 	lcd_fill(0, CRUMB_H, LCD_W, LCD_H - CRUMB_H, bgCol);

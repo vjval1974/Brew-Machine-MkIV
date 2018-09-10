@@ -166,6 +166,7 @@ int main(void)
 	vDiagPWMInit();
 	vChillerPumpInit();
 	vBoilValveInit();
+	lcd_background(Black);
 
 	xTaskCreate( vConsolePrintTask, ( signed portCHAR * ) "PrintTask", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, &xPrintTaskHandle);
 

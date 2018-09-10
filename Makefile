@@ -121,7 +121,8 @@ SOURCE=	main.c 	drivers/lcd.c \
 		stf_syscalls_minimal.c \
 		io_util.c \
 		MashWater.c \
-		MenuExamples.c
+		MenuExamples.c \
+		drivers/button.c		
 		
 
 # ST Library source files.

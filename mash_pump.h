@@ -33,5 +33,6 @@ void vMashPumpApplet(int init);
 int iMashPumpKey(int xx, int yy);
 void vMashPump(MashPumpCommand command);
 MashPumpState_t GetMashPumpState();
+void vToggleMashPump();
 
 #endif /* MASH_PUMP_H_ */

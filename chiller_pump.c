@@ -62,6 +62,20 @@ void vChillerPump(ChillerPumpCommand command )
 
 }
 
+void vToggleChillerPump()
+{
+
+	if(ChillerPumpState != CHILLER_PUMP_PUMPING)
+	{
+		//printf("MPStart\r\n");
+		vChillerPump(START_CHILLER_PUMP);
+	}
+	else
+//		printf("MPStop\r\n");
+		vChillerPump(STOP_CHILLER_PUMP);
+}
+
+
 #define START_CHILLER_PUMP_X1 155
 #define START_CHILLER_PUMP_Y1 30
 #define START_CHILLER_PUMP_X2 300

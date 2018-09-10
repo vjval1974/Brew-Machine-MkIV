@@ -62,7 +62,7 @@ void lcd_lock();
 void lcd_release();
 void DrawBMP(uint8_t* ptrBitmap);
 
-void lcd_background(uint16_t color);
+uint16_t lcd_background(uint16_t color);
 void lcd_text(uint8_t col, uint8_t row, const char *text);
 /**
  * The LCD is written to by more than one task so is controlled by a

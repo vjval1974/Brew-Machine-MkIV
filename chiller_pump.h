@@ -35,5 +35,6 @@ void vChillerPumpApplet(int init);
 int iChillerPumpKey(int xx, int yy);
 void vChillerPump(ChillerPumpCommand command);
 ChillerPumpState_t GetChillerPumpState();
+void vToggleChillerPump();
 
 #endif /* CHILLER_PUMP_H_ */

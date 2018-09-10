@@ -57,6 +57,7 @@ int OkToPump() // crane has gotta be at the bottom, unless valve is opened.
 
 void vMashPump(MashPumpCommand command)
 {
+printf("MashPumpCmd %d",  command);
 	if (command == START_MASH_PUMP && MashPumpState != MASH_PUMP_PUMPING)
 	{
 		if (OkToPump()) // this could have issues if called from setup step. Test!
@@ -77,6 +78,19 @@ void vMashPump(MashPumpCommand command)
 		GPIO_ResetBits(MASH_PUMP_PORT, MASH_PUMP_PIN );
 		MashPumpState = MASH_PUMP_STOPPED;
 	}
+}
+
+void vToggleMashPump()
+{
+
+	if(MashPumpState != MASH_PUMP_PUMPING)
+	{
+		//printf("MPStart\r\n");
+		vMashPump(START_MASH_PUMP);
+	}
+	else
+		//printf("MPStop\r\n");
+		vMashPump(STOP_MASH_PUMP);
 }
 
 #define START_MASH_PUMP_X1 155

@@ -109,7 +109,7 @@ void vParametersInit(void)
 	BrewParameters.fStrikeLitres = 21.00;//20.79;
 	BrewParameters.fMashStage2Litres = 0.2;
  	BrewParameters.fMashOutLitres = 15.00;
-	BrewParameters.fSpargeLitres = 11.33;//11.28;
+	BrewParameters.fSpargeLitres = 10.59;//11.28;
 
 	BrewParameters.iMashTime = 60;//60;
 	BrewParameters.iMashStage2Time = 5;//60;
@@ -139,26 +139,25 @@ void vParametersInit(void)
 	BrewParameters.iSpargeStirTime2 = 0;
 
 	//Pump
-	BrewParameters.iPumpPrimingCycles = 5;
+	BrewParameters.iPumpPrimingCycles = 3;
 	BrewParameters.iPumpPrimingTime = 1;
 
 	//Boil
 	BrewParameters.uiBoilTime = 60;
-	BrewParameters.uiBringToBoilTime = 24;//24; //based off last brew.. 40% duty cycle at sparge 2. large boil volume, maybe 38-40l
-										 // TODO: Make sure the elbow is in the boiler for the end of the boil to stop splashing
+	BrewParameters.uiBringToBoilTime = 17;// //based off last brew..
 
 	BrewParameters.uiHopTimes[0] = 60;
-	BrewParameters.uiHopTimes[1] = 60;
-	BrewParameters.uiHopTimes[2] = 30;
-	BrewParameters.uiHopTimes[3] = 15;
-	BrewParameters.uiHopTimes[4] = 5;
-	BrewParameters.uiHopTimes[5] = 1;
+	BrewParameters.uiHopTimes[1] = 59;
+	BrewParameters.uiHopTimes[2] = 58;
+	BrewParameters.uiHopTimes[3] = 30;
+	BrewParameters.uiHopTimes[4] = 15;
+	BrewParameters.uiHopTimes[5] = 5;
 	BrewParameters.uiHopDropperStopDelayms = 200;
 
 	BrewParameters.uiSettlingRecircTime = 1; //mins
 	BrewParameters.uiSettlingTime = 1; //mins
 
-	BrewParameters.uiChillTime = 15;//20; //mins to pump and recirc in boiler after flame out.
+	BrewParameters.uiChillTime = 20;//20; //mins to pump and recirc in boiler after flame out.
 	BrewParameters.uiPumpToFermenterTime = 7;
 
 	BrewParameters.uiChillerPumpPrimingCycles = 5;

@@ -26,8 +26,12 @@
 #include "main.h"
 #include "hlt.h"
 #include "MashWater.h"
+#include "button.h"
+#include "macros.h"
+
 
 volatile char hlt_state = OFF;
+volatile char manual_hlt_command = OFF;
 
 // semaphore that stops the returning from the applet to the menu system until the applet goes into the blocked state.
 xSemaphoreHandle xHLTAppletRunningSemaphore;
@@ -40,10 +44,12 @@ volatile float diag_setpoint = 74.5; // when calling the heat_hlt task, we use t
 const char * pcHltCommands[3] = { "Idle", "Fill and Heat", "Drain" };
 const char * pcHltLevels[3] = { "HLT-Low", "HLT-Medium", "HLT-High" };
 
+
 static float fGetStableHltTemp(float tolerance);
 bool xTickTimer(portTickType * ticksToWait, portTickType setpoint);
 HltLevel xGetHltLevel();
 void vHLTAppletDisplay(void *pvParameters);
+
 unsigned int uiGetHltTemp()
 {
 	return (unsigned int) ds1820_get_temp(HLT);
@@ -113,6 +119,8 @@ void hlt_init()
 		else
 			vConsolePrint("Created Brew HLT Task Queues\r\n\0");
 	}
+
+
 
 }
 
@@ -446,6 +454,7 @@ void vTaskHeatHLT()
 	HltLevel hltLevel = HLT_LEVEL_LOW;
 	char hlt_ok = 0;
 
+
 	for (;;)
 	{
 		hltLevel = xGetHltLevel();
@@ -474,69 +483,81 @@ void vTaskHeatHLT()
 	}
 }
 
-#define SETPOINT_UP_X1 0
-#define SETPOINT_UP_Y1 30
-#define SETPOINT_UP_X2 100
-#define SETPOINT_UP_Y2 100
-#define SETPOINT_UP_W (SETPOINT_UP_X2-SETPOINT_UP_X1)
-#define SETPOINT_UP_H (SETPOINT_UP_Y2-SETPOINT_UP_Y1)
 
-#define SETPOINT_DN_X1 0
-#define SETPOINT_DN_Y1 105
-#define SETPOINT_DN_X2 100
-#define SETPOINT_DN_Y2 175
-#define SETPOINT_DN_W (SETPOINT_DN_X2-SETPOINT_DN_X1)
-#define SETPOINT_DN_H (SETPOINT_DN_Y2-SETPOINT_DN_Y1)
+static int SetpointUp()
+{
+	diag_setpoint += 0.5;
+	return 0;
+}
 
-#define START_HEATING_X1 155
-#define START_HEATING_Y1 30
-#define START_HEATING_X2 300
-#define START_HEATING_Y2 100
-#define START_HEATING_W (START_HEATING_X2-START_HEATING_X1)
-#define START_HEATING_H (START_HEATING_Y2-START_HEATING_Y1)
 
-#define STOP_HEATING_X1 155
-#define STOP_HEATING_Y1 105
-#define STOP_HEATING_X2 300
-#define STOP_HEATING_Y2 175
-#define STOP_HEATING_W (STOP_HEATING_X2-STOP_HEATING_X1)
-#define STOP_HEATING_H (STOP_HEATING_Y2-STOP_HEATING_Y1)
+static int SetpointDown()
+{
+	diag_setpoint -= 0.5;
+	return 0;
+}
 
-#define BAK_X1 200
-#define BAK_Y1 190
-#define BAK_X2 315
-#define BAK_Y2 235
-#define BAK_W (BAK_X2-BAK_X1)
-#define BAK_H (BAK_Y2-BAK_Y1)
+static int StartHeating()
+{
+	manual_hlt_command = HEATING;
+	if (xHeatHLTTaskHandle == NULL )
+	{
+		vConsolePrint("Creating MANUAL HLT Task\r\n\0");
+		xTaskCreate( vTaskHeatHLT, ( signed portCHAR * ) "HLT_HEAT",configMINIMAL_STACK_SIZE +300, NULL, tskIDLE_PRIORITY+1, &xHeatHLTTaskHandle);
+	}
+	return 0;
+}
+
+static int StopHeating()
+{
+	manual_hlt_command = OFF;
+	if (xHeatHLTTaskHandle != NULL )
+	{
+		vTaskDelete(xHeatHLTTaskHandle);
+		xHeatHLTTaskHandle = NULL;
+	}
+	GPIO_WriteBit(HLT_SSR_PORT, HLT_SSR_PIN, 0);
+	hlt_state = OFF;
+	return 0;
+}
+
+static int Back()
+{
+	//try to take the semaphore from the display applet. wait here if we cant take it.
+	xSemaphoreTake(xHLTAppletRunningSemaphore, portMAX_DELAY);
+	//delete the display applet task if its been created.
+	if (xHLTAppletDisplayHandle != NULL )
+	{
+		vTaskDelete(xHLTAppletDisplayHandle);
+		vTaskDelay(100);
+		xHLTAppletDisplayHandle = NULL;
+	}
+	//return the semaphore for taking by another task.
+	xSemaphoreGive(xHLTAppletRunningSemaphore);
+	return 1;
+}
+
+static Button HltButtons[] =
+{
+		{SETPOINT_UP_X1, SETPOINT_UP_Y1, SETPOINT_UP_X2, SETPOINT_UP_Y2, "SP UP", Red, Blue, SetpointUp, ""},
+		{SETPOINT_DN_X1, SETPOINT_DN_Y1, SETPOINT_DN_X2, SETPOINT_DN_Y2, "SP DOWN", Red, Blue, SetpointDown, ""},
+		{START_HEATING_X1, START_HEATING_Y1, START_HEATING_X2, START_HEATING_Y2, "Start Heating", Red, Blue, StartHeating, ""},
+		{STOP_HEATING_X1, STOP_HEATING_Y1, STOP_HEATING_X2, STOP_HEATING_Y2, "Stop Heating", Red, Blue, StopHeating, ""},
+		{BAK_X1, BAK_Y1, BAK_X2, BAK_Y2, "BACK", Red, Blue, Back, ""},
+};
+
+
+static int HltButtonCount()
+{
+	return ARRAY_LENGTH(HltButtons);
+}
 
 void vHLTApplet(int init)
 {
+	vDrawButtons(HltButtons, HltButtonCount() );
 	if (init)
 	{
-		lcd_DrawRect(SETPOINT_UP_X1, SETPOINT_UP_Y1, SETPOINT_UP_X2,
-		    SETPOINT_UP_Y2, Red);
-		lcd_fill(SETPOINT_UP_X1 + 1, SETPOINT_UP_Y1 + 1, SETPOINT_UP_W,
-		    SETPOINT_UP_H, Blue);
-		lcd_DrawRect(SETPOINT_DN_X1, SETPOINT_DN_Y1, SETPOINT_DN_X2,
-		    SETPOINT_DN_Y2, Red);
-		lcd_fill(SETPOINT_DN_X1 + 1, SETPOINT_DN_Y1 + 1, SETPOINT_DN_W,
-		    SETPOINT_DN_H, Blue);
-		lcd_DrawRect(STOP_HEATING_X1, STOP_HEATING_Y1, STOP_HEATING_X2,
-		    STOP_HEATING_Y2, Cyan);
-		lcd_fill(STOP_HEATING_X1 + 1, STOP_HEATING_Y1 + 1, STOP_HEATING_W,
-		    STOP_HEATING_H, Red);
-		lcd_DrawRect(START_HEATING_X1, START_HEATING_Y1, START_HEATING_X2,
-		    START_HEATING_Y2, Cyan);
-		lcd_fill(START_HEATING_X1 + 1, START_HEATING_Y1 + 1, START_HEATING_W,
-		    START_HEATING_H, Green);
-		lcd_DrawRect(BAK_X1, BAK_Y1, BAK_X2, BAK_Y2, Cyan);
-		lcd_fill(BAK_X1 + 1, BAK_Y1 + 1, BAK_W, BAK_H, Magenta);
-		lcd_printf(10, 1, 18, "MANUAL HLT APPLET");
-		lcd_printf(3, 4, 11, "SP UP");
-		lcd_printf(1, 8, 13, "SP DOWN");
-		lcd_printf(22, 4, 13, "START HEATING");
-		lcd_printf(22, 8, 12, "STOP HEATING");
-		lcd_printf(30, 13, 4, "Back");
+
 
 		//create a dynamic display task
 		vConsolePrint("Creating HLT_Display Task!\r\n\0");
@@ -562,60 +583,13 @@ void vHLTAppletDisplay(void *pvParameters)
 
 		hltState = GetHltState();
 		diag_setpoint1 = diag_setpoint;
-		lcd_fill(1, 178, 170, 40, Black);
-		lcd_printf(1, 11, 20, pcHltLevels[hltState.level]);
-		//display the state and user info (the state will flash on the screen)
-		switch (hltState.heatingState)
-		{
-			case HLT_HEATING:
-				{
-				if (tog)
-				{
-					lcd_fill(1, 220, 180, 29, Black);
-					lcd_printf(1, 13, 15, "HEATING");
-					lcd_printf(1, 14, 25, "Currently = %d.%ddegC",
-					    (unsigned int) floor(hltState.temp_float),
-					    (unsigned int) ((hltState.temp_float - floor(hltState.temp_float))
-					        * pow(10, 3)));
-					//lcd_printf(1,14,15,"Currently = %2.1fdegC", current_temp);
-				}
-				else
-				{
-					lcd_fill(1, 210, 180, 17, Black);
-				}
-				break;
-			}
-			case HLT_NOT_HEATING:
-				{
-				if (tog)
-				{
-					lcd_fill(1, 210, 180, 29, Black);
-					lcd_printf(1, 13, 11, "NOT HEATING");
-					lcd_printf(1, 14, 25, "Currently = %d.%ddegC",
-					    (unsigned int) floor(hltState.temp_float),
-					    (unsigned int) ((hltState.temp_float - floor(hltState.temp_float))
-					        * pow(10, 3)));
-					//lcd_printf(1,14,15,"Currently = %2.1fdegC", current_temp);
-				}
-				else
-				{
-					lcd_fill(1, 210, 180, 17, Black);
-				}
 
-				break;
-			}
-			default:
-				{
-				break;
-			}
-		}
+		lcd_printf(0, 10, 15, "%d.%d", (unsigned int) floor(diag_setpoint), (unsigned int) ((diag_setpoint - floor(diag_setpoint)) * pow(10, 3)));
+		lcd_printf(0, 11, 15, pcHltLevels[hltState.level]);
+		lcd_printf(0, 12, 15, manual_hlt_command == HEATING ? "CMD: HEAT" : "CMD: OFF");
+		lcd_printf(0, 13, 15, hltState.heatingState == HLT_HEATING ? "HEATING" : "NOT HEATING");
+		lcd_printf(0, 14, 20, "Currently = %d.%ddegC", (unsigned int) floor(hltState.temp_float), (unsigned int) ((hltState.temp_float - floor(hltState.temp_float)) * pow(10, 3)));
 
-		tog = tog ^ 1;
-		lcd_fill(102, 99, 35, 10, Black);
-		//printf("%d, %d, %d\r\n\0", (uint8_t)diag_setpoint, (diag_setpoint), ((uint8_t)diag_setpoint*10)%5);
-		lcd_printf(13, 6, 25, "%d.%d", (unsigned int) floor(diag_setpoint),
-		    (unsigned int) ((diag_setpoint - floor(diag_setpoint)) * pow(10, 3)));
-		//lcd_printf(13,6,15,"%d", (int)diag_setpoint);
 
 		xSemaphoreGive(xHLTAppletRunningSemaphore);
 		//give back the semaphore as its safe to return now.
@@ -632,61 +606,9 @@ void vHLTAppletCallback(int in_out)
 
 int HLTKey(int xx, int yy)
 {
-
-	uint16_t window = 0;
-	static uint8_t w = 5, h = 5;
-	static uint16_t last_window = 0;
-	if (xx > SETPOINT_UP_X1 + 1 && xx < SETPOINT_UP_X2 - 1
-	    && yy > SETPOINT_UP_Y1 + 1 && yy < SETPOINT_UP_Y2 - 1)
-	{
-		diag_setpoint += 0.5;
-	}
-	else if (xx > SETPOINT_DN_X1 + 1 && xx < SETPOINT_DN_X2 - 1
-	    && yy > SETPOINT_DN_Y1 + 1 && yy < SETPOINT_DN_Y2 - 1)
-
-	{
-		diag_setpoint -= 0.5;
-	}
-	else if (xx > STOP_HEATING_X1 + 1 && xx < STOP_HEATING_X2 - 1
-	    && yy > STOP_HEATING_Y1 + 1 && yy < STOP_HEATING_Y2 - 1)
-	{
-		if (xHeatHLTTaskHandle != NULL )
-		{
-			vTaskDelete(xHeatHLTTaskHandle);
-			xHeatHLTTaskHandle = NULL;
-
-		}
-		GPIO_WriteBit(HLT_SSR_PORT, HLT_SSR_PIN, 0);
-		hlt_state = OFF;
-	}
-	else if (xx > START_HEATING_X1 + 1 && xx < START_HEATING_X2 - 1
-	    && yy > START_HEATING_Y1 + 1 && yy < START_HEATING_Y2 - 1)
-	{
-		if (xHeatHLTTaskHandle == NULL )
-		{
-			vConsolePrint("Creating MANUAL HLT Task\r\n\0");
-			xTaskCreate( vTaskHeatHLT, ( signed portCHAR * ) "HLT_HEAT",
-			    configMINIMAL_STACK_SIZE +300, NULL, tskIDLE_PRIORITY+1,
-			    &xHeatHLTTaskHandle);
-		}
-	}
-	else if (xx > BAK_X1 && yy > BAK_Y1 && xx < BAK_X2 && yy < BAK_Y2)
-	{
-		//try to take the semaphore from the display applet. wait here if we cant take it.
-		xSemaphoreTake(xHLTAppletRunningSemaphore, portMAX_DELAY);
-		//delete the display applet task if its been created.
-		if (xHLTAppletDisplayHandle != NULL )
-		{
-			vTaskDelete(xHLTAppletDisplayHandle);
-			vTaskDelay(100);
-			xHLTAppletDisplayHandle = NULL;
-		}
-		//return the semaphore for taking by another task.
-		xSemaphoreGive(xHLTAppletRunningSemaphore);
-		return 1;
-	}
+	int retVal = ActionKeyPress(HltButtons, HltButtonCount(), xx, yy);
 	vTaskDelay(10);
-	return 0;
+	return retVal;
 
 }
 

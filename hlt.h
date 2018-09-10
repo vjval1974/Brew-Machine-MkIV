@@ -9,6 +9,30 @@
 #define HLT_H_
 #include "queue.h"
 #include "valves.h"
+#define SETPOINT_UP_X1 0
+#define SETPOINT_UP_Y1 30
+#define SETPOINT_UP_X2 70
+#define SETPOINT_UP_Y2 80
+
+#define SETPOINT_DN_X1 0
+#define SETPOINT_DN_Y1 85
+#define SETPOINT_DN_X2 70
+#define SETPOINT_DN_Y2 145
+
+#define START_HEATING_X1 155
+#define START_HEATING_Y1 30
+#define START_HEATING_X2 300
+#define START_HEATING_Y2 100
+
+#define STOP_HEATING_X1 155
+#define STOP_HEATING_Y1 105
+#define STOP_HEATING_X2 300
+#define STOP_HEATING_Y2 175
+
+#define BAK_X1 200
+#define BAK_Y1 190
+#define BAK_X2 315
+#define BAK_Y2 235
 
 //#define HLT_LEVEL_ADC_CHAN 10 // corresponds to PORT C, Bit 0
 #define HLT_SSR_PORT GPIOC
@@ -72,6 +96,8 @@ typedef struct
     char pcTxt[32];
 } HltMessage;
 
+
+
 typedef struct HltState
 {
   HltLevel level;
@@ -97,4 +123,5 @@ extern xTaskHandle xBrewHLTTaskHandle;
 extern xQueueHandle xBrewTaskHLTQueue;
 extern xQueueHandle xHltTaskQueue;
 extern xTaskHandle xTaskHLTLevelCheckerTaskHandle;
+
 #endif /* HLT_H_ */

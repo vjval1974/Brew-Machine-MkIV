@@ -91,6 +91,7 @@ xTaskHandle xLCDTaskHandle,
     xSerialControlTaskHandle;
 
 /*-----------------------------------------------------------*/
+
 struct menu diag_menu[] =
 {
 	{"Applet",              NULL,                           example_applet,                NULL,                   example_applet_touch_handler},
@@ -114,20 +115,23 @@ struct menu manual_menu[] =
 	{NULL, 			        NULL, 			             	NULL, 			             	NULL, 		        	NULL}
 };
 
-struct menu pumps_valves[] =
-{
-	{"Chiller Pump",        NULL,                           vChillerPumpApplet,             NULL,                   iChillerPumpKey},
-	{"Mash Pump",           NULL,                           vMashPumpApplet,                NULL,                   iMashPumpKey},
-	{"Valves",              NULL,                           vValvesApplet,                  NULL,                   iValvesKey},
-	{"Boil Valve",          NULL,                           vBoilValveApplet,               NULL,                   iBoilValveKey},
-	{"Back",                NULL,                           NULL,                           NULL,                   NULL},
-	{NULL,                  NULL,                           NULL,                           NULL,                   NULL}
-};
+//struct menu pumps_valves[] =
+//{
+////	{"Chiller Pump",        NULL,                           vChillerPumpApplet,             NULL,                   iChillerPumpKey},
+////	{"Mash Pump",           NULL,                           vMashPumpApplet,                NULL,                   iMashPumpKey},
+//	{"Valves",              NULL,                           vValvesApplet,                  NULL,                   iValvesKey},
+////	{"Boil Valve",          NULL,                           vBoilValveApplet,               NULL,                   iBoilValveKey},
+//	{"Back",                NULL,                           NULL,                           NULL,                   NULL},
+//	{NULL,                  NULL,                           NULL,                           NULL,                   NULL}
+//};
+
+
+
 
 struct menu main_menu[] =
 {
 	{"Manual Control",      manual_menu,    		        NULL, 	             			NULL, 		        	NULL},
-	{"Pumps/Valves" ,       pumps_valves,                   NULL,                           NULL,                   NULL},
+	{"Pumps/Valves" ,       NULL,                   vValvesApplet,                           NULL,                   iValvesKey},
 	{"Diagnostics",         diag_menu,                      NULL,                           NULL,                   NULL},
 	{"Parameters",          NULL,                           vParametersApplet,              NULL,                   iParametersKey},
 	{"BREW",                NULL,                           vBrewApplet,                    NULL,                   iBrewKey},

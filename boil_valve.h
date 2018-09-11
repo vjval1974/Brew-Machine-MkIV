@@ -49,6 +49,7 @@ void vBoilValveInit();
 void vTaskBoilValve(void * pvParameters);
 int iBoilValveKey(int xx, int yy);
 void vBoilValveApplet(int init);
+void vToggleBoilValve();
 
 extern xQueueHandle xBoilValveQueue;
 
@@ -61,7 +62,7 @@ typedef struct
 } BoilValveMessage;
 
 BoilValveState xGetBoilValveState(void);
-
+char * pcGetBoilValveStateText(BoilValveState state);
 
 
 #endif /* BOIL_VALVE_H_ */

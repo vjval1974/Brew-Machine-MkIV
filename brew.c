@@ -219,10 +219,10 @@ void vBrewReset(void)
 	vMashPump(STOP_MASH_PUMP);
 	vMill(MILL_STOPPED); // need to change state name.
 	vStir(STIR_STOPPED);
-	vValveActuate(HLT_VALVE, CLOSE_VALVE);
-	vValveActuate(INLET_VALVE, CLOSE_VALVE);
-	vValveActuate(MASH_VALVE, CLOSE_VALVE);
-	vValveActuate(CHILLER_VALVE, CLOSE_VALVE);
+	vActuateValve(&valves[HLT_VALVE], CLOSE_VALVE);
+	vActuateValve(&valves[INLET_VALVE], CLOSE_VALVE);
+	vActuateValve(&valves[MASH_VALVE], CLOSE_VALVE);
+	vActuateValve(&valves[CHILLER_VALVE], CLOSE_VALVE);
 }
 
 //run this at the "brew finished step.
@@ -686,9 +686,9 @@ void vBrewMashSetupFunction(int piParameters[5])
 	int ii;
 	for (ii = 0; ii < iCycles; ii++)
 	{
-		vValveActuate(MASH_VALVE, OPEN_VALVE);
+		vActuateValve(&valves[MASH_VALVE], OPEN_VALVE);
 		vTaskDelay(4000);
-		vValveActuate(MASH_VALVE, CLOSE_VALVE);
+		vActuateValve(&valves[MASH_VALVE], CLOSE_VALVE);
 		vTaskDelay(4000);
 	}
 
@@ -866,9 +866,9 @@ void vBrewMillPollFunction(int piParameters[5])
 //===================================================================================================================================================
 void vBrewCloseDiscreteValves(int piParameters[5])
 {
-	vValveActuate(HLT_VALVE, CLOSE_VALVE);
-	vValveActuate(MASH_VALVE, CLOSE_VALVE);
-	vValveActuate(INLET_VALVE, CLOSE_VALVE);
+	vActuateValve(&valves[HLT_VALVE], CLOSE_VALVE);
+	vActuateValve(&valves[MASH_VALVE], CLOSE_VALVE);
+	vActuateValve(&valves[INLET_VALVE], CLOSE_VALVE);
 	vConsolePrint("Valves Setup Func Called\r\n\0");
 	vTaskDelay(50);
 	BrewSteps[ThisBrewState.ucStep].ucComplete = 1;
@@ -974,8 +974,9 @@ void vBrewPreChillPollFunction(int piParameters[5])
 void vBrewChillSetupFunction(int piParameters[5])
 {
 	vBrewBoilValveCheckClose();
-	vValveActuate(CHILLER_VALVE, OPEN_VALVE);
+	vActuateValve(&valves[CHILLER_VALVE], OPEN_VALVE);
 }
+
 
 void vBrewChillPollFunction(int piParameters[5])
 {
@@ -1010,7 +1011,7 @@ void vBrewChillPollFunction(int piParameters[5])
 //===================================================================================================================================================
 void vBrewPumpToFermenterSetupFunction(int piParameters[5])
 {
-	vValveActuate(CHILLER_VALVE, CLOSE_VALVE);
+	vActuateValve(&valves[CHILLER_VALVE], CLOSE_VALVE);
 	vChillerPump(START_CHILLER_PUMP); //Pump.
 
 	vBrewBoilValveOpen();
@@ -1030,7 +1031,7 @@ void vBrewPumpToFermenterPollFunction(int piParameters[5])
 void vBrewPumpToBoilSetupFunction(int piParameters[5])
 {
 	int ii = 0;
-	vValveActuate(MASH_VALVE, OPEN_VALVE);
+	vActuateValve(&valves[MASH_VALVE], OPEN_VALVE);
 
 	for (ii = 0; ii < BrewParameters.iPumpPrimingCycles; ii++)
 	// try to prime, if not already primed
@@ -1047,7 +1048,7 @@ void vBrewPumpToBoilPollFunction(int piParameters[5])
 {
 	int iPumpToBoilTime = piParameters[1];
 	vMashPump(START_MASH_PUMP);
-	vValveActuate(MASH_VALVE, OPEN_VALVE);
+	vActuateValve(&valves[MASH_VALVE], OPEN_VALVE);
 
 	if (BrewSteps[ThisBrewState.ucStep].uElapsedTime >= iPumpToBoilTime)
 	{
@@ -1057,7 +1058,7 @@ void vBrewPumpToBoilPollFunction(int piParameters[5])
 		//--------------------------------------------------------------------------------------------
 		BrewSteps[ThisBrewState.ucStep].ucComplete = 1;
 		vMashPump(STOP_MASH_PUMP);
-		vValveActuate(MASH_VALVE, CLOSE_VALVE);
+		vActuateValve(&valves[MASH_VALVE], CLOSE_VALVE);
 		vBrewNextStep();
 	}
 }
@@ -1124,7 +1125,7 @@ void vBrewBoilSetupFunction(int piParameters[5])
 	xBoilTextMessage->pcMsgText = "BOIL";
 	xBoilTextMessage->ucLine = 5;
 	xQueueSendToBack(xBrewAppletTextQueue, &xBoilTextMessage, 0);
-	vValveActuate(MASH_VALVE, CLOSE_VALVE); // Runs water through the other side of the chiller.
+	vActuateValve(&valves[MASH_VALVE], CLOSE_VALVE); // Runs water through the other side of the chiller.
 
 
 	xBoilMessage.iBrewStep = ThisBrewState.ucStep;
@@ -1138,7 +1139,7 @@ void vPumpToBoilRecycler(int onTimeInSeconds, int offTimeInSeconds)
 	static int pumpOffCounter = 0;
 	if (pumpOffCounter < offTimeInSeconds)
 	{
-		vValveActuate(MASH_VALVE, CLOSE_VALVE);
+		vActuateValve(&valves[MASH_VALVE], CLOSE_VALVE);
 		vMashPump(STOP_MASH_PUMP);
 		pumpOffCounter++;
 	}
@@ -1146,7 +1147,7 @@ void vPumpToBoilRecycler(int onTimeInSeconds, int offTimeInSeconds)
 	{
 		if (pumpOnCounter < onTimeInSeconds)
 		{
-			vValveActuate(MASH_VALVE, OPEN_VALVE);
+			vActuateValve(&valves[MASH_VALVE], OPEN_VALVE);
 			vMashPump(START_MASH_PUMP);
 			pumpOnCounter++;
 		}
@@ -1205,7 +1206,7 @@ void vBrewBoilPollFunction(int piParameters[5])
 	{
 		if (iChillerValveChecked == FALSE)
 		{
-			vValveActuate(CHILLER_VALVE, CLOSE_VALVE);
+			vActuateValve(&valves[CHILLER_VALVE], CLOSE_VALVE);
 			iChillerValveChecked = TRUE;
 		}
 		vChillerPump(START_CHILLER_PUMP);

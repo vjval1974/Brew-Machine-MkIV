@@ -25,54 +25,33 @@
 #include "button.h"
 #include "mash_pump.h"
 #include "chiller_pump.h"
+#include "boil_valve.h"
 
 void vValvesAppletDisplay(void *pvParameters);
 void vValvesApplet(int init);
 static void UpdateValveButtons();
-
+void vOnOpenHlt();
+void vOnCloseHlt();
 
 xTaskHandle xValvesTaskHandle = NULL, xValvesAppletDisplayHandle = NULL;
 xSemaphoreHandle xValvesAppletRunningSemaphore;
 
-
-ValveState ucGetHltValveState()
+Valve valves[] =
 {
-	if (GPIO_ReadInputDataBit(HLT_VALVE_PORT, HLT_VALVE_PIN ) == 0)
-	{
-		return VALVE_CLOSED;
-	}
-	else
-		return VALVE_OPENED;
-}
+	{"HLT", GPIOB, GPIO_Pin_0, VALVE_STATE_NOT_DEFINED, vOnOpenHlt, vOnCloseHlt},
+	{"MASH", GPIOB, GPIO_Pin_1, VALVE_STATE_NOT_DEFINED, NULL, NULL},
+	{"INLET", GPIOB, GPIO_Pin_5, VALVE_STATE_NOT_DEFINED, NULL, NULL},
+	{"CHILLER", GPIOC, GPIO_Pin_9, VALVE_STATE_NOT_DEFINED, NULL, NULL}
+};
 
-ValveState ucGetMashValveState()
+ValveState xGetValveState(Valve * valve)
 {
-	if (GPIO_ReadInputDataBit(MASH_VALVE_PORT, MASH_VALVE_PIN ) == 0)
-	{
-		return VALVE_CLOSED;
-	}
-	else
-		return VALVE_OPENED;
-}
-
-ValveState ucGetInletValveState()
-{
-	if (GPIO_ReadInputDataBit(INLET_VALVE_PORT, INLET_VALVE_PIN ) == 0)
-	{
-		return VALVE_CLOSED;
-	}
-	else
-		return VALVE_OPENED;
-}
-
-ValveState ucGetChillerValveState()
-{
-	if (GPIO_ReadInputDataBit(CHILLER_VALVE_PORT, CHILLER_VALVE_PIN ) == 0)
-	{
-		return VALVE_CLOSED;
-	}
-	else
-		return VALVE_OPENED;
+	if (GPIO_ReadInputDataBit(valve->GPIO_Port, valve->GPIO_Pin) == 0)
+		{
+			return VALVE_CLOSED;
+		}
+		else
+			return VALVE_OPENED;
 }
 
 void vValvesInit(void)
@@ -109,94 +88,59 @@ void vValvesInit(void)
 	vSemaphoreCreateBinary(xValvesAppletRunningSemaphore);
 
 }
-
-void vValveActuate(unsigned char valve, ValveCommand command)
+void vOpenValve(Valve * valve)
 {
-	uint8_t current = 0;
-
-	switch (valve)
-	{
-		case HLT_VALVE:
-			{
-			if (command == TOGGLE_VALVE)
-			{
-				current = GPIO_ReadInputDataBit(HLT_VALVE_PORT, HLT_VALVE_PIN );
-				GPIO_WriteBit(HLT_VALVE_PORT, HLT_VALVE_PIN, current ^ 1);
-			}
-			else if (command == OPEN_VALVE)
-			{
-				GPIO_WriteBit(HLT_VALVE_PORT, HLT_VALVE_PIN, 1);
-			}
-			else
-			{
-				GPIO_WriteBit(HLT_VALVE_PORT, HLT_VALVE_PIN, 0);
-			}
-			if (ucGetHltValveState() == VALVE_OPENED)
-			{
-				vSetBoilFlowMeasuringState(MEASURING_FLOW);
-			}
-			else vSetBoilFlowMeasuringState(NOT_MEASURING_FLOW);
-			break;
-		}
-		case MASH_VALVE:
-			{
-			if (command == TOGGLE_VALVE)
-			{
-				current = GPIO_ReadInputDataBit(MASH_VALVE_PORT, MASH_VALVE_PIN );
-				GPIO_WriteBit(MASH_VALVE_PORT, MASH_VALVE_PIN, current ^ 1);
-
-			}
-			else if (command == OPEN_VALVE)
-			{
-				GPIO_WriteBit(MASH_VALVE_PORT, MASH_VALVE_PIN, 1);
-			}
-			else
-			{
-				GPIO_WriteBit(MASH_VALVE_PORT, MASH_VALVE_PIN, 0);
-			}
-			break;
-		}
-		case INLET_VALVE:
-			{
-			if (command == TOGGLE_VALVE)
-			{
-				current = GPIO_ReadInputDataBit(INLET_VALVE_PORT, INLET_VALVE_PIN );
-				GPIO_WriteBit(INLET_VALVE_PORT, INLET_VALVE_PIN, current ^ 1);
-			}
-			else if (command == OPEN_VALVE)
-			{
-				GPIO_WriteBit(INLET_VALVE_PORT, INLET_VALVE_PIN, 1);
-			}
-			else
-			{
-				GPIO_WriteBit(INLET_VALVE_PORT, INLET_VALVE_PIN, 0);
-			}
-			break;
-		}
-		case CHILLER_VALVE:
-			{
-			if (command == TOGGLE_VALVE)
-			{
-				current = GPIO_ReadInputDataBit(CHILLER_VALVE_PORT, CHILLER_VALVE_PIN );
-				GPIO_WriteBit(CHILLER_VALVE_PORT, CHILLER_VALVE_PIN, current ^ 1);
-			}
-			else if (command == OPEN_VALVE)
-			{
-				GPIO_WriteBit(CHILLER_VALVE_PORT, CHILLER_VALVE_PIN, 1);
-			}
-			else
-			{
-				GPIO_WriteBit(CHILLER_VALVE_PORT, CHILLER_VALVE_PIN, 0);
-			}
-			break;
-		}
-		default:
-			{
-			break;
-		}
-	}
+	GPIO_WriteBit(valve->GPIO_Port, valve->GPIO_Pin, 1);
+	valve->state = VALVE_OPENED;
 }
 
+void vCloseValve(Valve * valve)
+{
+
+	GPIO_WriteBit(valve->GPIO_Port, valve->GPIO_Pin, 0);
+	valve->state = VALVE_CLOSED;
+}
+void vOnOpenHlt()
+{
+	printf("OnOpen Called\r\n");
+	vSetBoilFlowMeasuringState(MEASURING_FLOW);
+}
+
+void vOnCloseHlt()
+{
+	printf("OnOpen Called\r\n");
+	vSetBoilFlowMeasuringState(NOT_MEASURING_FLOW);
+}
+
+void vActuateValve(Valve * valve, ValveCommand command)
+{
+
+	if (command == TOGGLE_VALVE)
+	{
+		valve->state = xGetValveState(valve);
+		printf("toggle State = %d\r\n", valve->state);
+		valve->state == VALVE_OPENED ? vCloseValve(valve) : vOpenValve(valve);
+
+	}
+	else if (command == OPEN_VALVE)
+	{
+		vOpenValve(valve);
+	}
+	else
+	{
+		vCloseValve(valve);
+	}
+	if (xGetValveState(valve) == VALVE_OPENED)
+	{
+		if (valve->onOpen != NULL)
+			valve->onOpen();
+	}
+	else
+	{
+		if (valve->onClose != NULL)
+			valve->onClose();
+	}
+}
 
 
 #define TOGGLE_HLT_VALVE_X1 0
@@ -237,32 +181,41 @@ void vValveActuate(unsigned char valve, ValveCommand command)
 #define RESET_FLOW_1_X2 318
 #define RESET_FLOW_1_Y2 80
 
+#define TOGGLE_BOIL_VALVE_X1 225
+#define TOGGLE_BOIL_VALVE_Y1 85
+#define TOGGLE_BOIL_VALVE_X2 318
+#define TOGGLE_BOIL_VALVE_Y2 145
+
 #define BK_X1 200
 #define BK_Y1 190
 #define BK_X2 315
 #define BK_Y2 235
 
-
+int ToggleBoilValve()
+{
+    vToggleBoilValve();
+    return 0;
+}
 int ToggleHltValve()
 {
-	vValveActuate(HLT_VALVE, TOGGLE_VALVE);
+	vActuateValve(&valves[HLT_VALVE], TOGGLE_VALVE);
 	return 0;
 }
 
 int ToggleMashValve()
 {
-	vValveActuate(MASH_VALVE, TOGGLE_VALVE);
+	vActuateValve(&valves[MASH_VALVE], TOGGLE_VALVE);
 	return 0;
 }
 
 int ToggleInletValve()
 {
-	vValveActuate(INLET_VALVE, TOGGLE_VALVE);
+	vActuateValve(&valves[INLET_VALVE], TOGGLE_VALVE);
 	return 0;
 }
 int ToggleChillerValve()
 {
-	vValveActuate(CHILLER_VALVE, TOGGLE_VALVE);
+	vActuateValve(&valves[CHILLER_VALVE], TOGGLE_VALVE);
 	return 0;
 }
 
@@ -299,16 +252,24 @@ int Back()
 	return 1;
 }
 
+#define valveButtonBackground  		NavyBlue
+#define valveButtonFillColorOpen  	NavyBlue
+#define valveButtonFillColorClosed  Orange
+#define pumpButtonFillColorOn  		Dark_Green
+#define pumpButtonFillColorOff  	NavyBlue
+#define buttonOutlineColor 			White
+
 static Button ValveButtons[] =
 {
-		{TOGGLE_HLT_VALVE_X1, TOGGLE_HLT_VALVE_Y1, TOGGLE_HLT_VALVE_X2, TOGGLE_HLT_VALVE_Y2, "HLT", Red, Blue, ToggleHltValve, ""},
-		{TOGGLE_MASH_VALVE_X1, TOGGLE_MASH_VALVE_Y1, TOGGLE_MASH_VALVE_X2, TOGGLE_MASH_VALVE_Y2, "Mash", Red, Blue, ToggleMashValve, ""},
-		{TOGGLE_INLET_VALVE_X1, TOGGLE_INLET_VALVE_Y1, TOGGLE_INLET_VALVE_X2, TOGGLE_INLET_VALVE_Y2, "Inlet", Red, Blue, ToggleInletValve, ""},
-		{TOGGLE_CHILLER_VALVE_X1, TOGGLE_CHILLER_VALVE_Y1, TOGGLE_CHILLER_VALVE_X2, TOGGLE_CHILLER_VALVE_Y2, "Boil", Red, Blue, ToggleChillerValve, ""},
-		{TOGGLE_MASH_PUMP_X1, TOGGLE_MASH_PUMP_Y1, TOGGLE_MASH_PUMP_X2, TOGGLE_MASH_PUMP_Y2, "B PUMP", Red, Blue, ToggleMashPump, ""},
-		{TOGGLE_BOIL_PUMP_X1, TOGGLE_BOIL_PUMP_Y1, TOGGLE_BOIL_PUMP_X2, TOGGLE_BOIL_PUMP_Y2, "Boil", Red, Blue, ToggleBoilPump, ""},
-		{RESET_FLOW_1_X1, RESET_FLOW_1_Y1, RESET_FLOW_1_X2, RESET_FLOW_1_Y2, "Flow Reset", Red, Blue, ResetFlow, ""},
-		{BK_X1, BK_Y1, BK_X2, BK_Y2, "BACK", Red, Blue, Back, ""},
+		{TOGGLE_HLT_VALVE_X1, TOGGLE_HLT_VALVE_Y1, TOGGLE_HLT_VALVE_X2, TOGGLE_HLT_VALVE_Y2, "HLT", valveButtonFillColorClosed, buttonOutlineColor, ToggleHltValve, ""},
+		{TOGGLE_MASH_VALVE_X1, TOGGLE_MASH_VALVE_Y1, TOGGLE_MASH_VALVE_X2, TOGGLE_MASH_VALVE_Y2, "Mash", valveButtonFillColorClosed, buttonOutlineColor, ToggleMashValve, ""},
+		{TOGGLE_INLET_VALVE_X1, TOGGLE_INLET_VALVE_Y1, TOGGLE_INLET_VALVE_X2, TOGGLE_INLET_VALVE_Y2, "Inlet", valveButtonFillColorClosed, buttonOutlineColor, ToggleInletValve, ""},
+		{TOGGLE_CHILLER_VALVE_X1, TOGGLE_CHILLER_VALVE_Y1, TOGGLE_CHILLER_VALVE_X2, TOGGLE_CHILLER_VALVE_Y2, "Chiller", valveButtonFillColorClosed, buttonOutlineColor, ToggleChillerValve, ""},
+		{TOGGLE_BOIL_VALVE_X1, TOGGLE_BOIL_VALVE_Y1, TOGGLE_BOIL_VALVE_X2, TOGGLE_BOIL_VALVE_Y2, "Boil", valveButtonFillColorClosed, buttonOutlineColor, ToggleBoilValve, ""},
+		{TOGGLE_MASH_PUMP_X1, TOGGLE_MASH_PUMP_Y1, TOGGLE_MASH_PUMP_X2, TOGGLE_MASH_PUMP_Y2, "MashPump", pumpButtonFillColorOff, buttonOutlineColor, ToggleMashPump, ""},
+		{TOGGLE_BOIL_PUMP_X1, TOGGLE_BOIL_PUMP_Y1, TOGGLE_BOIL_PUMP_X2, TOGGLE_BOIL_PUMP_Y2, "BoilPump", pumpButtonFillColorOff, buttonOutlineColor, ToggleBoilPump, ""},
+		{RESET_FLOW_1_X1, RESET_FLOW_1_Y1, RESET_FLOW_1_X2, RESET_FLOW_1_Y2, "Flow Rst", valveButtonBackground, buttonOutlineColor, ResetFlow, ""},
+		{BK_X1, BK_Y1, BK_X2, BK_Y2, "BACK", Red, Blue, Back, ""}
 };
 typedef enum
 {
@@ -316,6 +277,7 @@ typedef enum
 	MashButton,
 	InletButton,
 	ChillerButton,
+	BoilButton,
 	MashPumpButton,
 	BoilPumpButton,
 	ResetFlowButton,
@@ -334,47 +296,54 @@ void UpdateButton(Button * button, uint16_t fillColor, uint16_t outlineColor, co
 	button->stateText = text;
 }
 
-static uint16_t valveButtonBackground = Red;
 
 static void UpdateValveButtons()
 {
 
-	ValveState hLTValveState = ucGetHltValveState();
-	ValveState mashValveState = ucGetMashValveState();
-	ValveState inletValveState = ucGetInletValveState();
-	ValveState chillerValveState = ucGetChillerValveState();
+	ValveState hLTValveState = xGetValveState(&valves[HLT_VALVE]);
+	ValveState mashValveState = xGetValveState(&valves[MASH_VALVE]);
+	ValveState inletValveState = xGetValveState(&valves[INLET_VALVE]);
+	ValveState chillerValveState = xGetValveState(&valves[CHILLER_VALVE]);
 	MashPumpState_t mashPumpState = GetMashPumpState();
 	ChillerPumpState_t chillerPumpState = GetChillerPumpState();
+	BoilValveState boilValveState = xGetBoilValveState();
 
 		if (hLTValveState == VALVE_OPENED)
-			UpdateButton(&ValveButtons[HltButton], Red, Black, "To Mash");
+			UpdateButton(&ValveButtons[HltButton], valveButtonFillColorOpen, buttonOutlineColor, "To Mash");
 		else
-			UpdateButton(&ValveButtons[HltButton], Blue, Red, "To HLT");
+			UpdateButton(&ValveButtons[HltButton], valveButtonFillColorClosed, buttonOutlineColor, "To HLT");
 
 		if (mashValveState == VALVE_OPENED)
-			UpdateButton(&ValveButtons[MashButton], Red, Black, "To Boil");
+			UpdateButton(&ValveButtons[MashButton], valveButtonFillColorOpen, buttonOutlineColor, "To Boil");
 		else
-			UpdateButton(&ValveButtons[MashButton], Blue, Red, "To Mash");
+			UpdateButton(&ValveButtons[MashButton], valveButtonFillColorClosed, buttonOutlineColor, "To Mash");
 
 		if (inletValveState == VALVE_OPENED)
-			UpdateButton(&ValveButtons[InletButton], Red, Black, "Filling");
+			UpdateButton(&ValveButtons[InletButton], valveButtonFillColorOpen, buttonOutlineColor, "Filling");
 		else
-			UpdateButton(&ValveButtons[InletButton], Blue, Red, "Closed");
+			UpdateButton(&ValveButtons[InletButton], valveButtonFillColorClosed, buttonOutlineColor, "Closed");
 
 		if (chillerValveState == VALVE_OPENED)
-			UpdateButton(&ValveButtons[ChillerButton], Red, Black, "To Ferm");
+			UpdateButton(&ValveButtons[ChillerButton], valveButtonFillColorOpen, buttonOutlineColor, "Open");
 		else
-			UpdateButton(&ValveButtons[ChillerButton], Blue, Red, "To Boil");
+			UpdateButton(&ValveButtons[ChillerButton], valveButtonFillColorClosed, buttonOutlineColor, "Closed");
 
 		if (mashPumpState == MASH_PUMP_PUMPING)
-			UpdateButton(&ValveButtons[MashPumpButton], Red, Black, "Pumping");
+			UpdateButton(&ValveButtons[MashPumpButton], pumpButtonFillColorOn, buttonOutlineColor, "Pumping");
 		else
-			UpdateButton(&ValveButtons[MashPumpButton], Blue, Red, "Off");
+			UpdateButton(&ValveButtons[MashPumpButton], pumpButtonFillColorOff, buttonOutlineColor, "Off");
 
 		if (chillerPumpState == CHILLER_PUMP_PUMPING)
-			UpdateButton(&ValveButtons[BoilPumpButton], Red, Black, "Pumping");
+			UpdateButton(&ValveButtons[BoilPumpButton], pumpButtonFillColorOn, buttonOutlineColor, "Pumping");
 		else
-			UpdateButton(&ValveButtons[BoilPumpButton], Blue, Red, "Off");
+			UpdateButton(&ValveButtons[BoilPumpButton], pumpButtonFillColorOff, buttonOutlineColor, "Off");
+
+		if (boilValveState == BOIL_VALVE_OPENED)
+		{
+			UpdateButton(&ValveButtons[BoilButton], valveButtonFillColorOpen, White, pcGetBoilValveStateText(boilValveState));
+		}
+		else
+			UpdateButton(&ValveButtons[BoilButton], valveButtonFillColorClosed, White, pcGetBoilValveStateText(boilValveState));
 
 		uint16_t old = lcd_background(valveButtonBackground);
 		vDrawButtons(ValveButtons, ValveButtonCount() );

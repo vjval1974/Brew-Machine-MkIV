@@ -8,11 +8,13 @@
 #ifndef VALVES_H_
 #define VALVES_H_
 
-#define HLT_VALVE 0
-#define MASH_VALVE 1
-#define BOIL_VALVE 2
-#define INLET_VALVE 3
-#define CHILLER_VALVE 4
+//#define HLT_VALVE 0
+//#define MASH_VALVE 1
+//#define BOIL_VALVE 2
+//#define INLET_VALVE 3
+//#define CHILLER_VALVE 4
+#include "stm32f10x.h"
+#include "stm32f10x_gpio.h"
 
 typedef enum
 {
@@ -29,6 +31,26 @@ typedef enum
   TOGGLE_VALVE
 } ValveCommand;
 
+typedef enum
+{
+	HLT_VALVE,
+	MASH_VALVE,
+	INLET_VALVE,
+	CHILLER_VALVE
+} ValveEnum;
+
+typedef struct
+{
+		const char * name;
+		GPIO_TypeDef * GPIO_Port;
+		uint16_t GPIO_Pin;
+		ValveState state;
+		void (* onOpen)();
+		void (* onClose)();
+
+} Valve;
+
+extern Valve valves[];
 
 #define HLT_VALVE_PORT GPIOB
 #define MASH_VALVE_PORT GPIOB
@@ -44,11 +66,8 @@ typedef enum
 void vValvesInit(void);
 void vValvesApplet(int init);
 int iValvesKey(int xx, int yy);
-void vValveActuate(unsigned char valve, ValveCommand command);
+void vActuateValve(Valve * valve, ValveCommand command);
 
-ValveState ucGetHltValveState();
-ValveState ucGetMashValveState();
-ValveState ucGetInletValveState();
-ValveState ucGetChillerValveState();
+ValveState xGetValveState(Valve * valve);
 
 #endif /* VALVES_H_ */

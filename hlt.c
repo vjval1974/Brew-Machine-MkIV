@@ -136,12 +136,12 @@ static char cMaintainHighLevelHlt()
 	if (!GPIO_ReadInputDataBit(HLT_HIGH_LEVEL_PORT, HLT_HIGH_LEVEL_PIN )) // looking for zero volts
 	{
 		vTaskDelay(2000);
-		vValveActuate(INLET_VALVE, CLOSE_VALVE);
+		vActuateValve(&valves[INLET_VALVE], CLOSE_VALVE);
 		cSetpointReached = 1;
 	}
 	else
 	{
-		vValveActuate(INLET_VALVE, OPEN_VALVE);
+		vActuateValve(&valves[INLET_VALVE], OPEN_VALVE);
 		cSetpointReached = 0;
 	}
 	return cSetpointReached;
@@ -225,8 +225,8 @@ vTaskBrewHLT(void * pvParameters)
 				if (uMessageReceivedOnThisIteration)
 				{
 					vConsolePrint("HLT Entered IDLE State\r\n\0");
-					vValveActuate(INLET_VALVE, CLOSE_VALVE);
-					vValveActuate(HLT_VALVE, CLOSE_VALVE);
+					vActuateValve(&valves[INLET_VALVE], CLOSE_VALVE);
+					vActuateValve(&valves[HLT_VALVE], CLOSE_VALVE);
 					GPIO_WriteBit(HLT_SSR_PORT, HLT_SSR_PIN, 0);
 				}
 				break;
@@ -245,7 +245,7 @@ vTaskBrewHLT(void * pvParameters)
 					xQueueSendToBack(xBrewAppletTextQueue, &NewMessage, 0);
 				}
 				// make sure the HLT valve is closed
-				vValveActuate(HLT_VALVE, CLOSE_VALVE);
+				vActuateValve(&valves[HLT_VALVE], CLOSE_VALVE);
 
 				cHltLevelReached = cMaintainHighLevelHlt();
 				cHltTempReached = cMaintainTempHlt(fTempSetpoint);
@@ -276,7 +276,7 @@ vTaskBrewHLT(void * pvParameters)
 					//Todo: Send this message to the LCD via the text message queue
 					LCD_FLOAT(10, 10, 1, fLitresToDrain * 1000);
 					lcd_printf(1, 10, 10, "Draining:");
-					vValveActuate(HLT_VALVE, OPEN_VALVE);
+					vActuateValve(&valves[HLT_VALVE], OPEN_VALVE);
 					IsValveOpening = TRUE;
 					vResetFlow1();
 					ThisBrewState.xHLTState.hltBrewState = HLT_STATE_DRAIN;
@@ -296,7 +296,7 @@ vTaskBrewHLT(void * pvParameters)
 				}
 				else
 				{
-					vValveActuate(HLT_VALVE, OPEN_VALVE);
+					vActuateValve(&valves[HLT_VALVE], OPEN_VALVE);
 					fActualLitresDelivered = fGetBoilFlowLitres();
 
 					if (ucLitresDeliveredDisplayCtr++ >= 5 * xTaskTicksPerSecond) // every 5 seconds.
@@ -308,7 +308,7 @@ vTaskBrewHLT(void * pvParameters)
 					if (fActualLitresDelivered >= fLitresToDrain)
 					{
 						vConsolePrint("HLT is DRAINED\r\n\0");
-						vValveActuate(HLT_VALVE, CLOSE_VALVE);
+						vActuateValve(&valves[HLT_VALVE], CLOSE_VALVE);
 						vTaskDelay(500);
 						uiActualLitresDelivered += (unsigned int) (fActualLitresDelivered * 1000);
 
@@ -388,8 +388,8 @@ HltState GetHltState()
 
 	S.temp_float = ds1820_get_temp(HLT);
 	S.temp_int = uiGetHltTemp();
-	S.filling = ucGetInletValveState();
-	S.draining = ucGetHltValveState();
+	S.filling = xGetValveState(&valves[INLET_VALVE]);
+	S.draining = xGetValveState(&valves[HLT_VALVE]);
 	if (S.filling == VALVE_OPENED)
 		sprintf(S.fillingStr, "HLT Filling");
 	else
@@ -432,13 +432,13 @@ void vTaskHLTLevelChecker(void * pvParameters)
 				vConsolePrint("HLT Level Check Task: SSR on while level low!\r\n\0");
 			}
 		}
-		if (level == HLT_LEVEL_HIGH && ucGetInletValveState() == VALVE_OPENED)
+		if (level == HLT_LEVEL_HIGH && xGetValveState(&valves[INLET_VALVE]) == VALVE_OPENED)
 		{
 			vTaskDelay(3000);
 			level = xGetHltLevel();
-			if (level == HLT_LEVEL_HIGH && ucGetInletValveState() == VALVE_OPENED)
+			if (level == HLT_LEVEL_HIGH && xGetValveState(&valves[INLET_VALVE]) == VALVE_OPENED)
 			{
-				vValveActuate(INLET_VALVE, CLOSE_VALVE);
+				vActuateValve(&valves[INLET_VALVE], CLOSE_VALVE);
 				vConsolePrint("HLT Level Check Task: INTERVENED\r\n\0");
 				vConsolePrint("INLET OPENED while level HIGH for >3s!\r\n\0");
 			}
@@ -446,6 +446,7 @@ void vTaskHLTLevelChecker(void * pvParameters)
 		vTaskDelay(delay);
 	}
 }
+
 
 void vTaskHeatHLT()
 {

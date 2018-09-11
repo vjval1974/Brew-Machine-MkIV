@@ -115,18 +115,6 @@ struct menu manual_menu[] =
 	{NULL, 			        NULL, 			             	NULL, 			             	NULL, 		        	NULL}
 };
 
-//struct menu pumps_valves[] =
-//{
-////	{"Chiller Pump",        NULL,                           vChillerPumpApplet,             NULL,                   iChillerPumpKey},
-////	{"Mash Pump",           NULL,                           vMashPumpApplet,                NULL,                   iMashPumpKey},
-//	{"Valves",              NULL,                           vValvesApplet,                  NULL,                   iValvesKey},
-////	{"Boil Valve",          NULL,                           vBoilValveApplet,               NULL,                   iBoilValveKey},
-//	{"Back",                NULL,                           NULL,                           NULL,                   NULL},
-//	{NULL,                  NULL,                           NULL,                           NULL,                   NULL}
-//};
-
-
-
 
 struct menu main_menu[] =
 {

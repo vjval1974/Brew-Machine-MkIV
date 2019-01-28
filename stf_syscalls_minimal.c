@@ -32,6 +32,15 @@
 #include "FreeRTOS.h"
 #include <stdlib.h>
 
+#ifndef _PTR
+#define _PTR void*
+#endif
+
+#ifndef _VOID
+#define _VOID void
+#endif
+
+
 
 // Function declaration.
 void _exit(int i);
@@ -45,7 +54,7 @@ int _unlink(char *name);
 int _stat(char *file, struct stat *st);
 int _close(int file);
 int _execve(char *name, char **argv, char **env);
-int _fork();
+int _fork();	
 int _getpid();
 int _isatty(int file);
 int _kill(int pid, int sig);

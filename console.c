@@ -26,6 +26,7 @@
 #include "queue.h"
 #include "console.h"
 #include "main.h"
+#include "serial.h"
 
 xQueueHandle xPrintQueue;
 xTaskHandle xPrintTaskHandle;

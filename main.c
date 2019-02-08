@@ -52,6 +52,7 @@
 #include "parameters.h"
 #include "boil_valve.h"
 #include "main.h"
+#include "FreeRTOS/Source/portable/GCC/ARM_CM3/portmacro.h"
 
 /*-----------------------------------------------------------*/
 
@@ -88,7 +89,8 @@ xTaskHandle xLCDTaskHandle,
     xBrewTaskHandle,
     xBoilValveTaskHandle,
     xSerialHandlerTaskHandle,
-    xSerialControlTaskHandle;
+		xSerialControlTaskHandle,
+		xTaskWakesUpEverySecondHandle;
 
 /*-----------------------------------------------------------*/
 
@@ -182,6 +184,9 @@ int main(void)
 
 	xTaskCreate( vI2C_SendTask, ( signed portCHAR * ) "i2c_send", configMINIMAL_STACK_SIZE +500, NULL, tskIDLE_PRIORITY+2, & xI2C_SendHandle);
 
+	xTaskCreate(vTaskWakesUpEverySecond, (signed portCHAR *) "i2c_send", configMINIMAL_STACK_SIZE, NULL,
+			tskIDLE_PRIORITY + 2, &xTaskWakesUpEverySecondHandle);
+
 	/* Start the scheduler. */
 	vTaskStartScheduler();
 
@@ -191,6 +196,29 @@ int main(void)
 	 task. */
 	return 0;
 }
+
+volatile portTickType ticks;
+
+void vTaskWakesUpEverySecond(void *pvParameters)
+{
+	// Set up
+	portTickType xLastWakeTime;
+	const portTickType xPeriodInMilliSeconds=1000;
+
+	// Initialise the xLastWakeTime variable with the current time.
+	xLastWakeTime=xTaskGetTickCount();
+
+	for (;;)
+	{
+		vTaskDelayUntil(&xLastWakeTime, xPeriodInMilliSeconds / portTICK_RATE_MS);
+		ticks++;
+	}
+
+
+	// Loop
+}
+
+
 
 /*-----------------------------------------------------------*/
 // HARDWARE SETUP

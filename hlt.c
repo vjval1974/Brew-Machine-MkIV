@@ -174,6 +174,8 @@ static char cMaintainTempHlt(float fTempSetpoint)
 	return cSetpointReached;
 }
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmissing-noreturn"
 //=================================================================================================================================================================
 void
 vTaskBrewHLT(void * pvParameters)
@@ -330,6 +332,8 @@ vTaskBrewHLT(void * pvParameters)
 
 	}
 }
+
+#pragma clang diagnostic pop
 
 bool xTickTimer(portTickType * ticksToWait, portTickType setpoint)
 {

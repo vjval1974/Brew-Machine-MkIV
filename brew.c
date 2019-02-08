@@ -496,10 +496,10 @@ void vBrewHLTSetupFunction(int piParameters[5])
 	hltMessage.fData3 = 0.0;
 	hltMessage.fData4 = 0.0;
 	hltMessage.command = HLT_CMD_IDLE;
-	sprintf(hltMessage.pcTxt, "blah");
+	sprintf(hltMessage.pcTxt, "SetIdle");
 	static int iSpargeNumber = 0;
 	static double dSpargeSetpoint;
-	char buf[50] = "abcdefghijk\r\n";
+	//char buf[50] = "abcdefghijk\r\n";
 
 	switch ((HltCommand) piParameters[0])
 	{
@@ -599,6 +599,8 @@ void vBrewHLTSetupFunction(int piParameters[5])
 			break;
 
 		}
+		case HLT_CMD_IDLE:
+			break;
 	}
 	hltMessage.ucStepNumber = ThisBrewState.ucStep;
 	xQueueSendToBack(xHltTaskQueue, &hltMessage, portMAX_DELAY);

@@ -54,34 +54,34 @@ typedef struct
 //this struct defines pointers to the parameters.
 UserParameters UserParametersList[] =
     {
-        { &BrewParameters.iGrindTime, INT_TYPE, "Milling Time" },
-        { &BrewParameters.fGrainWeightKilos, FLOAT_TYPE, "Grain Weight" },
-        { &BrewParameters.fStrikeTemp, FLOAT_TYPE, "Strike Temp" },
-        { &BrewParameters.fMashStage2Temp, FLOAT_TYPE, "Mash Stg2 Temp" },
-        { &BrewParameters.fStrikeLitres, FLOAT_TYPE, "Strike(l)" },
-        { &BrewParameters.fMashStage2Litres, FLOAT_TYPE, "Mash Stg2 (l)" },
-        { &BrewParameters.fMashOutTemp, FLOAT_TYPE, "Mash Out Temp" },
-        { &BrewParameters.fMashOutLitres, FLOAT_TYPE, "Mash Out(l)" },
-        { &BrewParameters.fSpargeTemp, FLOAT_TYPE, "Sparge1 Temp" },
-        { &BrewParameters.fSpargeTemp2, FLOAT_TYPE, "Sparge2 Temp" },
-        { &BrewParameters.fSpargeTemp3, FLOAT_TYPE, "Sparge3 Temp" },
-        { &BrewParameters.fSpargeLitres, FLOAT_TYPE, "Sparge1(l)" },
-        { &BrewParameters.iMashTime, INT_TYPE, "Mash Time" },
-        { &BrewParameters.iMashStage2Time, INT_TYPE, "Mash2 Time" },
-        { &BrewParameters.uiCurrentMashStage, INT_TYPE, "CurrentMash Stage" },
-        { &BrewParameters.iMashOutTime, INT_TYPE, "Mash Out Time" },
-        { &BrewParameters.iSpargeTime, INT_TYPE, "Sparge Time" },
-        { &BrewParameters.uiBoilTime, INT_TYPE, "Boil Time" },
-        { &BrewParameters.uiHopDropperStopDelayms, INT_TYPE, "HopDropper delay ms" },
-        { &BrewParameters.uiHopTimes[0], INT_TYPE, "Hop Time 1" },
-        { &BrewParameters.uiHopTimes[1], INT_TYPE, "Hop Time 2" },
-        { &BrewParameters.uiHopTimes[2], INT_TYPE, "Hop Time 3" },
-        { &BrewParameters.uiHopTimes[3], INT_TYPE, "Hop Time 4" },
-        { &BrewParameters.uiHopTimes[4], INT_TYPE, "Hop Time 5" },
-        { &BrewParameters.uiHopTimes[5], INT_TYPE, "Hop Time 6" },
-        { &BrewParameters.uiChillTime, INT_TYPE, "Chill Time " },
-        { &BrewParameters.uiPumpToFermenterTime, INT_TYPE, "PumpToFermenter Time " },
-        { (int *) NULL, (int) NULL, (char *) NULL }
+		    { &BrewParameters.iGrindTime, INT_TYPE, "Milling Time" },
+		    { &BrewParameters.fGrainWeightKilos, FLOAT_TYPE, "Grain Weight" },
+		    { &BrewParameters.fStrikeTemp, FLOAT_TYPE, "Strike Temp" },
+		    { &BrewParameters.fMashStage2Temp, FLOAT_TYPE, "Mash Stg2 Temp" },
+		    { &BrewParameters.fStrikeLitres, FLOAT_TYPE, "Strike(l)" },
+		    { &BrewParameters.fMashStage2Litres, FLOAT_TYPE, "Mash Stg2 (l)" },
+		    { &BrewParameters.fMashOutTemp, FLOAT_TYPE, "Mash Out Temp" },
+		    { &BrewParameters.fMashOutLitres, FLOAT_TYPE, "Mash Out(l)" },
+		    { &BrewParameters.fSpargeTemp, FLOAT_TYPE, "Sparge1 Temp" },
+		    { &BrewParameters.fSpargeTemp2, FLOAT_TYPE, "Sparge2 Temp" },
+		    {&BrewParameters.fSpargeTemp3,            FLOAT_TYPE, "Sparge3 Temp" },
+		    {&BrewParameters.fSpargeLitres,           FLOAT_TYPE, "Sparge1(l)" },
+		    {&BrewParameters.iMashTime,               INT_TYPE,   "Mash Time" },
+		    {&BrewParameters.iMashStage2Time,         INT_TYPE,   "Mash2 Time" },
+		    {&BrewParameters.uiCurrentMashStage,      INT_TYPE,   "CurrentMash Stage" },
+		    {&BrewParameters.iMashOutTime,            INT_TYPE,   "Mash Out Time" },
+		    {&BrewParameters.iSpargeTime,             INT_TYPE,   "Sparge Time" },
+		    {&BrewParameters.uiBoilTime,              INT_TYPE,   "Boil Time" },
+		    {&BrewParameters.uiHopDropperStopDelayms, INT_TYPE,   "HopDropperms"},
+		    {&BrewParameters.uiHopTimes[0],           INT_TYPE,   "Hop Time 1" },
+		    {&BrewParameters.uiHopTimes[1],           INT_TYPE,   "Hop Time 2" },
+		    {&BrewParameters.uiHopTimes[2],           INT_TYPE,   "Hop Time 3" },
+		    {&BrewParameters.uiHopTimes[3],           INT_TYPE,   "Hop Time 4" },
+		    {&BrewParameters.uiHopTimes[4],           INT_TYPE,   "Hop Time 5" },
+		    {&BrewParameters.uiHopTimes[5],           INT_TYPE,   "Hop Time 6" },
+		    {&BrewParameters.uiChillTime,             INT_TYPE,   "Chill Time " },
+		    {&BrewParameters.uiPumpToFermenterTime,   INT_TYPE,   "PumpToFermenter Time " },
+		    {(int *) NULL,                            (int) NULL, (char *) NULL }
     };
 
 // END OF NEW CODE
@@ -91,7 +91,7 @@ void vParametersInit(void)
 {
 
 	//Grind
-	BrewParameters.iGrindTime = 16; //16; 1
+	BrewParameters.iGrindTime=1; //16; 1
 	BrewParameters.fGrainWeightKilos = 7.6;
 
 	//Mash
@@ -109,7 +109,7 @@ void vParametersInit(void)
 	BrewParameters.fStrikeLitres = 21.00;//20.79;
 	BrewParameters.fMashStage2Litres = 0.2;
  	BrewParameters.fMashOutLitres = 15.00;
-	BrewParameters.fSpargeLitres = 10.59;//11.28;
+	BrewParameters.fSpargeLitres=12.00;//11.28;
 
 	BrewParameters.iMashTime = 60;//60;
 	BrewParameters.iMashStage2Time = 5;//60;
@@ -147,12 +147,12 @@ void vParametersInit(void)
 	BrewParameters.uiBringToBoilTime = 17;// //based off last brew..
 
 	BrewParameters.uiHopTimes[0] = 60;
-	BrewParameters.uiHopTimes[1] = 59;
-	BrewParameters.uiHopTimes[2] = 58;
-	BrewParameters.uiHopTimes[3] = 30;
-	BrewParameters.uiHopTimes[4] = 15;
-	BrewParameters.uiHopTimes[5] = 5;
-	BrewParameters.uiHopDropperStopDelayms = 200;
+	BrewParameters.uiHopTimes[1]=30;
+	BrewParameters.uiHopTimes[2]=15;
+	BrewParameters.uiHopTimes[3]=5;
+	BrewParameters.uiHopTimes[4]=1;
+	BrewParameters.uiHopTimes[5]=1;
+	BrewParameters.uiHopDropperStopDelayms=150;
 
 	BrewParameters.uiSettlingRecircTime = 1; //mins
 	BrewParameters.uiSettlingTime = 1; //mins

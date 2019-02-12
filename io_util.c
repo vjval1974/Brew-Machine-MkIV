@@ -27,7 +27,7 @@ uint8_t uDebounce(GPIO_TypeDef* GPIOx, uint16_t GPIO_Pin, PinState uRequiredStat
 {
 	uint8_t uPinState1, uPinState2;
 	uPinState1 = GPIO_ReadInputDataBit(GPIOx, GPIO_Pin);
-	vTaskDelay(5);
+	vTaskDelay(2);
 	uPinState2 = GPIO_ReadInputDataBit(GPIOx, GPIO_Pin);
 	// if both values are the same, we are happy.
 	if ((uPinState1 == uPinState2) && (uPinState2 == uRequiredState))

@@ -68,6 +68,8 @@ unsigned long ulIdleCycleCount = 0UL;
  */
 static void prvSetupHardware(void);
 
+void vTaskWakesUpEverySecond(void *pvParameters);
+
 // Needed by file core_cm3.h
 volatile int ITM_RxBuffer;
 
@@ -172,7 +174,8 @@ int main(void)
 
 	xTaskCreate( vTaskLitresToMash, ( signed portCHAR * ) "mash_litres", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, &xLitresToMashHandle);
 
-	xTaskCreate( vTaskHops, ( signed portCHAR * ) "hops    ", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY, &xHopsTaskHandle);
+	xTaskCreate(vTaskHops, (signed portCHAR *) "hops    ", configMINIMAL_STACK_SIZE, NULL, tskIDLE_PRIORITY + 1,
+			&xHopsTaskHandle);
 
 	xTaskCreate( vCheckTask, ( signed portCHAR * ) "check     ", configMINIMAL_STACK_SIZE +400, NULL, tskIDLE_PRIORITY, &xCheckTaskHandle);
 
@@ -184,7 +187,7 @@ int main(void)
 
 	xTaskCreate( vI2C_SendTask, ( signed portCHAR * ) "i2c_send", configMINIMAL_STACK_SIZE +500, NULL, tskIDLE_PRIORITY+2, & xI2C_SendHandle);
 
-	xTaskCreate(vTaskWakesUpEverySecond, (signed portCHAR *) "i2c_send", configMINIMAL_STACK_SIZE, NULL,
+	xTaskCreate(vTaskWakesUpEverySecond, (signed portCHAR *) "1secTickTask", configMINIMAL_STACK_SIZE, NULL,
 			tskIDLE_PRIORITY + 2, &xTaskWakesUpEverySecondHandle);
 
 	/* Start the scheduler. */

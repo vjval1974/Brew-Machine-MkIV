@@ -1079,7 +1079,7 @@ void vBrewWaitingPollFunction(int piParameters[5])
 //===================================================================================================================================================
 bool IsEnoughWaterInBoilerForHeating()
 {
-	if (fGetLitresCurrentlyInBoiler() >= 10.0)
+	if (fGetLitresCurrentlyInBoiler() >= 15.0)
 	{
 		// check boil level probe..
 		if (GetBoilerState().level == HIGH)

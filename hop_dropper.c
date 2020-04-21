@@ -253,8 +253,8 @@ static int Back()
 
 static Button HopDropperButtons[] =
 {
-		{HOPS_NEXT_X1, HOPS_NEXT_Y1, HOPS_NEXT_X2, HOPS_NEXT_Y2, "Hops Next Pos", Blue, Orange, iHopsNext, ""},
-		{HOPS_START_X1, HOPS_START_Y1, HOPS_START_X2, HOPS_START_Y2, "Run (cont)", Blue, Green, iHopsDrive, ""},
+		{HOPS_NEXT_X1, HOPS_NEXT_Y1, HOPS_NEXT_X2, HOPS_NEXT_Y2, "Index", Red, Blue, iHopsNext, ""},
+		{HOPS_START_X1, HOPS_START_Y1, HOPS_START_X2, HOPS_START_Y2, "Run", Blue, Green, iHopsDrive, ""},
 		{HOPS_STOP_X1, HOPS_STOP_Y1, HOPS_STOP_X2, HOPS_STOP_Y2, "Stop", Cyan, Red, iHopsStop, ""},
 		{BK_X1, BK_Y1, BK_X2, BK_Y2, "BACK", Cyan, Magenta, Back, ""},
 };
@@ -263,7 +263,6 @@ static int ButtonCount()
 {
 	return ARRAY_LENGTH(HopDropperButtons);
 }
-
 
 
 void vHopDropperApplet(int init)

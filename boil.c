@@ -24,6 +24,8 @@
 #include "adc.h"
 // main.h holds the definition for the preprocessor directive TESTING
 #include "main.h"
+#include "button.h"
+#include "macros.h"
 
 #define BOIL_PORT GPIOD
 #define BOIL_PIN GPIO_Pin_12
@@ -48,6 +50,12 @@ volatile uint8_t uiBoilState = WAITING_FOR_COMMAND;
 void vBoilAppletDisplay(void * pvParameters);
 void vTaskBoil( void * pvParameters);
 static unsigned int uiGetADCBoilDuty();
+static void vSendDutyMessage(int duty);
+static int iBoilStart();
+static int iBoilStop();
+static int iBoilDutyDown();
+static int iBoilDutyUp();
+
 
 unsigned char ucGetBoilState()
 {
@@ -60,20 +68,20 @@ BoilerState GetBoilerState()
 
   boilerState.level = uGetBoilLevel();
   if (boilerState.level == HIGH)
-    sprintf(boilerState.levelStr, "Level HIGH");
+    sprintf(boilerState.levelStr, "Boil Level: HIGH");
   else if (boilerState.level == LOW)
-    sprintf(boilerState.levelStr, "Level LOW");
+    sprintf(boilerState.levelStr, "Boil Level: LOW");
 
   boilerState.boil_state = ucGetBoilState();
 
   if (boilerState.boil_state ==  BOILING)
-    sprintf(boilerState.boilStateStr, "Boiling");
+    sprintf(boilerState.boilStateStr, "Boiler: Boiling");
   else if (boilerState.boil_state == WAITING_FOR_COMMAND)
-    sprintf(boilerState.boilStateStr, "Boiler Waiting");
+    sprintf(boilerState.boilStateStr, "Boiler: Waiting");
   else if (boilerState.boil_state == AUTO_BOILING)
-    sprintf(boilerState.boilStateStr, "Auto-Boiling");
+    sprintf(boilerState.boilStateStr, "Boiler: Auto-Boiling");
   else if (boilerState.boil_state == OFF)
-    sprintf(boilerState.boilStateStr, "Boil OFF");
+    sprintf(boilerState.boilStateStr, "Boiler: OFF");
 
   boilerState.duty = uiGetADCBoilDuty();
   sprintf(boilerState.dutyStr, "%d", boilerState.duty);
@@ -393,27 +401,33 @@ unsigned int uiGetBoilDuty()
 #define BAK_Y2 235
 #define BAK_W (BAK_X2-BAK_X1)
 #define BAK_H (BAK_Y2-BAK_Y1)
+
+
+static int Back()
+{
+	return BackFromApplet(xAppletRunningSemaphore, xBoilAppletDisplayHandle);
+}
+
+static Button BoilButtons[] =
+{
+		{DUTY_UP_X1, DUTY_UP_Y1, DUTY_UP_X2, DUTY_UP_Y2, "Duty UP", Cyan, Blue, iBoilDutyUp, ""},
+		{DUTY_DN_X1, DUTY_DN_Y1, DUTY_DN_X2, DUTY_DN_Y2, "Duty DOWN", Cyan, Blue, iBoilDutyDown, ""},
+		{START_HEATING_X1, START_HEATING_Y1, START_HEATING_X2, START_HEATING_Y2, "Start Boil", Blue, Green, iBoilStart, ""},
+		{STOP_HEATING_X1, STOP_HEATING_Y1, STOP_HEATING_X2, STOP_HEATING_Y2, "Stop Boil", Blue, Red, iBoilStop, ""},
+		{BAK_X1, BAK_Y1, BAK_X2, BAK_Y2, "Back", Cyan, Magenta, Back, ""},
+};
+
+static int BoilButtonCount()
+{
+	return ARRAY_LENGTH(BoilButtons);
+}
+
 void vBoilApplet(int init)
 {
+  lcd_printf(10,0,18,  "Manual Boil");
+  vDrawButtons(BoilButtons, BoilButtonCount() );
   if (init)
     {
-      lcd_DrawRect(DUTY_UP_X1, DUTY_UP_Y1, DUTY_UP_X2, DUTY_UP_Y2, Red);
-      lcd_fill(DUTY_UP_X1+1, DUTY_UP_Y1+1, DUTY_UP_W, DUTY_UP_H, Blue);
-      lcd_DrawRect(DUTY_DN_X1, DUTY_DN_Y1, DUTY_DN_X2, DUTY_DN_Y2, Red);
-      lcd_fill(DUTY_DN_X1+1, DUTY_DN_Y1+1, DUTY_DN_W, DUTY_DN_H, Blue);
-      lcd_DrawRect(STOP_HEATING_X1, STOP_HEATING_Y1, STOP_HEATING_X2, STOP_HEATING_Y2, Cyan);
-      lcd_fill(STOP_HEATING_X1+1, STOP_HEATING_Y1+1, STOP_HEATING_W, STOP_HEATING_H, Red);
-      lcd_DrawRect(START_HEATING_X1, START_HEATING_Y1, START_HEATING_X2, START_HEATING_Y2, Cyan);
-      lcd_fill(START_HEATING_X1+1, START_HEATING_Y1+1, START_HEATING_W, START_HEATING_H, Green);
-      lcd_DrawRect(BAK_X1, BAK_Y1, BAK_X2, BAK_Y2, Cyan);
-      lcd_fill(BAK_X1+1, BAK_Y1+1, BAK_W, BAK_H, Magenta);
-      lcd_printf(10,1,18,  "MANUAL Boil APPLET");
-      lcd_printf(3,4,11,  "Duty UP");
-      lcd_printf(1,8,13,  "Duty DOWN");
-      lcd_printf(22,4,13, "START BOIL");
-      lcd_printf(22,8,12, "STOP BOIL");
-      lcd_printf(30, 13, 4, "Back");
-
       xTaskCreate( vBoilAppletDisplay,
           ( signed portCHAR * ) "hlt_disp",
           configMINIMAL_STACK_SIZE + 500,
@@ -500,67 +514,61 @@ void vBoilAppletDisplay( void *pvParameters){
     }
 }
 
+static void vSendDutyMessage(int duty)
+{
+	static BoilMessage xMessage;
+
+	xMessage.ucFromTask = 0;
+	xMessage.iBrewStep = 0;
+	xMessage.iDutyCycle = duty;
+
+	xQueueSendToBack(xBoilQueue, &xMessage, 0);
+
+	vTaskDelay(10);
+}
+
+static int iBoilDutyUp()
+{
+	diag_duty+=1;
+
+	if (diag_duty >= 100)
+		diag_duty = 100;
+	if (uiBoilState == BOILING)
+	{
+		vSendDutyMessage(diag_duty);
+	}
+	return 0;
+}
+
+
+static int iBoilDutyDown()
+{
+	if (diag_duty == 0)
+		diag_duty = 0;
+	else diag_duty-=1;
+	if (uiBoilState == BOILING)
+	{
+		vSendDutyMessage(diag_duty);
+	}
+	return 0;
+}
+
+static int iBoilStop()
+{
+	vSendDutyMessage(0);
+	return 0;
+}
+
+static int iBoilStart()
+{
+	vSendDutyMessage(diag_duty);
+	return 0;
+}
 
 
 int iBoilKey(int xx, int yy)
 {
-  static BoilMessage xMessage;
-
-  xMessage.ucFromTask = 0;
-  xMessage.iBrewStep = 0;
-  static int zero = 0;
-  static uint8_t w = 5,h = 5;
-  static uint16_t last_window = 0;
-  if (xx > DUTY_UP_X1+1 && xx < DUTY_UP_X2-1 && yy > DUTY_UP_Y1+1 && yy < DUTY_UP_Y2-1)
-    {
-      diag_duty+=1;
-
-      //printf("Duty Cycle is now %d\r\n\0", diag_duty);
-      if (uiBoilState == BOILING)
-        {
-          xMessage.iDutyCycle = diag_duty;
-          xQueueSendToBack(xBoilQueue, &xMessage, 0);
-        }
-    }
-  else if (xx > DUTY_DN_X1+1 && xx < DUTY_DN_X2-1 && yy > DUTY_DN_Y1+1 && yy < DUTY_DN_Y2-1)
-    {
-      if (diag_duty == 0)
-        diag_duty = 0;
-      else diag_duty-=1;
-      //printf("Duty Cycle is now %d\r\n\0", diag_duty);
-      if (uiBoilState == BOILING)
-        {
-          xMessage.iDutyCycle = diag_duty;
-          xQueueSendToBack(xBoilQueue, &xMessage, 0);
-        }
-    }
-  else if (xx > STOP_HEATING_X1+1 && xx < STOP_HEATING_X2-1 && yy > STOP_HEATING_Y1+1 && yy < STOP_HEATING_Y2-1)
-    {
-      xMessage.iDutyCycle = zero;
-      xQueueSendToBack(xBoilQueue, &xMessage, 0);
-    }
-  else if (xx > START_HEATING_X1+1 && xx < START_HEATING_X2-1 && yy > START_HEATING_Y1+1 && yy < START_HEATING_Y2-1)
-    {
-      xMessage.iDutyCycle = diag_duty;
-      xQueueSendToBack(xBoilQueue, &xMessage, 0);
-
-    }
-  else if (xx > BAK_X1 && yy > BAK_Y1 && xx < BAK_X2 && yy < BAK_Y2)
-    {
-      //try to take the semaphore from the display applet. wait here if we cant take it.
-      xSemaphoreTake(xAppletRunningSemaphore, portMAX_DELAY);
-      //delete the display applet task if its been created.
-      if (xBoilAppletDisplayHandle != NULL)
-        {
-          vTaskDelete(xBoilAppletDisplayHandle);
-          vTaskDelay(100);
-          xBoilAppletDisplayHandle = NULL;
-        }
-
-      //return the semaphore for taking by another task.
-      xSemaphoreGive(xAppletRunningSemaphore);
-      return 1;
-    }
-  vTaskDelay(10);
-  return 0;
+	int retVal = ActionKeyPress(BoilButtons, BoilButtonCount(), xx, yy);
+	vTaskDelay(10);
+	return retVal;
 }

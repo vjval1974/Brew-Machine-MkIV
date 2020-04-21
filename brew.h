@@ -93,7 +93,7 @@
 // Back Button
 //------------
 #define BK_X1 200
-#define BK_Y1 191
+#define BK_Y1 192
 #define BK_X2 315
 #define BK_Y2 235
 #define BK_W (BK_X2-BK_X1)

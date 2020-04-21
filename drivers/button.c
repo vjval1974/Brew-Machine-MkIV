@@ -10,19 +10,48 @@
 #include <string.h>
 #include "button.h"
 #include "lcd.h"
+#include "FreeRTOS.h"
+#include "task.h"
+#include "queue.h"
+
+uint16_t uiGetXPosForButtonText(uint16_t x1, uint16_t x2, const char * text)
+{
+	// 1. Get Centre
+	uint16_t centre = (uint16_t)( (x2 + x1) / 2 );
+
+	// 2. Get string length * char width (8) and halve it;
+	uint16_t halfStringLength = strlen(text) * 8 / 2;
+
+	// 3.
+	return centre - halfStringLength;
+}
+
+uint16_t uiGetYPosForButtonText(uint16_t y1, uint16_t y2)
+{
+	return (uint16_t)( (y2 + y1) / 2 ) - 8; // halfway between the y's and take half of the char height off
+}
 
 
 
 void vDrawButton(Button button)
 {
-	const double xPosTextQuotient = 7.5, yPosTextQuotient = 32.5;
 	lcd_DrawRect(button.x1, button.y1, button.x2, button.y2, button.outlineColor);
 	lcd_fill(button.x1 + 1, button.y1 + 1, button.x2-button.x1, button.y2-button.y1, button.fillColor);
 	uint16_t lenText = strlen(button.text);
 	uint16_t lenStateText = strlen(button.stateText);
-	lcd_printf((int)floor(button.x1/xPosTextQuotient), (int)floor((button.y2 + button.y1)/yPosTextQuotient), lenText, button.text);
-	lcd_printf((int)floor(button.x1/xPosTextQuotient), (int)floor((button.y2 + button.y1)/yPosTextQuotient)+1, lenStateText, button.stateText);
+	uint16_t textXpos = uiGetXPosForButtonText(button.x1, button.x2, button.text);
+	uint16_t stateTextXpos = uiGetXPosForButtonText(button.x1, button.x2, button.stateText);
+	uint16_t textYpos = uiGetYPosForButtonText(button.y1, button.y2);
+
+	//lcd_text_xy(button.x1 + 2, button.y1,    button.text,      button.outlineColor, button.fillColor);
+	lcd_text_xy(textXpos, textYpos-8,    button.text,      button.outlineColor, button.fillColor);
+
+	//lcd_text_xy(button.x1 + 2, button.y1+32, button.stateText, Yellow,              button.fillColor);
+	lcd_text_xy(stateTextXpos, textYpos+8,    button.stateText,    Yellow, 			button.fillColor);
+	//lcd_text_xy(button.x1 + 2, button.y1+32, button.stateText, Yellow,              button.fillColor);
+
 }
+
 
 
 void vDrawButtons(Button buttons[], int count)
@@ -81,4 +110,24 @@ int ActionKeyPress(Button buttons[], int count, int xx, int yy)
 	}
 	return 0;
 }
+
+
+int BackFromApplet(xSemaphoreHandle sem, xTaskHandle displayTaskToDelete )
+{
+	//try to take the semaphore from the display applet. wait here if we cant take it.
+	xSemaphoreTake(sem, portMAX_DELAY);
+	//delete the display applet task if its been created.
+	if (displayTaskToDelete != NULL )
+	{
+		vTaskDelete(displayTaskToDelete);
+		vTaskDelay(100);
+		displayTaskToDelete = NULL;
+	}
+
+	//return the semaphore for taking by another task.
+	xSemaphoreGive(sem);
+	return 1;
+
+}
+
 

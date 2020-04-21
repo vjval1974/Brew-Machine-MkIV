@@ -235,22 +235,11 @@ int ResetFlow()
 	return 0;
 }
 
-int Back()
+static int Back()
 {
-	//try to take the semaphore from the display applet. wait here if we cant take it.
-	xSemaphoreTake(xValvesAppletRunningSemaphore, portMAX_DELAY);
-	//delete the display applet task if its been created.
-	if (xValvesAppletDisplayHandle != NULL )
-	{
-		vTaskDelete(xValvesAppletDisplayHandle);
-		vTaskDelay(100);
-		xValvesAppletDisplayHandle = NULL;
-	}
-
-	//return the semaphore for taking by another task.
-	xSemaphoreGive(xValvesAppletRunningSemaphore);
-	return 1;
+	return BackFromApplet(xValvesAppletRunningSemaphore, xValvesAppletDisplayHandle);
 }
+
 
 #define valveButtonBackground  		NavyBlue
 #define valveButtonFillColorOpen  	NavyBlue

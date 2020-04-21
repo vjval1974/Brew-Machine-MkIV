@@ -20,6 +20,8 @@
 #include "semphr.h"
 #include "mill.h"
 #include "main.h"
+#include "button.h"
+#include "macros.h"
 
 void vMillAppletDisplay(void *pvParameters);
 void vMillApplet(int init);
@@ -55,6 +57,18 @@ void vMill(MillState state)
 	xMillState = state;
 }
 
+int iMillStart()
+{
+	vMill(MILL_DRIVING);
+	return 0;
+}
+
+int iMillStop()
+{
+	vMill(MILL_STOPPED);
+	return 0;
+}
+
 #define START_MILL_X1 155
 #define START_MILL_Y1 30
 #define START_MILL_X2 300
@@ -76,21 +90,30 @@ void vMill(MillState state)
 #define BK_W (BK_X2-BK_X1)
 #define BK_H (BK_Y2-BK_Y1)
 
+static int Back()
+{
+	return BackFromApplet(xAppletRunningSemaphore, xMillAppletDisplayHandle);
+}
+
+static Button MillButtons[] =
+{
+		{START_MILL_X1, START_MILL_Y1, START_MILL_X2, START_MILL_Y2, "Start", Blue, Green, iMillStart, ""},
+		{STOP_MILL_X1, STOP_MILL_Y1, STOP_MILL_X2, STOP_MILL_Y2, "Stop", Blue, Red, iMillStop, ""},
+		{BK_X1, BK_Y1, BK_X2, BK_Y2, "BACK", Cyan, Magenta, Back, ""},
+};
+
+static int ButtonCount()
+{
+	return ARRAY_LENGTH(MillButtons);
+}
+
 void vMillApplet(int init)
 {
+	lcd_text_xy(10 * 8, 0, "MANUAL MILL", White, Black);
+	vDrawButtons(MillButtons, ButtonCount() );
+
 	if (init)
 	{
-		lcd_DrawRect(STOP_MILL_X1, STOP_MILL_Y1, STOP_MILL_X2, STOP_MILL_Y2, Cyan);
-		lcd_fill(STOP_MILL_X1 + 1, STOP_MILL_Y1 + 1, STOP_MILL_W, STOP_MILL_H, Red);
-		lcd_DrawRect(START_MILL_X1, START_MILL_Y1, START_MILL_X2, START_MILL_Y2, Cyan);
-		lcd_fill(START_MILL_X1 + 1, START_MILL_Y1 + 1, START_MILL_W, START_MILL_H, Green);
-		lcd_DrawRect(BK_X1, BK_Y1, BK_X2, BK_Y2, Cyan);
-		lcd_fill(BK_X1 + 1, BK_Y1 + 1, BK_W, BK_H, Magenta);
-		lcd_printf(10, 1, 18, "MANUAL MILL APPLET");
-		lcd_printf(22, 4, 13, "START MILL");
-		lcd_printf(22, 8, 12, "STOP MILL");
-		lcd_printf(30, 13, 4, "Back");
-
 		//create a dynamic display task
 		xTaskCreate( vMillAppletDisplay,
 		    ( signed portCHAR * ) "Mill_disp",
@@ -157,40 +180,9 @@ void vMillAppletDisplay(void *pvParameters)
 int iMillKey(int xx, int yy)
 {
 
-	uint16_t window = 0;
-	static uint8_t w = 5, h = 5;
-	static uint16_t last_window = 0;
-
-	if (xx > STOP_MILL_X1 + 1 && xx < STOP_MILL_X2 - 1 && yy > STOP_MILL_Y1 + 1 && yy < STOP_MILL_Y2 - 1)
-	{
-		vMill(MILL_STOPPED);
-
-	}
-	else if (xx > START_MILL_X1 + 1 && xx < START_MILL_X2 - 1 && yy > START_MILL_Y1 + 1 && yy < START_MILL_Y2 - 1)
-	{
-		vMill(MILL_DRIVING);
-
-	}
-	else if (xx > BK_X1 && yy > BK_Y1 && xx < BK_X2 && yy < BK_Y2)
-	{
-		//try to take the semaphore from the display applet. wait here if we cant take it.
-		xSemaphoreTake(xAppletRunningSemaphore, portMAX_DELAY);
-		//delete the display applet task if its been created.
-		if (xMillAppletDisplayHandle != NULL )
-		{
-			vTaskDelete(xMillAppletDisplayHandle);
-			vTaskDelay(100);
-			xMillAppletDisplayHandle = NULL;
-		}
-
-		//return the semaphore for taking by another task.
-		xSemaphoreGive(xAppletRunningSemaphore);
-		return 1;
-
-	}
-
-	vTaskDelay(10);
-	return 0;
+	int retVal = ActionKeyPress(MillButtons, ButtonCount(), xx, yy);
+		vTaskDelay(10);
+		return retVal;
 
 }
 

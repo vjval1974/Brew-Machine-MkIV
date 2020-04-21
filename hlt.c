@@ -384,24 +384,24 @@ HltState GetHltState()
 	HltState S;
 	S.level = xGetHltLevel();
 	if (S.level == HLT_LEVEL_HIGH)
-		sprintf(S.levelStr, "HLT Level HIGH");
+		sprintf(S.levelStr, "HLT Level: HIGH");
 	else if (S.level == HLT_LEVEL_MID)
-		sprintf(S.levelStr, "HLT Level MID");
+		sprintf(S.levelStr, "HLT Level: MID");
 	else
-		sprintf(S.levelStr, "HLT Level Low");
+		sprintf(S.levelStr, "HLT Level: Low");
 
 	S.temp_float = ds1820_get_temp(HLT);
 	S.temp_int = uiGetHltTemp();
 	S.filling = xGetValveState(&valves[INLET_VALVE]);
 	S.draining = xGetValveState(&valves[HLT_VALVE]);
 	if (S.filling == VALVE_OPENED)
-		sprintf(S.fillingStr, "HLT Filling");
+		sprintf(S.fillingStr, "HLT: Filling");
 	else
-		sprintf(S.fillingStr, "HLT NOT Filling");
+		sprintf(S.fillingStr, "HLT: NOT Filling");
 	if (S.draining == VALVE_OPENED)
-		sprintf(S.drainingStr, "HLT Draining");
+		sprintf(S.drainingStr, "HLT: Draining");
 	else
-		sprintf(S.drainingStr, "HLT NOT Draining");
+		sprintf(S.drainingStr, "HLT: NOT Draining");
 	S.heatingState = xGetHltHeatingState();
 	return S;
 }
@@ -528,27 +528,17 @@ static int StopHeating()
 
 static int Back()
 {
-	//try to take the semaphore from the display applet. wait here if we cant take it.
-	xSemaphoreTake(xHLTAppletRunningSemaphore, portMAX_DELAY);
-	//delete the display applet task if its been created.
-	if (xHLTAppletDisplayHandle != NULL )
-	{
-		vTaskDelete(xHLTAppletDisplayHandle);
-		vTaskDelay(100);
-		xHLTAppletDisplayHandle = NULL;
-	}
-	//return the semaphore for taking by another task.
-	xSemaphoreGive(xHLTAppletRunningSemaphore);
-	return 1;
+	return BackFromApplet(xHLTAppletRunningSemaphore, xHLTAppletDisplayHandle);
 }
+
 
 static Button HltButtons[] =
 {
-		{SETPOINT_UP_X1, SETPOINT_UP_Y1, SETPOINT_UP_X2, SETPOINT_UP_Y2, "SP UP", Red, Blue, SetpointUp, ""},
-		{SETPOINT_DN_X1, SETPOINT_DN_Y1, SETPOINT_DN_X2, SETPOINT_DN_Y2, "SP DOWN", Red, Blue, SetpointDown, ""},
-		{START_HEATING_X1, START_HEATING_Y1, START_HEATING_X2, START_HEATING_Y2, "Start Heating", Red, Blue, StartHeating, ""},
-		{STOP_HEATING_X1, STOP_HEATING_Y1, STOP_HEATING_X2, STOP_HEATING_Y2, "Stop Heating", Red, Blue, StopHeating, ""},
-		{BAK_X1, BAK_Y1, BAK_X2, BAK_Y2, "BACK", Red, Blue, Back, ""},
+		{SETPOINT_UP_X1, SETPOINT_UP_Y1, SETPOINT_UP_X2, SETPOINT_UP_Y2, "SP UP", Cyan, Blue, SetpointUp, ""},
+		{SETPOINT_DN_X1, SETPOINT_DN_Y1, SETPOINT_DN_X2, SETPOINT_DN_Y2, "SP DOWN", Cyan, Blue, SetpointDown, ""},
+		{START_HEATING_X1, START_HEATING_Y1, START_HEATING_X2, START_HEATING_Y2, "Start Heating", Blue, Green, StartHeating, ""},
+		{STOP_HEATING_X1, STOP_HEATING_Y1, STOP_HEATING_X2, STOP_HEATING_Y2, "Stop Heating", Blue, Red, StopHeating, ""},
+		{BAK_X1, BAK_Y1, BAK_X2, BAK_Y2, "BACK", Cyan, Magenta, Back, ""},
 };
 
 

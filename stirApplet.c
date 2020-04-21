@@ -14,6 +14,8 @@
 #include "queue.h"
 #include "stirApplet.h"
 #include "stir.h"
+#include "button.h"
+#include "macros.h"
 
 xTaskHandle xStirAppletDisplayHandle = NULL;
 xSemaphoreHandle xStirAppletRunningSemaphore;
@@ -42,20 +44,41 @@ void vStirApplet(int init);
 #define BK_W (BK_X2-BK_X1)
 #define BK_H (BK_Y2-BK_Y1)
 
+
+static int Back()
+{
+	return BackFromApplet(xStirAppletRunningSemaphore, xStirAppletDisplayHandle);
+}
+
+
+static Button StirButtons[] =
+{
+		{START_STIR_X1, START_STIR_Y1, START_STIR_X2, START_STIR_Y2, "Start", Blue, Green, vStartStir, ""},
+		{STOP_STIR_X1, STOP_STIR_Y1, STOP_STIR_X2, STOP_STIR_Y2, "Stop", Blue, Red, vStopStir, ""},
+		{BK_X1, BK_Y1, BK_X2, BK_Y2, "BACK", Cyan, Magenta, Back, ""},
+};
+
+static int StirButtonCount()
+{
+	return ARRAY_LENGTH(StirButtons);
+}
+
 void vStirApplet(int init)
 {
+	vDrawButtons(StirButtons, StirButtonCount() );
 	if (init)
 	{
-		lcd_DrawRect(STOP_STIR_X1, STOP_STIR_Y1, STOP_STIR_X2, STOP_STIR_Y2, Cyan);
-		lcd_fill(STOP_STIR_X1 + 1, STOP_STIR_Y1 + 1, STOP_STIR_W, STOP_STIR_H, Red);
-		lcd_DrawRect(START_STIR_X1, START_STIR_Y1, START_STIR_X2, START_STIR_Y2, Cyan);
-		lcd_fill(START_STIR_X1 + 1, START_STIR_Y1 + 1, START_STIR_W, START_STIR_H, Green);
-		lcd_DrawRect(BK_X1, BK_Y1, BK_X2, BK_Y2, Cyan);
-		lcd_fill(BK_X1 + 1, BK_Y1 + 1, BK_W, BK_H, Magenta);
-		lcd_printf(10, 1, 18, "MANUAL STIR APPLET");
-		lcd_printf(22, 4, 13, "START STIR");
-		lcd_printf(22, 8, 12, "STOP STIR");
-		lcd_printf(30, 13, 4, "Back");
+//		lcd_DrawRect(STOP_STIR_X1, STOP_STIR_Y1, STOP_STIR_X2, STOP_STIR_Y2, Cyan);
+//		lcd_fill(STOP_STIR_X1 + 1, STOP_STIR_Y1 + 1, STOP_STIR_W, STOP_STIR_H, Red);
+//		lcd_DrawRect(START_STIR_X1, START_STIR_Y1, START_STIR_X2, START_STIR_Y2, Cyan);
+//		lcd_fill(START_STIR_X1 + 1, START_STIR_Y1 + 1, START_STIR_W, START_STIR_H, Green);
+//		lcd_DrawRect(BK_X1, BK_Y1, BK_X2, BK_Y2, Cyan);
+//		lcd_fill(BK_X1 + 1, BK_Y1 + 1, BK_W, BK_H, Magenta);
+//		lcd_printf(10, 0, 18, "STIR");
+//		lcd_printf(22, 4, 13, "START");
+//		lcd_printf(22, 8, 12, "STOP");
+//		lcd_printf(30, 13, 4, "Back");
+
 		//vTaskDelay(2000);
 		//adc_init();
 		//adc_init();
@@ -69,6 +92,9 @@ void vStirApplet(int init)
 	}
 
 }
+
+
+
 
 void vStirAppletDisplay(void *pvParameters)
 {
@@ -126,39 +152,42 @@ void vStirAppletDisplay(void *pvParameters)
 
 int iStirKey(int xx, int yy)
 {
-
-	uint16_t window = 0;
-	static uint8_t w = 5, h = 5;
-	static uint16_t last_window = 0;
-
-	if (xx > STOP_STIR_X1 + 1 && xx < STOP_STIR_X2 - 1 && yy > STOP_STIR_Y1 + 1 && yy < STOP_STIR_Y2 - 1)
-	{
-		vStir(STIR_STOPPED);
-
-	}
-	else if (xx > START_STIR_X1 + 1 && xx < START_STIR_X2 - 1 && yy > START_STIR_Y1 + 1 && yy < START_STIR_Y2 - 1)
-	{
-		vStir(STIR_DRIVING);
-	}
-	else if (xx > BK_X1 && yy > BK_Y1 && xx < BK_X2 && yy < BK_Y2)
-	{
-		//try to take the semaphore from the display applet. wait here if we cant take it.
-		xSemaphoreTake(xStirAppletRunningSemaphore, portMAX_DELAY);
-		//delete the display applet task if its been created.
-		if (xStirAppletDisplayHandle != NULL )
-		{
-			vTaskDelete(xStirAppletDisplayHandle);
-			vTaskDelay(100);
-			xStirAppletDisplayHandle = NULL;
-		}
-
-		//return the semaphore for taking by another task.
-		xSemaphoreGive(xStirAppletRunningSemaphore);
-		return 1;
-
-	}
-
+	int retVal = ActionKeyPress(StirButtons, StirButtonCount(), xx, yy);
 	vTaskDelay(10);
-	return 0;
+	return retVal;
+
+//	uint16_t window = 0;
+//	static uint8_t w = 5, h = 5;
+//	static uint16_t last_window = 0;
+//
+//	if (xx > STOP_STIR_X1 + 1 && xx < STOP_STIR_X2 - 1 && yy > STOP_STIR_Y1 + 1 && yy < STOP_STIR_Y2 - 1)
+//	{
+//		vStir(STIR_STOPPED);
+//
+//	}
+//	else if (xx > START_STIR_X1 + 1 && xx < START_STIR_X2 - 1 && yy > START_STIR_Y1 + 1 && yy < START_STIR_Y2 - 1)
+//	{
+//		vStir(STIR_DRIVING);
+//	}
+//	else if (xx > BK_X1 && yy > BK_Y1 && xx < BK_X2 && yy < BK_Y2)
+//	{
+//		//try to take the semaphore from the display applet. wait here if we cant take it.
+//		xSemaphoreTake(xStirAppletRunningSemaphore, portMAX_DELAY);
+//		//delete the display applet task if its been created.
+//		if (xStirAppletDisplayHandle != NULL )
+//		{
+//			vTaskDelete(xStirAppletDisplayHandle);
+//			vTaskDelay(100);
+//			xStirAppletDisplayHandle = NULL;
+//		}
+//
+//		//return the semaphore for taking by another task.
+//		xSemaphoreGive(xStirAppletRunningSemaphore);
+//		return 1;
+//
+//	}
+//
+//	vTaskDelay(10);
+//	return 0;
 
 }

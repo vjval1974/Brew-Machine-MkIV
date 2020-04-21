@@ -74,6 +74,18 @@ StirState xGetStirState(void)
 	return xStirState;
 }
 
+int vStartStir()
+{
+	vStir(STIR_DRIVING);
+	return 0;
+}
+
+int vStopStir()
+{
+	vStir(STIR_STOPPED);
+	return 0;
+}
+
 
 
 

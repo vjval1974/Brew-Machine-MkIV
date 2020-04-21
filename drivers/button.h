@@ -9,6 +9,12 @@
 #define BUTTON_H_
 #include <stdlib.h>
 #include "stm32f10x.h"
+#include "FreeRTOS.h"
+#include "semphr.h"
+#include "task.h"
+
+#include "queue.h"
+
 typedef struct
 {
 	uint16_t x1;
@@ -26,5 +32,6 @@ void vDrawButton(Button button);
 void vDrawButtons(Button buttons[], int count);
 //static int ButtonHasBeenPressed(Button button, int xx, int yy);
 int ActionKeyPress(Button buttons[], int count, int xx, int yy);
+int BackFromApplet(xSemaphoreHandle sem, xTaskHandle displayTaskToDelete );
 
 #endif /* BUTTON_H_ */

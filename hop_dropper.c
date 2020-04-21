@@ -20,6 +20,8 @@
 #include "console.h"
 #include "main.h"
 #include "parameters.h"
+#include "button.h"
+#include "macros.h"
 
 typedef enum
 {
@@ -192,11 +194,28 @@ void vHopDropperAppletDisplay(void *pvParameters)
 }
 
 #define HOPS_NEXT_X1 0
-#define HOPS_NEXT_Y1 30
+#define HOPS_NEXT_Y1 33
 #define HOPS_NEXT_X2 150
 #define HOPS_NEXT_Y2 150
 #define HOPS_NEXT_W (HOPS_NEXT_X2-HOPS_NEXT_X1)
 #define HOPS_NEXT_H (HOPS_NEXT_Y2-HOPS_NEXT_Y1)
+
+#define HOPS_START_X1 155
+#define HOPS_START_Y1 33
+#define HOPS_START_X2 225
+#define HOPS_START_Y2 83
+#define HOPS_START_W (HOPS_START_X2-HOPS_START_X1)
+#define HOPS_START_H (HOPS_START_Y2-HOPS_START_Y1)
+
+#define HOPS_STOP_X1 155
+#define HOPS_STOP_Y1 85
+#define HOPS_STOP_X2 225
+#define HOPS_STOP_Y2 135
+#define HOPS_STOP_W (HOPS_STOP_X2-HOPS_STOP_X1)
+#define HOPS_STOP_H (HOPS_STOP_Y2-HOPS_STOP_Y1)
+
+
+
 
 #define BK_X1 200
 #define BK_Y1 190
@@ -204,21 +223,56 @@ void vHopDropperAppletDisplay(void *pvParameters)
 #define BK_Y2 235
 #define BK_W (BK_X2-BK_X1)
 #define BK_H (BK_Y2-BK_Y1)
+
+
+
+
+static int iHopsNext()
+{
+	xQueueSendToBack(xHopsQueue, (void *)1, 0);
+	return 0;
+}
+
+static int iHopsDrive()
+{
+	vHopsDrive(HOP_DROPPER_DRIVE);
+	return 0;
+}
+
+static int iHopsStop()
+{
+	vHopsDrive(HOP_DROPPER_STOP);
+	return 0;
+}
+
+
+static int Back()
+{
+	return BackFromApplet(xHopAppletRunningSemaphore, xHopDropperAppletDisplayHandle);
+}
+
+static Button HopDropperButtons[] =
+{
+		{HOPS_NEXT_X1, HOPS_NEXT_Y1, HOPS_NEXT_X2, HOPS_NEXT_Y2, "Hops Next Pos", Blue, Orange, iHopsNext, ""},
+		{HOPS_START_X1, HOPS_START_Y1, HOPS_START_X2, HOPS_START_Y2, "Run (cont)", Blue, Green, iHopsDrive, ""},
+		{HOPS_STOP_X1, HOPS_STOP_Y1, HOPS_STOP_X2, HOPS_STOP_Y2, "Stop", Cyan, Red, iHopsStop, ""},
+		{BK_X1, BK_Y1, BK_X2, BK_Y2, "BACK", Cyan, Magenta, Back, ""},
+};
+
+static int ButtonCount()
+{
+	return ARRAY_LENGTH(HopDropperButtons);
+}
+
+
+
 void vHopDropperApplet(int init)
 {
+	lcd_printf(10, 0, 18, "MANUAL Hops APPLET");
+	vDrawButtons(HopDropperButtons, ButtonCount() );
 	if (init)
 	{
-		lcd_DrawRect(HOPS_NEXT_X1, HOPS_NEXT_Y1, HOPS_NEXT_X2, HOPS_NEXT_Y2, Red);
-		lcd_fill(HOPS_NEXT_X1 + 1, HOPS_NEXT_Y1 + 1, HOPS_NEXT_W, HOPS_NEXT_H, Blue);
 
-		lcd_DrawRect(BK_X1, BK_Y1, BK_X2, BK_Y2, Cyan);
-		lcd_fill(BK_X1 + 1, BK_Y1 + 1, BK_W, BK_H, Magenta);
-		lcd_printf(10, 1, 18, "MANUAL Hops APPLET");
-		lcd_printf(1, 3, 11, "Increment the");
-		lcd_printf(1, 4, 11, "Hop Dropper to");
-		lcd_printf(1, 5, 11, "it's next");
-		lcd_printf(1, 6, 11, "position");
-		lcd_printf(30, 13, 4, "Back");
 		xTaskCreate( vHopDropperAppletDisplay,
 		    ( signed portCHAR * ) "hlt_disp",
 		    configMINIMAL_STACK_SIZE + 500,
@@ -230,31 +284,9 @@ void vHopDropperApplet(int init)
 
 int iHopDropperKey(int xx, int yy)
 {
-	uint16_t window = 0;
-	static uint8_t w = 5, h = 5;
-	static uint16_t last_window = 0;
-	if (xx > HOPS_NEXT_X1 + 1 && xx < HOPS_NEXT_X2 - 1 && yy > HOPS_NEXT_Y1 + 1 && yy < HOPS_NEXT_Y2 - 1)
-	{
-		xQueueSendToBack(xHopsQueue, (void *)1, 0);
-	}
-	else if (xx > BK_X1 && yy > BK_Y1 && xx < BK_X2 && yy < BK_Y2)
-	{
-		//try to take the semaphore from the display applet. wait here if we cant take it.
-		xSemaphoreTake(xHopAppletRunningSemaphore, portMAX_DELAY);
-		//delete the display applet task if its been created.
-		if (xHopDropperAppletDisplayHandle != NULL )
-		{
-			vTaskDelete(xHopDropperAppletDisplayHandle);
-			vTaskDelay(100);
-			xHopDropperAppletDisplayHandle = NULL;
-		}
-		vHopsDrive(HOP_DROPPER_STOP);
-		vTaskDelay(100);
-		//return the semaphore for taking by another task.
-		xSemaphoreGive(xHopAppletRunningSemaphore);
-		return 1;
-	}
+	int retVal = ActionKeyPress(HopDropperButtons, ButtonCount(), xx, yy);
 	vTaskDelay(10);
-	return 0;
+	return retVal;
+
 }
 

@@ -23,6 +23,7 @@ typedef enum
 void vStirInit(void); // initialises the output and semaphores for applet.
 void vStir( StirState state ); // gives the command to the output
 StirState xGetStirState(void); //returns the current state of the stirrer
-
+int vStartStir();
+int vStopStir();
 
 #endif /* STIR_H_ */

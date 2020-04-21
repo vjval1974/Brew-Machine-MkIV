@@ -36,6 +36,8 @@
 #include "message.h"
 #include "stir.h"
 #include "main.h"
+#include "button.h"
+#include "macros.h"
 
 volatile int8_t cs = CRANE_STOPPED;
 CraneState xCraneState = CRANE_STOPPED;
@@ -537,23 +539,54 @@ void vCraneAppletDisplay( void *pvParameters){
 #define BAK_W (BAK_X2-BAK_X1)
 #define BAK_H (BAK_Y2-BAK_Y1)
 
+static int Back()
+{
+	return BackFromApplet(xAppletRunningSemaphore, xCraneAppletDisplayHandle);
+}
+
+static void vSendCommandToCrane(CraneCommand cmd)
+{
+	CraneMessage pxMessage;
+	pxMessage.xCommand = cmd;
+	xQueueSendToBack( xCraneQueue, &pxMessage, 0 );
+}
+
+static int iCraneUp()
+{
+	vSendCommandToCrane(CRANE_UP);
+	return 0;
+}
+
+static int iCraneDown()
+{
+	vSendCommandToCrane(CRANE_DOWN);
+	return 0;
+}
+
+static int iCraneStop()
+{
+	vSendCommandToCrane(CRANE_STOP);
+	return 0;
+}
+
+static Button CraneButtons[] =
+{
+		{UP_X1, UP_Y1, UP_X2, UP_Y2, "Up", Blue, Green, iCraneUp, ""},
+		{DN_X1, DN_Y1, DN_X2, DN_Y2, "Down", Green, Blue, iCraneDown, ""},
+		{ST_X1, ST_Y1, ST_X2, ST_Y2, "Stop", Cyan, Red, iCraneStop, ""},
+		{BK_X1, BK_Y1, BK_X2, BK_Y2, "BACK", Cyan, Magenta, Back, ""},
+};
+
+static int ButtonCount()
+{
+	return ARRAY_LENGTH(CraneButtons);
+}
+
 void vCraneApplet(int init){
+	lcd_printf(10,0,12,  "Crane");
+	vDrawButtons(CraneButtons, ButtonCount() );
   if (init)
     {
-      lcd_DrawRect(UP_X1, UP_Y1, UP_X2, UP_Y2, Red);
-      lcd_fill(UP_X1+1, UP_Y1+1, UP_W, UP_H, Blue);
-      lcd_DrawRect(DN_X1, DN_Y1, DN_X2, DN_Y2, Red);
-      lcd_fill(DN_X1+1, DN_Y1+1, DN_W, DN_H, Blue);
-      lcd_DrawRect(ST_X1, ST_Y1, ST_X2, ST_Y2, Cyan);
-      lcd_fill(ST_X1+1, ST_Y1+1, ST_W, ST_H, Red);
-      lcd_DrawRect(BAK_X1, BAK_Y1, BAK_X2, BAK_Y2, Cyan);
-      lcd_fill(BAK_X1+1, BAK_Y1+1, BAK_W, BAK_H, Magenta);
-      lcd_printf(10,1,12,  "MANUAL CRANE");
-      lcd_printf(8,4,2, "UP");
-      lcd_printf(8,8,2, "DN");
-      lcd_printf(26,6,4, "STOP");
-      lcd_printf(30, 13, 4, "Back");
-
       xTaskCreate( vCraneAppletDisplay,
           ( signed portCHAR * ) "Crane_display",
           configMINIMAL_STACK_SIZE +500,
@@ -567,51 +600,10 @@ void vCraneApplet(int init){
 
 
 int iCraneKey(int xx, int yy){
-	CraneMessage pxMessage;
-  uint16_t window = 0;
-  static uint8_t w = 5,h = 5;
-  static uint16_t last_window = 0;
 
-  pxMessage.xCommand = CRANE_STOP;
-
-  if (xx > UP_X1+1 && xx < UP_X2-1 && yy > UP_Y1+1 && yy < UP_Y2-1)
-    {
-      pxMessage.xCommand = CRANE_UP;
-      xQueueSendToBack( xCraneQueue, &pxMessage, 0 );
-    }
-  else if (xx > DN_X1+1 && xx < DN_X2-1 && yy > DN_Y1+1 && yy < DN_Y2-1)
-    {
-      pxMessage.xCommand = CRANE_DOWN;
-      xQueueSendToBack( xCraneQueue, &pxMessage, 0 );
-
-    }
-  else if (xx > ST_X1+1 && xx < ST_X2-1 && yy > ST_Y1+1 && yy < ST_Y2-1)
-    {
-      pxMessage.xCommand = CRANE_STOP;
-      xQueueSendToBack( xCraneQueue, &pxMessage, portMAX_DELAY );
-
-
-    }
-  else if (xx > BAK_X1 && yy > BAK_Y1 && xx < BAK_X2 && yy < BAK_Y2)
-    {
-
-      //try to take the semaphore from the display applet. wait here if we cant take it.
-      xSemaphoreTake(xAppletRunningSemaphore, portMAX_DELAY);
-      //delete the display applet task if its been created.
-      if (xCraneAppletDisplayHandle != NULL)
-        {
-          vTaskDelete(xCraneAppletDisplayHandle);
-          vTaskDelay(100);
-          xCraneAppletDisplayHandle = NULL;
-        }
-      //return the semaphore for taking by another task.
-      xSemaphoreGive(xAppletRunningSemaphore);
-      return 1;
-
-    }
-
-  vTaskDelay(10);
-  return 0;
+	int retVal = ActionKeyPress(CraneButtons, ButtonCount(), xx, yy);
+	vTaskDelay(10);
+	return retVal;
 
 }
 

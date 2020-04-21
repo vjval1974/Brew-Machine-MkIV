@@ -54,33 +54,49 @@ typedef struct
 //this struct defines pointers to the parameters.
 UserParameters UserParametersList[] =
     {
-		    { &BrewParameters.iGrindTime, INT_TYPE, "Milling Time" },
-		    { &BrewParameters.fGrainWeightKilos, FLOAT_TYPE, "Grain Weight" },
-		    { &BrewParameters.fStrikeTemp, FLOAT_TYPE, "Strike Temp" },
-		    { &BrewParameters.fMashStage2Temp, FLOAT_TYPE, "Mash Stg2 Temp" },
-		    { &BrewParameters.fStrikeLitres, FLOAT_TYPE, "Strike(l)" },
-		    { &BrewParameters.fMashStage2Litres, FLOAT_TYPE, "Mash Stg2 (l)" },
-		    { &BrewParameters.fMashOutTemp, FLOAT_TYPE, "Mash Out Temp" },
-		    { &BrewParameters.fMashOutLitres, FLOAT_TYPE, "Mash Out(l)" },
+		    { &BrewParameters.iGrindTime, 		       INT_TYPE, "Milling Time" },
+
+		    { &BrewParameters.fStrikeTemp, 			   FLOAT_TYPE, "Strike Temp" },
+		    { &BrewParameters.fStrikeLitres, 		   FLOAT_TYPE, "Strike(l)" },
+		    { &BrewParameters.fSpargeLitres,           FLOAT_TYPE, "Sparge1(l)" },
+
+		    { &BrewParameters.iMashTime,               INT_TYPE,   "Mash Time" },
+		    { &BrewParameters.iSpargeTime,             INT_TYPE,   "Sparge Time" },
+		    { &BrewParameters.uiBoilTime,              INT_TYPE,   "Boil Time" },
+
+		    { &BrewParameters.uiHopTimes[0],           INT_TYPE,   "Hop Time 1" },
+		    { &BrewParameters.uiHopTimes[1],           INT_TYPE,   "Hop Time 2" },
+		    { &BrewParameters.uiHopTimes[2],           INT_TYPE,   "Hop Time 3" },
+		    { &BrewParameters.uiHopTimes[3],           INT_TYPE,   "Hop Time 4" },
+		    { &BrewParameters.uiHopTimes[4],           INT_TYPE,   "Hop Time 5" },
+		    { &BrewParameters.uiHopTimes[5],           INT_TYPE,   "Hop Time 6" },
+		    { &BrewParameters.uiChillTime,             INT_TYPE,   "Chill Time " },
+		    { &BrewParameters.uiPumpToFermenterTime,   INT_TYPE,   "PumpToFermenter Time " },
+
+
+		    // Sparge Temps rarely changed - I have found these are good at defaults
 		    { &BrewParameters.fSpargeTemp, FLOAT_TYPE, "Sparge1 Temp" },
-		    { &BrewParameters.fSpargeTemp2, FLOAT_TYPE, "Sparge2 Temp" },
+   		    { &BrewParameters.fSpargeTemp2, FLOAT_TYPE, "Sparge2 Temp" },
 		    {&BrewParameters.fSpargeTemp3,            FLOAT_TYPE, "Sparge3 Temp" },
-		    {&BrewParameters.fSpargeLitres,           FLOAT_TYPE, "Sparge1(l)" },
-		    {&BrewParameters.iMashTime,               INT_TYPE,   "Mash Time" },
-		    {&BrewParameters.iMashStage2Time,         INT_TYPE,   "Mash2 Time" },
-		    {&BrewParameters.uiCurrentMashStage,      INT_TYPE,   "CurrentMash Stage" },
-		    {&BrewParameters.iMashOutTime,            INT_TYPE,   "Mash Out Time" },
-		    {&BrewParameters.iSpargeTime,             INT_TYPE,   "Sparge Time" },
-		    {&BrewParameters.uiBoilTime,              INT_TYPE,   "Boil Time" },
-		    {&BrewParameters.uiHopDropperStopDelayms, INT_TYPE,   "HopDropperms"},
-		    {&BrewParameters.uiHopTimes[0],           INT_TYPE,   "Hop Time 1" },
-		    {&BrewParameters.uiHopTimes[1],           INT_TYPE,   "Hop Time 2" },
-		    {&BrewParameters.uiHopTimes[2],           INT_TYPE,   "Hop Time 3" },
-		    {&BrewParameters.uiHopTimes[3],           INT_TYPE,   "Hop Time 4" },
-		    {&BrewParameters.uiHopTimes[4],           INT_TYPE,   "Hop Time 5" },
-		    {&BrewParameters.uiHopTimes[5],           INT_TYPE,   "Hop Time 6" },
-		    {&BrewParameters.uiChillTime,             INT_TYPE,   "Chill Time " },
-		    {&BrewParameters.uiPumpToFermenterTime,   INT_TYPE,   "PumpToFermenter Time " },
+
+		    // Mash out, rarely used
+		    { &BrewParameters.iMashOutTime,            INT_TYPE,   "Mash Out Time" },
+		    { &BrewParameters.fMashOutLitres, 		   FLOAT_TYPE, "Mash Out(l)" },
+		    { &BrewParameters.fMashOutTemp, 		   FLOAT_TYPE, "Mash Out Temp" },
+
+
+		    // Mash 2 rarely used
+			{ &BrewParameters.iMashStage2Time,         INT_TYPE,   "Mash2 Time" },
+			{ &BrewParameters.fMashStage2Litres, FLOAT_TYPE, "Mash Stg2 (l)" },
+		    { &BrewParameters.fMashStage2Temp, FLOAT_TYPE, "Mash Stg2 Temp" },
+
+
+
+
+		    // less important
+		    { &BrewParameters.uiCurrentMashStage,      INT_TYPE,   "CurrentMash Stage" },
+		    { &BrewParameters.uiHopDropperStopDelayms, INT_TYPE,   "HopDropperms"},
+		    { &BrewParameters.fGrainWeightKilos, FLOAT_TYPE, "Grain Weight" },
 		    {(int *) NULL,                            (int) NULL, (char *) NULL }
     };
 
@@ -91,17 +107,17 @@ void vParametersInit(void)
 {
 
 	//Grind
-	BrewParameters.iGrindTime=1; //16; 1
+	BrewParameters.iGrindTime=17; //16; 1
 	BrewParameters.fGrainWeightKilos = 7.6;
 
 	//Mash
-	BrewParameters.fHLTMaxLitres = 21.0; // This is the max amount that can be drained
-	BrewParameters.fStrikeTemp = 76.9; // first mash temp (added 1 degree for test, target temp with 15.79 litres is 62deg)
+	BrewParameters.fHLTMaxLitres = 22.5; // This is the max amount that can be drained
+	BrewParameters.fStrikeTemp = 75;
 	BrewParameters.fMashStage2Temp = 95.0; // for second mash rest
 	BrewParameters.fMashOutTemp = 99.0;
 
-	BrewParameters.fSpargeTemp = 95.0;//90.0;
-	BrewParameters.fSpargeTemp2 = 90.0;//90.0;
+	BrewParameters.fSpargeTemp = 98.0;
+	BrewParameters.fSpargeTemp2 = 95.0;
 	BrewParameters.fSpargeTemp3 = 75.6;//90.0;
 
 	BrewParameters.fCleanTemp = 32.34; //50
@@ -118,10 +134,10 @@ void vParametersInit(void)
 	BrewParameters.iPumpTime2 = 5;
 	BrewParameters.iStirTime2 = 0;
 
-	BrewParameters.uiInitialMixingTime = 8;
-	BrewParameters.uiClearingTime = 5;
-	BrewParameters.uiMixOnTime=1;
-	BrewParameters.uiMixOffTime=5;
+	BrewParameters.uiInitialMixingTime = 8; //8
+	BrewParameters.uiClearingTime = 5; //5
+	BrewParameters.uiMixOnTime=1; //1
+	BrewParameters.uiMixOffTime=5; //5
 
 
 	//Mash Out
@@ -152,7 +168,7 @@ void vParametersInit(void)
 	BrewParameters.uiHopTimes[3]=5;
 	BrewParameters.uiHopTimes[4]=1;
 	BrewParameters.uiHopTimes[5]=1;
-	BrewParameters.uiHopDropperStopDelayms=150;
+	BrewParameters.uiHopDropperStopDelayms=110;
 
 	BrewParameters.uiSettlingRecircTime = 1; //mins
 	BrewParameters.uiSettlingTime = 1; //mins
@@ -377,6 +393,7 @@ void vParametersAppletDisplay(void *pvParameters)
 					break;
 				}
 			}
+			vTaskDelay(100);
 		}
 		else
 		{
@@ -386,7 +403,7 @@ void vParametersAppletDisplay(void *pvParameters)
 		tog = tog ^ 1;
 		xSemaphoreGive(xAppletRunningSemaphore);
 		//give back the semaphore as its safe to return now.
-		vTaskDelay(500);
+		vTaskDelay(10);
 
 	}
 }

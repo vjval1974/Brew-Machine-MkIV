@@ -805,7 +805,7 @@ void lcd_printf(uint8_t col, uint8_t row, uint8_t ww, const char *fmt, ...)
     int len = vsnprintf(message, sizeof(message) - 1, fmt, ap);
     va_end(ap);
 
-    lcd_clear_text(col, row, ww);
+    lcd_clear_text(col, row, len);
 //    //clear message space
 //    for (i = 0; i < len; i++)
 //       	message[i] = ' ';

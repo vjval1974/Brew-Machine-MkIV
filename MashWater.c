@@ -83,7 +83,7 @@ void WaterAddedToMashTun(float waterToAdd)
 // Pumping Out
 void MashTunHasBeenDrained()
 {
-	WaterInBoiler = WaterInMash;
+	WaterInBoiler += WaterInMash;
 	WaterInMash = 0.0;
 	//LitresCurrentlyInBoiler = LitresCurrentlyInMashTun;
 	//LitresCurrentlyInMashTun = 0.0;

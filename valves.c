@@ -100,15 +100,14 @@ void vCloseValve(Valve * valve)
 	GPIO_WriteBit(valve->GPIO_Port, valve->GPIO_Pin, 0);
 	valve->state = VALVE_CLOSED;
 }
+
 void vOnOpenHlt()
 {
-	printf("OnOpen Called\r\n");
 	vSetBoilFlowMeasuringState(MEASURING_FLOW);
 }
 
 void vOnCloseHlt()
 {
-	printf("OnOpen Called\r\n");
 	vSetBoilFlowMeasuringState(NOT_MEASURING_FLOW);
 }
 

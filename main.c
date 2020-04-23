@@ -362,7 +362,7 @@ void vCheckTask(void *pvParameters)
 	static char cBuf[80];
 	for (;;)
 	{
-		vConsolePrint(".\r\0"); // added just to see if when the screen locks up on serial issue, does the processor lock too? Maybe we can recover if the screen is locked only. I.e. reinit the lcd or touch.
+		vConsolePrint("."); // added just to see if when the screen locks up on serial issue, does the processor lock too? Maybe we can recover if the screen is locked only. I.e. reinit the lcd or touch.
 		touch = uxTaskGetStackHighWaterMark(xTouchTaskHandle);
 		ds1820 = uxTaskGetStackHighWaterMark(xDS1820TaskHandle);
 		timer = uxTaskGetStackHighWaterMark(xTimerSetupHandle);

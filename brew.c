@@ -43,6 +43,7 @@
 #include "main.h"
 #include "boil.h"
 #include "MashWater.h"
+#include "button.h"
 
 #define ARRAY_LENGTH( x ) ( sizeof(x)/sizeof(x[0]) ) // not as yet implemented
 #define MAX_BREW_STEPS iMaxBrewSteps()
@@ -72,7 +73,7 @@ const char  * pcTASKS[6] = {"Brew", "Boil", "HLT", "Crane", "BoilValve", "HopDro
 const char  * pcBrewMessages[3] = {"Step Complete", "Step Failed", "Wait for previous steps"};
 
 static float fMashTemp = 0.0;
-static float fMashStage2Temp = 0.0;
+//static float fMashStage2Temp = 0.0;
 static float fSpargeTemp = 0.0;
 static float fMashOutTemp = 0.0;
 static unsigned char ucResStep = 0;
@@ -102,7 +103,7 @@ typedef enum
 typedef struct
 {
   const char * pcStepName;
-  int (*func)(void * pvParameters);
+  int (*setupFunc)(void * pvParameters);
   void (*poll)(void * pvParameters);
   int iFuncParams[5];
   uint16_t uTimeout;
@@ -123,21 +124,37 @@ xQueueHandle xBrewTaskStateQueue = NULL, xBrewTaskReceiveQueue = NULL;
 xQueueHandle xBrewTaskStateQueue1 = NULL, xBrewTaskReceiveQueue1 = NULL;
 xQueueHandle xBrewAppletTextQueue = NULL;
 
+const BrewRunningState xRun = RUNNING;
+const BrewRunningState xIdle = IDLE;
+
 int iMaxBrewSteps(void);
 bool IsEnoughWaterInBoilerForHeating();
 void vBrewAppletDisplay( void *pvParameters);
 void vBrewGraphAppletDisplay(void * pvParameters);
 void vBrewStatsAppletDisplay(void * pvParameters);
 void vBrewResAppletDisplay(void * pvParameters);
-void vBrewReset(void);
+void vBrewSetSafeStates(void);
 void vBrewApplet(int init);
-void vBrewRunStep(void);
-void vBrewNextStep(void);
+static void vBrewRunStep(void);
+static void vBrewNextStep(void);
 double dValidateDrainLitres(double parameter);
 double dGetSpargeSetpoint(int currentSpargeNumber);
 void vBrewSetHLTStateIdle();
 static void vRecordNominalTemps(void);
 char * ticker();
+unsigned char ucGetBrewHoursElapsed();
+unsigned char ucGetBrewMinutesElapsed();
+unsigned char ucGetBrewSecondsElapsed();
+unsigned char ucGetBrewStepMinutesElapsed();
+unsigned char ucGetBrewStepSecondsElapsed();
+unsigned char ucGetBrewStepElapsed();
+unsigned char ucGetBrewStep();
+unsigned char ucGetBrewState();
+
+void vDrawQuitAppletButton();
+void vDrawGraphAppletButtons();
+void vDrawStatsAppletButtons();
+void vDrawResAppletButtons();
 
 float fGetNominalMashTemp()
 {
@@ -152,64 +169,69 @@ float fGetNominalMashOutTemp()
   return fMashOutTemp;
 }
 
+void vUpdateStepElapsedTime(int iStep)
+{
+	BrewSteps[iStep].uElapsedTime = (ThisBrewState.uSecondCounter - BrewSteps[iStep].uStartTime);
+}
+
+bool bIsStepTimedOut(int iStep)
+{
+	return BrewSteps[iStep].uElapsedTime > BrewSteps[iStep].uTimeout;
+}
+
 /*
  * Step monitor loops through all steps up until the current step and
  * checks to see if there are any that are incomplete. Prints what step
  * we are waiting on and if it has timed out.
- * Parameter: iWaiting - if this parameter is set, we return the number of
- * incomplete steps. If not, we return 0.
- *
  */
-static int iBrewStepMonitor(int iWaiting)
+static int iBrewStepMonitor()
 {
-	static char buf[70];
+	static char buf[70], buf1[70];
 	int iStep = 0, iIncompleteSteps = 0;
-	int iNumberOfStepsToComplete;
 	static int iPrintToConsoleCtr = 0;
+
+	if ((iPrintToConsoleCtr++ % 5) == 0) //print once every 5 calls
+	{
+		sprintf(buf1, "Current Step:'%s' \r\n\0", BrewSteps[ThisBrewState.ucStep].pcStepName);
+		vConsolePrint(buf1);
+		vTaskDelay(10);
+	}
 
 	for (iStep = 0; iStep <= ThisBrewState.ucStep; iStep++)
 	{
 		if (BrewSteps[iStep].ucComplete == 0)
 		{
-
+			// All steps here are incomplete
 			iIncompleteSteps++;
-			BrewSteps[iStep].uElapsedTime = (ThisBrewState.uSecondCounter - BrewSteps[iStep].uStartTime);
+
+			vUpdateStepElapsedTime(iStep);
 
 			if (iStep != ThisBrewState.ucStep)
 			{
-				if (iPrintToConsoleCtr++ == 0) //print once every 10 calls
+				if ((iPrintToConsoleCtr % 10) == 0) //print once every 10 calls
 				{
 					sprintf(buf, "Waiting on Step %d:'%s' \r\n\0", iStep, BrewSteps[iStep].pcStepName);
 					vConsolePrint(buf);
-				}
-				else if (iPrintToConsoleCtr >= 10)
-				{
-					iPrintToConsoleCtr = 0;
+					vTaskDelay(10);
 				}
 			}
 
-			if (BrewSteps[iStep].uElapsedTime > BrewSteps[iStep].uTimeout)
+			if (bIsStepTimedOut(iStep))
 			{
 				sprintf(buf, "Step %d: %s - TIMEOUT\r\n\0", iStep, BrewSteps[iStep].pcStepName);
 				vConsolePrint(buf);
 			}
 		}
-
 	}
-	iNumberOfStepsToComplete = iIncompleteSteps;
 
-	if (iWaiting)
-	{
-		return iNumberOfStepsToComplete;
-	}
-	else
-		return 0;
+	return iIncompleteSteps;
+
 }
 
 
 
 //RESET RELATED METHODS
-void vBrewReset(void)
+void vBrewSetSafeStates(void)
 {
 	static BoilMessage xMessage;
 	xMessage.ucFromTask = BREW_TASK_RESET;
@@ -229,7 +251,7 @@ void vBrewReset(void)
 //run this at the "brew finished step.
 void vBrewResetAndZeroAllStepFlags(void)
 {
-	vBrewReset();
+	vBrewSetSafeStates();
 	for (int i = 0; i < MAX_BREW_STEPS; i++)
 	{
 		BrewSteps[i].ucComplete = 0;
@@ -254,6 +276,7 @@ static void vBrewReset_DeleteTasks_ZeroFlags(void)
 	xBrewTaskHandle = NULL;
 	xBrewTaskReceiveQueue = NULL;
 	xBrewTaskStateQueue = NULL;
+	vClearMashAndBoilLitres();
 }
 
 unsigned char ucGetBrewHoursElapsed()
@@ -281,6 +304,11 @@ unsigned char ucGetBrewStepSecondsElapsed()
   return BrewSteps[ThisBrewState.ucStep].uElapsedTime%60;
 }
 
+unsigned char ucGetBrewStepElapsed()
+{
+	return BrewSteps[ThisBrewState.ucStep].uElapsedTime;
+}
+
 unsigned char ucGetBrewStep()
 {
   return ThisBrewState.ucStep;
@@ -291,11 +319,75 @@ unsigned char ucGetBrewState()
   return ThisBrewState.xRunningState;
 }
 
+static void vSendWaitingMessage()
+{
+	BrewMessage xMessage11;
+	static char buf1[50];
+	sprintf(buf1, "NextStep:'%s' requires waiting\r\n\0", BrewSteps[ThisBrewState.ucStep + 1].pcStepName);
+	vConsolePrint(buf1);
+	vTaskDelay(100);
+	xMessage11.ucFromTask = BREW_TASK;
+	xMessage11.iBrewStep = ThisBrewState.ucStep;
+	xMessage11.xCommand = BREW_STEP_WAIT;
+	xQueueSendToBack(xBrewTaskReceiveQueue, &xMessage11, 0);
+}
+
+static bool bIsBrewFinished()
+{
+	return ThisBrewState.ucStep >= MAX_BREW_STEPS - 1;
+}
+
 
 //----------------------------------------------------------------------------------------------------------------------------
 // Brew Task
 //----------------------------------------------------------------------------------------------------------------------------
 const char * btx = "Brew Task xXX";
+
+static void UpdateBrewStateCounters()
+{
+	// Update the counters
+	ThisBrewState.uSecondCounter++;
+	ThisBrewState.uSecondsElapsed++;
+	if (ThisBrewState.uSecondsElapsed >= 60)
+	{
+		ThisBrewState.uSecondsElapsed = 0;
+		ThisBrewState.uMinutesElapsed++;
+	}
+	if (ThisBrewState.uMinutesElapsed >= 60)
+	{
+		ThisBrewState.uMinutesElapsed = 0;
+		ThisBrewState.uHoursElapsed++;
+	}
+}
+
+static void vIncrementStepAndRunIt()
+{
+	static char buf[50];
+	ThisBrewState.ucStep++;
+	if (BrewSteps[ThisBrewState.ucStep].pcStepName != NULL )
+	{
+		sprintf(buf, "Requesting next step: %d, %s\r\n\0", ThisBrewState.ucStep + 1, BrewSteps[ThisBrewState.ucStep + 1].pcStepName);
+		vConsolePrint(buf);
+	}
+	vBrewRunStep();
+}
+
+static bool bDoesNextStepRequirePreviousStepsComplete()
+{
+	return ThisBrewState.ucStep < MAX_BREW_STEPS && BrewSteps[ThisBrewState.ucStep + 1].ucWait == 1;
+}
+
+static void vRunStepPollingFunction()
+{
+	if (BrewSteps[ThisBrewState.ucStep].poll)
+		BrewSteps[ThisBrewState.ucStep].poll((void*) BrewSteps[ThisBrewState.ucStep].iFuncParams);
+}
+static void vRunStepSetupFunction()
+{
+	if (BrewSteps[ThisBrewState.ucStep].setupFunc)
+		BrewSteps[ThisBrewState.ucStep].setupFunc((void *) BrewSteps[ThisBrewState.ucStep].iFuncParams);
+}
+
 void vTaskBrew(void * pvParameters)
 {
 	portTickType xBrewStart;
@@ -332,13 +424,13 @@ void vTaskBrew(void * pvParameters)
 		switch (ThisBrewState.xRunningState)
 		{
 			case IDLE:
-				{ // do nothing , idling
+			{ // do nothing , idling
 				break;
 			}
 			case RUNNING:
-				{
-					//TODO: Log the brew time at certain intervals, say 5mins so that the log can be read better.
-					// Also think about quizzing another micro that has a RTC on board. Or... get motivated and add an 12C rtc ... the code is almost there for it.
+			{
+				//TODO: Log the brew time at certain intervals, say 5mins so that the log can be read better.
+				// Also think about quizzing another micro that has a RTC on board. Or... get motivated and add an 12C rtc ... the code is almost there for it.
 				if (xQueueReceive(xBrewTaskReceiveQueue, &xMessage, 0) == pdPASS)
 				{
 					iContent = xMessage.xCommand; //casts to int * and then dereferences.
@@ -351,7 +443,7 @@ void vTaskBrew(void * pvParameters)
 					switch (iContent)
 					{
 						case BREW_STEP_COMPLETE:
-							{
+						{
 							BrewSteps[xMessage.iBrewStep].ucComplete = 1;
 
 							sprintf(buf, "Brew Task: Setting Step %d to Complete\r\n\0", xMessage.iBrewStep);
@@ -359,116 +451,92 @@ void vTaskBrew(void * pvParameters)
 							break;
 						}
 						case BREW_STEP_FAILED:
-							{
+						{
 
 							break;
 						}
 						case BREW_STEP_WAIT:
-							{
-							vConsolePrint("WAITING COMMAND RECEIVED\r\n\0");
+						{
+							vConsolePrint("WAITING cmd received\r\n\0");
 							iWaiting = 1;
+							break;
 
+						}
+						default:
+						{
+							vConsolePrint("Invalid cmd received by Brew task\r\n\0");
+							break;
 						}
 					}
 				}
 
 
-				iStepsToComplete = iBrewStepMonitor(iWaiting); // updates elapsed times and monitors timeouts of steps.
+				iStepsToComplete = iBrewStepMonitor(); // updates elapsed times and monitors timeouts of steps.
+				UpdateBrewStateCounters();
 
-				if (iWaiting) // are we waiting on all previous steps to be completed?
-				{
-					if (iStepsToComplete) // are there any steps to be completed?
-					{
-						iWaiting = 1;
-					}
-					else // if not, we move on...
-					{
-						iWaiting = 0;
-						ThisBrewState.ucStep++;
-						printMashTunState();
-						printLitresCurrentlyInBoiler();
-						vBrewRunStep();
-					}
-				}
 
-				// If there is a polling function, run it.
 				if (!iWaiting)
 				{
-					if (BrewSteps[ThisBrewState.ucStep].poll)
-						BrewSteps[ThisBrewState.ucStep].poll((void *) BrewSteps[ThisBrewState.ucStep].iFuncParams);
+					vRunStepPollingFunction();
 				}
-				// Update the counters
-				ThisBrewState.uSecondCounter++;
-				ThisBrewState.uSecondsElapsed++;
-				if (ThisBrewState.uSecondsElapsed >= 60)
+				// if we are waiting, we shouldnt be incrementing the step number or running the polling function for that step.
+				else if (iStepsToComplete == 0)
 				{
-					ThisBrewState.uSecondsElapsed = 0;
-					ThisBrewState.uMinutesElapsed++;
+					iWaiting = 0;
+					printMashTunState();
+					printLitresCurrentlyInBoiler();
+					vIncrementStepAndRunIt();
 				}
-
-				if (ThisBrewState.uMinutesElapsed >= 60)
-				{
-					ThisBrewState.uMinutesElapsed = 0;
-					ThisBrewState.uHoursElapsed++;
-				}
-
 				break;
 			}
 		}
 		vTaskDelayUntil(&ThisBrewState.xLastWakeTime, 1000 / portTICK_RATE_MS);
 	}
 }
+
+
+static void vBrewFinished()
+{
+	vConsolePrint("Brew Finished!\r\n\0");
+	ThisBrewState.xRunningState = IDLE;
+	vBrewResetAndZeroAllStepFlags();
+}
+
 //----------------------------------------------------------------------------------------------------------------------------
 
+
+
 // STEP RELATED METHODS
-void vBrewNextStep(void)
+static void vBrewNextStep(void)
 {
-	BrewMessage xMessage11;
-	static char buf[50], buf1[50];
-	static int iCount = 0;
-	iCount++;
 
-	if (BrewSteps[ThisBrewState.ucStep + 1].pcStepName != NULL )
+	if (bDoesNextStepRequirePreviousStepsComplete())
 	{
-		sprintf(buf, "Requesting next step: %d, %s\r\n\0", ThisBrewState.ucStep + 1, BrewSteps[ThisBrewState.ucStep + 1].pcStepName);
-		vConsolePrint(buf);
+		vSendWaitingMessage();
 	}
-
-	if (ThisBrewState.ucStep < MAX_BREW_STEPS && BrewSteps[ThisBrewState.ucStep + 1].ucWait == 1)
+	else if (!bIsBrewFinished())
 	{
-		sprintf(buf1, "NextStep:'%s' requires waiting\r\n\0", BrewSteps[ThisBrewState.ucStep + 1].pcStepName);
-		vConsolePrint(buf1);
-		vTaskDelay(100);
-		xMessage11.ucFromTask = BREW_TASK;
-		xMessage11.iBrewStep = ThisBrewState.ucStep;
-		xMessage11.xCommand = BREW_STEP_WAIT;
-		xQueueSendToBack(xBrewTaskReceiveQueue, &xMessage11, 0);
-	}
-	else if (ThisBrewState.ucStep < MAX_BREW_STEPS - 1)
-	{
-		ThisBrewState.ucStep++;
-		vBrewRunStep();
+		vIncrementStepAndRunIt();
 	}
 	else
 	{
-		vConsolePrint("Brew Finished!\r\n\0");
-		ThisBrewState.xRunningState = IDLE;
-		vBrewResetAndZeroAllStepFlags();
+		vBrewFinished();
 	}
 }
 
-void vBrewRunStep(void)
+static void vResetStepTimers()
 {
-	int iFuncReturnValue = 0;
-	static char buf[50];
-
-	vBrewReset();
 	BrewSteps[ThisBrewState.ucStep].uElapsedTime = 0;
 	BrewSteps[ThisBrewState.ucStep].uStartTime = ThisBrewState.uSecondCounter;
+}
+
+static void vBrewRunStep(void)
+{
+	vBrewSetSafeStates();
+	vResetStepTimers();
 	CLEAR_APPLET_CANVAS
 	;
-	if (BrewSteps[ThisBrewState.ucStep].func)
-		BrewSteps[ThisBrewState.ucStep].func((void *) BrewSteps[ThisBrewState.ucStep].iFuncParams);
+	vRunStepSetupFunction();
 }
 
 
@@ -698,7 +766,7 @@ void vBrewMashSetupFunction(int piParameters[5])
 }
 
 // Note that the inputs here are just used to store the counter values and are cleared when we enter
-// from the next "setup" func.
+// from the next "setup" setupFunc.
 void vMashMixing(int *onCount, int *offCount)
 {
 	unsigned int elapsed = BrewSteps[ThisBrewState.ucStep].uElapsedTime;
@@ -1254,11 +1322,144 @@ void vBrewBoilPollFunction(int piParameters[5])
 	}
 }
 
+
+int iBrewSwitchToGraphApplet()
+{
+	xSemaphoreTake(xBrewAppletRunningSemaphore, portMAX_DELAY);
+	vTaskSuspend(xBrewAppletDisplayHandle);
+	vTaskSuspend(xBrewStatsAppletDisplayHandle);
+	vTaskSuspend(xBrewResAppletDisplayHandle);
+	vDrawGraphAppletButtons();
+	CLEAR_APPLET_CANVAS
+	;
+	vTaskResume(xBrewGraphAppletDisplayHandle);
+	xSemaphoreGive(xBrewAppletRunningSemaphore);
+	xAppletState = GRAPH_APPLET;
+	return 0;
+}
+
+
+int iBrewSwitchToStatsApplet()
+{
+	xSemaphoreTake(xBrewAppletRunningSemaphore, portMAX_DELAY);
+	vTaskSuspend(xBrewAppletDisplayHandle);
+	vTaskSuspend(xBrewGraphAppletDisplayHandle);
+	vTaskSuspend(xBrewResAppletDisplayHandle);
+	vDrawStatsAppletButtons();
+	CLEAR_APPLET_CANVAS
+	;
+	vTaskResume(xBrewStatsAppletDisplayHandle);
+	xSemaphoreGive(xBrewAppletRunningSemaphore);
+	xAppletState = STATS_APPLET;
+	return 0;
+}
+
+int iBrewSwitchToResApplet()
+{
+	xSemaphoreTake(xBrewAppletRunningSemaphore, portMAX_DELAY);
+	vTaskSuspend(xBrewAppletDisplayHandle);
+	vTaskSuspend(xBrewGraphAppletDisplayHandle);
+	vTaskSuspend(xBrewStatsAppletDisplayHandle);
+	vDrawResAppletButtons();
+	CLEAR_APPLET_CANVAS
+	;
+
+	vTaskResume(xBrewResAppletDisplayHandle);
+	xSemaphoreGive(xBrewAppletRunningSemaphore);
+
+	xAppletState = RESUME_APPLET;
+	ucResStep = ThisBrewState.ucStep;
+	return 0;
+}
+
+
+
+#define appletButtonOutlineColor  	NavyBlue
+#define appletButtonFillColor 		Green
+#define actionButtonFillColor      Blue
+#define actionButtonOutlineColor 	White
+
+static Button SubAppletButtons[] =
+{
+		{BUTTON_1_X1, BUTTON_1_Y1, BUTTON_1_X2, BUTTON_1_Y2, "GRAPH", appletButtonOutlineColor, appletButtonFillColor, iBrewSwitchToGraphApplet, ""},
+		{BUTTON_2_X1, BUTTON_2_Y1, BUTTON_2_X2, BUTTON_2_Y2, "STATE", appletButtonOutlineColor, appletButtonFillColor, iBrewSwitchToStatsApplet, ""},
+		{BUTTON_3_X1, BUTTON_3_Y1, BUTTON_3_X2, BUTTON_3_Y2, "RESUME", appletButtonOutlineColor, appletButtonFillColor, iBrewSwitchToResApplet, ""}
+};
+
+static int SubAppletButtonCount()
+{
+	return ARRAY_LENGTH(SubAppletButtons);
+}
+
+int iBrewStart()
+{
+	vBrewRunStep();
+	xQueueSendToBack(xBrewTaskStateQueue, &xRun, 0);
+	return 0;
+}
+
+int iBrewPause()
+{
+	if (ucGetBrewState()  == RUNNING)
+		xQueueSendToBack(xBrewTaskStateQueue, &xIdle, 0);
+	else if (ucGetBrewState()  == IDLE)
+		xQueueSendToBack(xBrewTaskStateQueue, &xRun, 0);
+	return 0;
+}
+
+int iBrewSkipStep()
+{
+	BrewSteps[ThisBrewState.ucStep].ucComplete = 1;
+	if (ThisBrewState.xRunningState == RUNNING)
+	{
+		vBrewNextStep();
+	}
+	else
+		ThisBrewState.ucStep++;
+	return 0;
+}
+
+int iBackFromBrewApplet()
+{
+	xAppletState = QUIT_APPLET;
+	xSemaphoreTake(xBrewAppletRunningSemaphore, portMAX_DELAY);
+	//given back in QUIT state
+	vTaskSuspend(xBrewAppletDisplayHandle);
+
+	CLEAR_APPLET_CANVAS
+	;
+
+	vDrawQuitAppletButton();
+	xSemaphoreGive(xBrewAppletRunningSemaphore);
+	return 0;
+}
+
+static Button BrewAppletButtons[] =
+{
+		{BUTTON_4_X1, BUTTON_4_Y1, BUTTON_4_X2, BUTTON_4_Y2, "Start", actionButtonOutlineColor, actionButtonFillColor, iBrewStart, ""},
+		{BUTTON_5_X1, BUTTON_5_Y1, BUTTON_5_X2, BUTTON_5_Y2, "Pause", actionButtonOutlineColor, actionButtonFillColor, iBrewPause, ""},
+		{BUTTON_6_X1, BUTTON_6_Y1, BUTTON_6_X2, BUTTON_6_Y2, "Skip", actionButtonOutlineColor, actionButtonFillColor, iBrewSkipStep, ""},
+		{BK_X1, BK_Y1, BK_X2, BK_Y2, "BACK", Red, Blue, iBackFromBrewApplet, ""}
+};
+
+static int iBrewAppletButtonCount()
+{
+	return ARRAY_LENGTH(BrewAppletButtons);
+}
+
+void vDrawBrewAppletButtons()
+{
+	vDrawButtons(SubAppletButtons, SubAppletButtonCount() );
+	vDrawButtons(BrewAppletButtons, iBrewAppletButtonCount() );
+}
+
+
 //----------------------------------------------------------------------------------------------------------------------------
 // BREW APPLET - Called from menu
 //----------------------------------------------------------------------------------------------------------------------------
 void vBrewApplet(int init)
 {
+	vDrawBrewAppletButtons();
 
 	if (init)
 	{
@@ -1267,38 +1468,6 @@ void vBrewApplet(int init)
 		lcd_fill(TOP_BANNER_X1 + 1, TOP_BANNER_Y1 + 1, TOP_BANNER_W, TOP_BANNER_H, Blue);
 		lcd_text_xy(12 * 8, 10, "BREW AUTO", Yellow, Blue);
 
-		lcd_DrawRect(BUTTON_1_X1, BUTTON_1_Y1, BUTTON_1_X2, BUTTON_1_Y2, Red);
-		lcd_fill(BUTTON_1_X1 + 1, BUTTON_1_Y1 + 1, BUTTON_1_W, BUTTON_1_H, Green);
-		lcd_DrawRect(BUTTON_2_X1, BUTTON_2_Y1, BUTTON_2_X2, BUTTON_2_Y2, Red);
-		lcd_fill(BUTTON_2_X1 + 1, BUTTON_2_Y1 + 1, BUTTON_2_W, BUTTON_2_H, Green);
-		lcd_DrawRect(BUTTON_3_X1, BUTTON_3_Y1, BUTTON_3_X2, BUTTON_3_Y2, Red);
-		lcd_fill(BUTTON_3_X1 + 1, BUTTON_3_Y1 + 1, BUTTON_3_W, BUTTON_3_H, Green);
-
-		lcd_DrawRect(BUTTON_4_X1, BUTTON_4_Y1, BUTTON_4_X2, BUTTON_4_Y2, Red);
-		lcd_fill(BUTTON_4_X1 + 1, BUTTON_4_Y1 + 1, BUTTON_4_W, BUTTON_4_H, Blue);
-		lcd_DrawRect(BUTTON_5_X1, BUTTON_5_Y1, BUTTON_5_X2, BUTTON_5_Y2, Red);
-		lcd_fill(BUTTON_5_X1 + 1, BUTTON_5_Y1 + 1, BUTTON_5_W, BUTTON_5_H, Blue);
-		lcd_DrawRect(BUTTON_6_X1, BUTTON_6_Y1, BUTTON_6_X2, BUTTON_6_Y2, Red);
-		lcd_fill(BUTTON_6_X1 + 1, BUTTON_6_Y1 + 1, BUTTON_6_W, BUTTON_6_H, Blue);
-
-		lcd_DrawRect(BK_X1, BK_Y1, BK_X2, BK_Y2, White);
-		lcd_fill(BK_X1 + 1, BK_Y1 + 1, BK_W, BK_H, Red);
-
-		//lcd_printf(33, 1, 13, "GRAPH"); //Button1
-		lcd_text_xy(33 * 8, 10, "GRAPH", Blue, Green);
-		lcd_text_xy(33 * 8, 26, "N/A", Blue, Green);
-		//lcd_printf(33, 5, 13, "STATES"); //Button2
-		lcd_text_xy(33 * 8, 72, "STATES", Blue, Green);
-		//lcd_printf(33 * 8, 8 * 16, "RESUME"); //Button3
-		lcd_text_xy(33 * 8, (8 * 16)-1, "RESUME", Blue, Green);
-		//lcd_printf(30, 13, 10, "QUIT");
-		lcd_text_xy(30 * 8, 13 * 16, "QUIT", Yellow, Green);
-		//lcd_printf(1, 13, 5, "START"); //Button4
-		lcd_text_xy(1 * 8, 13 * 16, "START", Yellow, Green);
-		//lcd_printf(9, 13, 5, "PAUSE"); //Button5
-		lcd_text_xy(9 * 8, 13 * 16, "PAUSE", Yellow, Green);
-		//lcd_printf(17, 13, 5, "SKIP"); //Button6
-		lcd_text_xy(17 * 8, 13 * 16, "SKIP", Yellow, Green);
 
 		vConsolePrint("Brew Applet Opened\r\n\0");
 		vSemaphoreCreateBinary(xBrewAppletRunningSemaphore);
@@ -1396,11 +1565,39 @@ void vBrewApplet(int init)
 //----------------------------------------------------------------------------------------------------------------------------
 // BREW GRAPH SUB-APPLET
 //----------------------------------------------------------------------------------------------------------------------------
+int BackFromGraphApplet()
+{
+	vDrawBrewAppletButtons();
+	xSemaphoreTake(xBrewAppletRunningSemaphore, portMAX_DELAY);
+	vTaskSuspend(xBrewGraphAppletDisplayHandle);
+	vTaskResume(xBrewAppletDisplayHandle);
+	xSemaphoreGive(xBrewAppletRunningSemaphore);
+	xAppletState = MAIN_APPLET;
+	return 0;
+}
+
+static Button GraphAppletButtons[] =
+{
+		{BK_X1, BK_Y1, BK_X2, BK_Y2, "BACK", Red, Blue, BackFromGraphApplet, ""}
+};
+
+static int GraphAppletButtonCount()
+{
+	return ARRAY_LENGTH(GraphAppletButtons);
+}
+
+void vDrawGraphAppletButtons()
+{
+	vDrawButtons(SubAppletButtons, SubAppletButtonCount() );
+	vDrawButtons(GraphAppletButtons, GraphAppletButtonCount() );
+}
+
 void vBrewGraphAppletDisplay(void * pvParameters)
 {
 	int i = 0;
 	CLEAR_APPLET_CANVAS
-	;
+		;
+	vDrawGraphAppletButtons();
 	for (;;)
 	{
 		vConsolePrint("Graph Display Applet Running\r\n\0");
@@ -1411,9 +1608,149 @@ void vBrewGraphAppletDisplay(void * pvParameters)
 //----------------------------------------------------------------------------------------------------------------------------
 // BREW STATISTICS SUB-APPLET
 //----------------------------------------------------------------------------------------------------------------------------
+
+int iBackFromQuitApplet() //Really Quit
+{
+	xSemaphoreTake(xBrewAppletRunningSemaphore, portMAX_DELAY);
+	if (xBrewAppletDisplayHandle != NULL )
+	{
+		vTaskDelete(xBrewAppletDisplayHandle);
+		vTaskDelay(100);
+		xBrewAppletDisplayHandle = NULL;
+	}
+	vBrewReset_DeleteTasks_ZeroFlags();
+
+	xSemaphoreGive(xBrewAppletRunningSemaphore);
+	xAppletState = MAIN_APPLET;
+	vTaskDelay(100);
+	return 1;
+}
+
+int iCancelFromQuitApplet()
+{
+	xAppletState = MAIN_APPLET;
+	xSemaphoreTake(xBrewAppletRunningSemaphore, portMAX_DELAY);
+	vTaskResume(xBrewAppletDisplayHandle);
+	xSemaphoreGive(xBrewAppletRunningSemaphore);
+
+
+	return 0;
+}
+
+static Button QuitAppletButtons[] =
+{
+	{BK_X1, BK_Y1, BK_X2, BK_Y2, "QUIT", Orange, Black, iBackFromQuitApplet, ""},
+	{Q_X1, Q_Y1, Q_X2, Q_Y2, "STAY", Red, Blue, iCancelFromQuitApplet, ""}
+
+};
+
+static int iQuitAppletButtonCount()
+{
+	return ARRAY_LENGTH(QuitAppletButtons);
+}
+
+void vDrawQuitAppletButton()
+{
+	vDrawButtons(QuitAppletButtons, iQuitAppletButtonCount() );
+}
+
+
+
+int iBackFromStatsApplet()
+{
+	vDrawBrewAppletButtons();
+	xSemaphoreTake(xBrewAppletRunningSemaphore, portMAX_DELAY);
+	vTaskSuspend(xBrewStatsAppletDisplayHandle);
+	vTaskResume(xBrewAppletDisplayHandle);
+	xSemaphoreGive(xBrewAppletRunningSemaphore);
+	xAppletState = MAIN_APPLET;
+	return 0;
+}
+
+static Button StatsAppletButtons[] =
+{
+	{BK_X1, BK_Y1, BK_X2, BK_Y2, "BACK", Red, Blue, iBackFromStatsApplet, ""}
+};
+
+static int iStatsAppletButtonCount()
+{
+	return ARRAY_LENGTH(StatsAppletButtons);
+}
+
+int iResAppletWhenUpPressed()
+{
+	if (ucResStep < MAX_BREW_STEPS)
+	{
+		ucResStep++;
+	}
+	return 0;
+}
+
+int iResAppletWhenDownPressed()
+{
+	if (ucResStep > 0)
+	{
+		ucResStep--;
+	}
+	return 0;
+}
+
+int iResAppletWhenResumePressed()
+{
+	for (int i = 0; i < ucResStep; i++)
+	{
+		BrewSteps[i].ucComplete = 1;
+	}
+	ThisBrewState.ucStep = ucResStep;
+	vBrewRunStep();
+	xQueueSendToBack(xBrewTaskStateQueue, &xRun, 0);
+	return 0;
+}
+
+int iBackFromResApplet()
+{
+	vDrawBrewAppletButtons();
+	xSemaphoreTake(xBrewAppletRunningSemaphore, portMAX_DELAY);
+	vTaskSuspend(xBrewResAppletDisplayHandle);
+	vTaskResume(xBrewAppletDisplayHandle);
+	xSemaphoreGive(xBrewAppletRunningSemaphore);
+	xAppletState = MAIN_APPLET;
+	return 0;
+}
+
+static Button ResAppletButtons[] =
+{
+	{BUTTON_4_X1, BUTTON_4_Y1, BUTTON_4_X2, BUTTON_4_Y2, "UP", actionButtonOutlineColor, actionButtonFillColor, iResAppletWhenUpPressed, ""},
+	{BUTTON_5_X1, BUTTON_5_Y1, BUTTON_5_X2, BUTTON_5_Y2, "DOWN", actionButtonOutlineColor, actionButtonFillColor, iResAppletWhenDownPressed, ""},
+	{BUTTON_6_X1, BUTTON_6_Y1, BUTTON_6_X2, BUTTON_6_Y2, "RESUME", actionButtonOutlineColor, actionButtonFillColor, iResAppletWhenResumePressed, ""},
+	{BK_X1, BK_Y1, BK_X2, BK_Y2, "BACK", Red, Blue, iBackFromResApplet, ""}
+};
+
+static int iResAppletButtonCount()
+{
+	return ARRAY_LENGTH(ResAppletButtons);
+}
+
+
+void vDrawStatsAppletButtons()
+{
+	vDrawButtons(SubAppletButtons, SubAppletButtonCount() );
+	vDrawButtons(StatsAppletButtons, iStatsAppletButtonCount() );
+}
+
+
+
+void vDrawResAppletButtons()
+{
+	vDrawButtons(SubAppletButtons, SubAppletButtonCount() );
+	vDrawButtons(ResAppletButtons, iResAppletButtonCount() );
+}
+
+
+
 void vBrewStatsAppletDisplay(void * pvParameters)
 {
-
+	vDrawStatsAppletButtons();
 	CLEAR_APPLET_CANVAS
 	;
 	for (;;)
@@ -1441,16 +1778,13 @@ void vBrewResAppletDisplay(void * pvParameters)
 {
 	static unsigned char ucLastStep;
 	ucLastStep = 255;
+	vDrawResAppletButtons();
 	CLEAR_APPLET_CANVAS
-	;
-	DRAW_RESUME_BUTTONS
-	;
-	DRAW_RESUME_BUTTON_TEXT
 	;
 
 	for (;;)
 	{
-		if (ucLastStep != ucResStep)
+		if (ucLastStep != ucResStep) // bug.. when returning to applet, it is blank.
 		{
 			CLEAR_APPLET_CANVAS
 			;
@@ -1466,6 +1800,7 @@ void vBrewResAppletDisplay(void * pvParameters)
 		vTaskDelay(200);
 	}
 }
+
 
 unsigned int uiGetBrewAppletDisplayHWM()
 {
@@ -1661,46 +1996,14 @@ char * ticker()
 	return retval;
 }
 
-const BrewRunningState xRun = RUNNING;
-const BrewRunningState xIdle = IDLE;
-
 void vBrewRemoteStart()
 {
 	vBrewRunStep();
 	xQueueSendToBack(xBrewTaskStateQueue, &xRun, 0);
 }
 
-static uint8_t uEvaluateTouch(int xx, int yy)
-{
-	if (xx > BUTTON_1_X1 + 5 && xx < BUTTON_1_X2 - 5 && yy > BUTTON_1_Y1 + 5 && yy < BUTTON_1_Y2 - 5)
-		return BUTTON_1;
-	if (xx > BUTTON_2_X1 + 5 && xx < BUTTON_2_X2 - 5 && yy > BUTTON_2_Y1 + 5 && yy < BUTTON_2_Y2 - 5)
-		return BUTTON_2;
-	if (xx > BUTTON_3_X1 + 5 && xx < BUTTON_3_X2 - 5 && yy > BUTTON_3_Y1 + 5 && yy < BUTTON_3_Y2 - 5)
-		return BUTTON_3;
-	if (xx > BUTTON_4_X1 + 5 && xx < BUTTON_4_X2 - 5 && yy > BUTTON_4_Y1 + 5 && yy < BUTTON_4_Y2 - 5)
-		return BUTTON_4;
-	if (xx > BUTTON_5_X1 + 5 && xx < BUTTON_5_X2 - 5 && yy > BUTTON_5_Y1 + 5 && yy < BUTTON_5_Y2 - 5)
-		return BUTTON_5;
-	if (xx > BUTTON_6_X1 + 5 && xx < BUTTON_6_X2 - 5 && yy > BUTTON_6_Y1 + 5 && yy < BUTTON_6_Y2 - 5)
-		return BUTTON_6;
-	if (xx > BK_X1 + 5 && xx < BK_X2 - 5 && yy > BK_Y1 + 5 && yy < BK_Y2 - 5)
-		return QUIT_BUTTON;
-
-	return NO_BUTTON;
-}
-
 int iBrewKey(int xx, int yy)
 {
-	uint16_t window = 0;
-	static uint8_t w = 5, h = 5;
-	static uint16_t last_window = 0;
-	int iKeyFromApplet = 0;
-	uint8_t uButton;
-
-	uButton = uEvaluateTouch(xx, yy);
-	static uint8_t iOneShot = 0;
-	static unsigned char ucPause = 0;
 
 	if (xx == -1 || yy == -1)
 		return 0;
@@ -1708,318 +2011,39 @@ int iBrewKey(int xx, int yy)
 	switch (xAppletState)
 	{
 		case GRAPH_APPLET:
-			{
-			//  vConsolePrint("AppletState = GRAPH_APPLET\r\n\0");
-			switch (uButton)
-			{
-				case BUTTON_1:
-					{
-					xAppletState = GRAPH_APPLET;
-					break;
-				}
-				case BUTTON_2:
-					{
-					xAppletState = STATS_APPLET;
-					break;
-				}
-				case BUTTON_3:
-					{
-					xAppletState = RESUME_APPLET;
-					ucResStep = ThisBrewState.ucStep;
-					break;
-				}
-				case BUTTON_4:
-					{
-					break;
-				}
-				case BUTTON_5:
-					{
-					break;
-				}
-				case BUTTON_6:
-					{
-					break;
-				}
+		{
+			ActionKeyPress(GraphAppletButtons, GraphAppletButtonCount(), xx, yy);
+			ActionKeyPress(SubAppletButtons, SubAppletButtonCount(), xx, yy);
 
-				case QUIT_BUTTON:
-					{
-					xSemaphoreTake(xBrewAppletRunningSemaphore, portMAX_DELAY);
-					vTaskSuspend(xBrewGraphAppletDisplayHandle);
-					vTaskResume(xBrewAppletDisplayHandle);
-					xSemaphoreGive(xBrewAppletRunningSemaphore);
-					xAppletState = MAIN_APPLET;
-
-					break;
-				}
-				case NO_BUTTON:
-					{
-					break;
-				}
-			} // switch uButton
 			break;
-		} // case GRAPH_APPLET
+		}
 		case STATS_APPLET:
-			{
-			//vConsolePrint("AppletState = STATS_APPLET\r\n\0");
-			switch (uButton)
-			{
-				case BUTTON_1:
-					{
-					xAppletState = GRAPH_APPLET;
-					break;
-				}
-				case BUTTON_2:
-					{
-					xAppletState = STATS_APPLET;
-					break;
-				}
-				case BUTTON_3:
-					{
-					xAppletState = RESUME_APPLET;
-					ucResStep = ThisBrewState.ucStep;
-					break;
-				}
-				case BUTTON_4:
-					{
-					break;
-				}
-				case BUTTON_5:
-					{
-					break;
-				}
-				case BUTTON_6:
-					{
-					break;
-				}
+		{
+			ActionKeyPress(StatsAppletButtons, iStatsAppletButtonCount(), xx, yy);
+			ActionKeyPress(SubAppletButtons, SubAppletButtonCount(), xx, yy);
 
-				case QUIT_BUTTON:
-					{
-					xSemaphoreTake(xBrewAppletRunningSemaphore, portMAX_DELAY);
-					vTaskSuspend(xBrewStatsAppletDisplayHandle);
-					vTaskResume(xBrewAppletDisplayHandle);
-					xSemaphoreGive(xBrewAppletRunningSemaphore);
-					xAppletState = MAIN_APPLET;
-					break;
-				}
-				case NO_BUTTON:
-					{
-					break;
-				}
-			} // switch uButton
 			break;
-		} // case STATS
+		}
 
 		case RESUME_APPLET:
-			{
-			//vConsolePrint("AppletState = RESUME_APPLET\r\n\0");
-			switch (uButton)
-			{
-				case BUTTON_1:
-					{
-					xAppletState = GRAPH_APPLET;
-					break;
-				}
-				case BUTTON_2:
-					{
-					xAppletState = STATS_APPLET;
-					break;
-				}
-				case BUTTON_3:
-					{
-					xAppletState = RESUME_APPLET;
-					ucResStep = ThisBrewState.ucStep;
-					break;
-				}
-				case BUTTON_4:
-					{
-					if (ucResStep < MAX_BREW_STEPS)
-					{
-						ucResStep++;
-					}
-					break;
-				}
-				case BUTTON_5:
-					{
-					if (ucResStep > 0)
-					{
-						ucResStep--;
-					}
-					break;
-				}
-				case BUTTON_6: //RESUME Button at bottom
-				{
-					for (int i = 0; i < ucResStep; i++)
-					{
-						BrewSteps[i].ucComplete = 1;
-					}
-					ThisBrewState.ucStep = ucResStep;
-					vBrewRunStep();
-					xQueueSendToBack(xBrewTaskStateQueue, &xRun, 0);
-					break;
-				}
-
-				case QUIT_BUTTON:
-					{
-					xSemaphoreTake(xBrewAppletRunningSemaphore, portMAX_DELAY);
-					vTaskSuspend(xBrewResAppletDisplayHandle);
-					CLEAR_APPLET_CANVAS
-					;
-					DRAW_RESUME_BUTTONS
-					;
-					DRAW_MAIN_BUTTON_TEXT
-					;
-
-					vTaskResume(xBrewAppletDisplayHandle);
-					xSemaphoreGive(xBrewAppletRunningSemaphore);
-					xAppletState = MAIN_APPLET;
-					break;
-				}
-				case NO_BUTTON:
-					{
-					break;
-				}
-			} // switch uButton
+		{
+			ActionKeyPress(ResAppletButtons, iResAppletButtonCount(), xx, yy);
+			ActionKeyPress(SubAppletButtons, SubAppletButtonCount(), xx, yy);
 			break;
-		} // case RESUME_APPLET
+		}
 		case MAIN_APPLET:
-			{
-			switch (uButton)
-			{
-				case BUTTON_1:
-					{
-					xSemaphoreTake(xBrewAppletRunningSemaphore, portMAX_DELAY);
-					vTaskSuspend(xBrewAppletDisplayHandle);
-					vTaskSuspend(xBrewStatsAppletDisplayHandle);
-					vTaskSuspend(xBrewResAppletDisplayHandle);
-					CLEAR_APPLET_CANVAS
-					;
-					vTaskResume(xBrewGraphAppletDisplayHandle);
-					xSemaphoreGive(xBrewAppletRunningSemaphore);
-					xAppletState = GRAPH_APPLET;
-
-					break;
-				}
-				case BUTTON_2:
-					{
-					xSemaphoreTake(xBrewAppletRunningSemaphore, portMAX_DELAY);
-					vTaskSuspend(xBrewAppletDisplayHandle);
-					vTaskSuspend(xBrewGraphAppletDisplayHandle);
-					vTaskSuspend(xBrewResAppletDisplayHandle);
-					CLEAR_APPLET_CANVAS
-					;
-					vTaskResume(xBrewStatsAppletDisplayHandle);
-					xSemaphoreGive(xBrewAppletRunningSemaphore);
-					xAppletState = STATS_APPLET;
-
-					break;
-				}
-				case BUTTON_3:
-					{
-					xSemaphoreTake(xBrewAppletRunningSemaphore, portMAX_DELAY);
-					vTaskSuspend(xBrewAppletDisplayHandle);
-					vTaskSuspend(xBrewGraphAppletDisplayHandle);
-					vTaskSuspend(xBrewStatsAppletDisplayHandle);
-
-					CLEAR_APPLET_CANVAS
-					;
-					DRAW_RESUME_BUTTONS
-					;
-					DRAW_RESUME_BUTTON_TEXT
-					;
-					vTaskResume(xBrewResAppletDisplayHandle);
-					xSemaphoreGive(xBrewAppletRunningSemaphore);
-
-					xAppletState = RESUME_APPLET;
-					ucResStep = ThisBrewState.ucStep;
-					break;
-				}
-				case BUTTON_4:
-					{
-					vBrewRunStep();
-					xQueueSendToBack(xBrewTaskStateQueue, &xRun, 0);
-					break;
-				}
-				case BUTTON_5:
-					{
-					if (ucPause == 0)
-					{
-						xQueueSendToBack(xBrewTaskStateQueue, &xIdle, 0);
-						ucPause = 1;
-					}
-					else if (ucPause == 1)
-					{
-						xQueueSendToBack(xBrewTaskStateQueue, &xRun, 0);
-						ucPause = 0;
-					}
-
-					break;
-				}
-				case BUTTON_6:
-					{
-					BrewSteps[ThisBrewState.ucStep].ucComplete = 1;
-					if (ThisBrewState.xRunningState == RUNNING)
-					{
-						vBrewNextStep();
-					}
-					else
-						ThisBrewState.ucStep++;
-					break;
-				}
-
-				case QUIT_BUTTON:
-					{
-					xAppletState = QUIT_APPLET;
-					xSemaphoreTake(xBrewAppletRunningSemaphore, portMAX_DELAY);
-					//given back in QUIT state
-					vTaskSuspend(xBrewAppletDisplayHandle);
-					CLEAR_APPLET_CANVAS
-					;
-
-					lcd_DrawRect(Q_X1, Q_Y1, Q_X2, Q_Y2, White);
-					lcd_fill(Q_X1 + 1, Q_Y1 + 1, Q_W, Q_H, Blue);
-					lcd_printf(13, 4, 13, "QUIT???");
-					lcd_printf(13, 5, 13, "IF YES PRESS");
-					lcd_printf(13, 6, 13, "QUIT AGAIN");
-					lcd_printf(13, 7, 13, "IF NO, PRESS");
-					lcd_printf(13, 8, 13, "HERE");
-
-					break;
-				}
-				case NO_BUTTON:
-					{
-					break;
-				}
-
-			} // switch uButton
+		{
+			ActionKeyPress(BrewAppletButtons, iBrewAppletButtonCount(), xx, yy);
+			ActionKeyPress(SubAppletButtons, SubAppletButtonCount(), xx, yy);
 			break;
-		} // case STATS_APPLET
+		}
 		case QUIT_APPLET:
-			{
+		{
+			return ActionKeyPress(QuitAppletButtons, iQuitAppletButtonCount(), xx, yy);
 
-			if (xx > BK_X1 && yy > BK_Y1 && xx < BK_X2 && yy < BK_Y2)
-			{
-				if (xBrewAppletDisplayHandle != NULL )
-				{
-					vTaskDelete(xBrewAppletDisplayHandle);
-					vTaskDelay(100);
-					xBrewAppletDisplayHandle = NULL;
-				}
-				vBrewReset_DeleteTasks_ZeroFlags();
-				//return the semaphore for taking by another task.
-				xSemaphoreGive(xBrewAppletRunningSemaphore);
-				xAppletState = MAIN_APPLET;
-				vTaskDelay(100);
-				return 1;
-			}
-			else if (xx > Q_X1 && yy > Q_Y1 && xx < Q_X2 && yy < Q_Y2)
-			{
-				vTaskResume(xBrewAppletDisplayHandle);
-				xAppletState = MAIN_APPLET;
-			}
-			xSemaphoreGive(xBrewAppletRunningSemaphore);
 			break;
-		} // case QUIT
-	} //Switch iAppletState
+		}
+	}
 
 	vTaskDelay(10);
 	return 0;

@@ -21,8 +21,10 @@ for g in gpio i2c dialout; do
   fi
 done
 
-# 2. Install node_modules
-sudo -u "$USER_NAME" bash -c "cd '$REPO_DIR' && npm install --omit=dev"
+# 2. Install all deps (we need devDependencies for TypeScript)
+sudo -u "$USER_NAME" bash -c "cd '$REPO_DIR' && npm install"
+# Build TypeScript -> dist/ (server) and web/js/ (browser)
+sudo -u "$USER_NAME" bash -c "cd '$REPO_DIR' && npm run build"
 
 # 3. Ensure data dir exists and is owned by the service user
 mkdir -p "$REPO_DIR/data"

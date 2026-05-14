@@ -1,5 +1,8 @@
 node_modules/
 data/
+dist/
+web/js/
+*.tsbuildinfo
 *.log
 .DS_Store
 .idea/

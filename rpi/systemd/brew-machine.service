@@ -10,7 +10,7 @@ Group=gpio
 WorkingDirectory=/home/pi/Brew-Machine-MkIV/rpi
 Environment=NODE_ENV=production
 Environment=PORT=8080
-ExecStart=/usr/bin/node src/index.js
+ExecStart=/usr/bin/node dist/index.js
 Restart=on-failure
 RestartSec=3
 StandardOutput=journal

@@ -1,0 +1,28 @@
+[Unit]
+Description=Brew Machine MkIV Node.js controller
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+Group=gpio
+WorkingDirectory=/home/pi/Brew-Machine-MkIV/rpi
+Environment=NODE_ENV=production
+Environment=PORT=8080
+ExecStart=/usr/bin/node src/index.js
+Restart=on-failure
+RestartSec=3
+StandardOutput=journal
+StandardError=journal
+# Allow access to GPIO / I2C / 1-Wire / hardware PWM
+SupplementaryGroups=i2c gpio dialout
+# Hardening
+NoNewPrivileges=true
+ProtectSystem=full
+ProtectHome=read-only
+ReadWritePaths=/home/pi/Brew-Machine-MkIV/rpi/data
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

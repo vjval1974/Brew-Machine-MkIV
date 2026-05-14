@@ -1,0 +1,130 @@
+/* Touch-friendly kiosk styles. Sized for the Pi 7" official touchscreen
+   (800 x 480), but degrades fine on larger displays. */
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; }
+body {
+  font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: #0b0f17;
+  color: #e6edf3;
+  user-select: none;
+  overflow: hidden;
+}
+#app { display: flex; flex-direction: column; height: 100vh; }
+
+header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 12px; background: #11161f; border-bottom: 1px solid #1f2733;
+  flex: 0 0 auto;
+}
+.title { font-size: 18px; font-weight: 600; }
+.status { display: flex; gap: 14px; align-items: center; font-size: 14px; }
+.status .temp b { color: #ffb454; font-weight: 700; }
+.pill {
+  border-radius: 999px; padding: 3px 10px; font-size: 12px; font-weight: 600;
+  background: #1f2733; color: #c0caf5;
+}
+.pill.ok   { background: #1d3a2a; color: #7ee787; }
+.pill.warn { background: #3d2a1a; color: #ffb454; }
+.pill.bad  { background: #3a1f25; color: #ff7b72; }
+
+nav {
+  display: flex; flex: 0 0 auto; border-bottom: 1px solid #1f2733;
+  background: #11161f;
+}
+nav .tab {
+  flex: 1; padding: 14px 8px; background: transparent; color: #c0caf5;
+  border: none; border-right: 1px solid #1f2733;
+  font-size: 16px; font-weight: 600; cursor: pointer;
+}
+nav .tab.active { background: #1f2733; color: #ffb454; }
+nav .tab:last-child { border-right: none; }
+
+main {
+  flex: 1 1 auto; overflow: hidden; position: relative;
+}
+.view {
+  display: none; padding: 14px; height: 100%; overflow-y: auto;
+}
+.view.active { display: block; }
+
+footer {
+  flex: 0 0 auto; border-top: 1px solid #1f2733;
+  background: #0b0f17; padding: 6px 12px; max-height: 100px; overflow: hidden;
+}
+.log {
+  font-family: ui-monospace, Consolas, monospace; font-size: 11px;
+  color: #8b949e; height: 80px; overflow-y: scroll;
+}
+.log .line { white-space: pre; }
+.log .ERROR { color: #ff7b72; }
+.log .WARN  { color: #ffb454; }
+.log .INFO  { color: #8b949e; }
+
+/* Touch buttons */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 16px 18px; min-width: 110px; min-height: 60px;
+  background: #1f2733; color: #e6edf3; border: 2px solid #2c3a4c;
+  border-radius: 8px; font-size: 16px; font-weight: 600;
+  cursor: pointer; touch-action: manipulation;
+}
+.btn:active { background: #2c3a4c; }
+.btn.on    { background: #1d3a2a; border-color: #2da44e; color: #7ee787; }
+.btn.off   { background: #3a1f25; border-color: #cf222e; color: #ff7b72; }
+.btn.warn  { background: #3d2a1a; border-color: #d29922; color: #ffb454; }
+.btn.primary { background: #1f3a5a; border-color: #316dca; color: #79c0ff; }
+.btn.lg { min-height: 88px; font-size: 18px; }
+.btn[disabled] { opacity: 0.4; cursor: not-allowed; }
+
+.grid { display: grid; gap: 10px; }
+.grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+.grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+.grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+
+.card {
+  background: #11161f; border: 1px solid #1f2733; border-radius: 10px;
+  padding: 12px; margin-bottom: 12px;
+}
+.card h3 { margin: 0 0 10px 0; font-size: 14px; color: #ffb454; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+
+.kv { display: grid; grid-template-columns: max-content 1fr; gap: 4px 14px; font-size: 14px; }
+.kv b { color: #79c0ff; }
+
+.row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* Big number readout */
+.readout {
+  text-align: center; padding: 12px 0;
+  font-size: 32px; font-weight: 700; color: #ffb454;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Number-pad style input field for the parameters view */
+.numpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.numpad .btn { min-height: 60px; }
+
+.param-list { max-height: 320px; overflow-y: auto; }
+.param-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px; border-bottom: 1px solid #1f2733; cursor: pointer;
+}
+.param-row.selected { background: #1f3a5a; }
+
+input.numeric {
+  background: #0b0f17; border: 1px solid #1f2733; border-radius: 6px;
+  color: #e6edf3; font-size: 22px; padding: 8px; text-align: right;
+  width: 100%; font-variant-numeric: tabular-nums;
+}
+
+.brew-progress {
+  display: flex; align-items: center; gap: 12px;
+  font-size: 18px;
+}
+.brew-progress .name { font-weight: 700; color: #ffb454; }
+
+.led {
+  display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+  margin-right: 6px; background: #475467;
+}
+.led.on { background: #7ee787; box-shadow: 0 0 6px #7ee787aa; }
+.led.warn { background: #ffb454; box-shadow: 0 0 6px #ffb454aa; }

@@ -1,0 +1,27 @@
+{
+  "name": "brew-machine-mkiv-rpi",
+  "version": "1.0.0",
+  "description": "Raspberry Pi 5 port of the Brew Machine MkIV brewing controller.",
+  "license": "MIT",
+  "main": "src/index.js",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "MOCK_HARDWARE=1 nodemon --watch src --watch web --watch config src/index.js",
+    "mock": "MOCK_HARDWARE=1 node src/index.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "ws": "^8.18.0"
+  },
+  "optionalDependencies": {
+    "node-libgpiod": "^0.4.2",
+    "i2c-bus": "^5.2.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  }
+}

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=800, initial-scale=1">
+  <title>Brew Machine MkIV</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <header>
+      <div class="title">Brew Machine MkIV</div>
+      <div class="status">
+        <span id="conn-status" class="pill warn">connecting…</span>
+        <span class="temp">HLT <b id="hlt-temp">—</b>°C</span>
+        <span class="temp">MASH <b id="mash-temp">—</b>°C</span>
+        <span class="temp">Flow <b id="flow-litres">0.000</b> L</span>
+      </div>
+    </header>
+
+    <nav>
+      <button class="tab active" data-view="dashboard">Dashboard</button>
+      <button class="tab" data-view="manual">Manual</button>
+      <button class="tab" data-view="valves">Valves &amp; Pumps</button>
+      <button class="tab" data-view="diagnostics">Diagnostics</button>
+      <button class="tab" data-view="parameters">Parameters</button>
+      <button class="tab" data-view="brew">BREW</button>
+    </nav>
+
+    <main>
+      <!-- Each view becomes visible when the matching tab is selected. -->
+      <section id="view-dashboard" class="view active"></section>
+      <section id="view-manual" class="view"></section>
+      <section id="view-valves" class="view"></section>
+      <section id="view-diagnostics" class="view"></section>
+      <section id="view-parameters" class="view"></section>
+      <section id="view-brew" class="view"></section>
+    </main>
+
+    <footer>
+      <div id="log" class="log"></div>
+    </footer>
+  </div>
+
+  <script src="socket.js"></script>
+  <script src="views/dashboard.js"></script>
+  <script src="views/manual.js"></script>
+  <script src="views/valves.js"></script>
+  <script src="views/diagnostics.js"></script>
+  <script src="views/parameters.js"></script>
+  <script src="views/brew.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

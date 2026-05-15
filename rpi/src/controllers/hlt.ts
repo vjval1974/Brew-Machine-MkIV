@@ -201,7 +201,23 @@ export function start(): void {
 }
 
 // ── Public, awaitable command API ───────────────────────────────────────────
+
+/**
+ * Reject a same-typed pending command. We bound `pending` to one in-flight
+ * request per command type to avoid unbounded queue growth from a chatty UI.
+ */
+function ensureOneInFlight(c: HltCmd): void {
+  for (let i = pending.length - 1; i >= 0; i--) {
+    if (pending[i]!.cmd === c) {
+      log.warn(`HLT: superseding in-flight '${c}' command`);
+      pending[i]!.reject(new Error('superseded'));
+      pending.splice(i, 1);
+    }
+  }
+}
+
 export function heatAndFill(targetC: number): Promise<void> {
+  ensureOneInFlight('heat_and_fill');
   cmd = 'heat_and_fill';
   cmdParams = { setpoint: targetC };
   log.info(`HLT command: heat_and_fill ${targetC} °C`);
@@ -211,6 +227,7 @@ export function heatAndFill(targetC: number): Promise<void> {
 }
 
 export function drain(litres: number): Promise<void> {
+  ensureOneInFlight('drain');
   cmd = 'drain';
   cmdParams = { litres };
   log.info(`HLT command: drain ${litres.toFixed(2)} L`);

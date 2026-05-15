@@ -28,6 +28,7 @@ interface GpioBackend {
   getValue(bcm: number): number;
   cleanup(): void;
   _setInput?(name: string, value: number): void;
+  _getInputByName?(name: string): number | undefined;
 }
 
 // Lazy-load libgpiod so the module still works in mock mode without it
@@ -178,10 +179,30 @@ class MockGpioBackend implements GpioBackend {
     const i = this.inputs.get(name);
     if (i) i.value = value ? 1 : 0;
   }
+  _getInputByName(name: string): number | undefined {
+    const i = this.inputs.get(name);
+    return i?.value;
+  }
   cleanup(): void { /* noop */ }
 }
 
-const backend: GpioBackend = (MOCK || !libgpiod) ? new MockGpioBackend() : new RealGpioBackend();
+// IMPORTANT: a missing libgpiod binding must NOT silently fall back to a
+// mock backend when the user expected real hardware. The only path to the
+// mock backend is the explicit MOCK_HARDWARE=1 environment variable. This
+// closes the failure mode where a fresh checkout on the Pi without
+// `node-libgpiod` installed would "successfully" boot driving a 230 V
+// element with no GPIO ever actually being written.
+function makeBackend(): GpioBackend {
+  if (MOCK) return new MockGpioBackend();
+  if (!libgpiod) {
+    throw new Error(
+      'GPIO HAL: node-libgpiod is not installed and MOCK_HARDWARE is not set. ' +
+      'Install libgpiod-dev and `npm install`, or set MOCK_HARDWARE=1 explicitly.'
+    );
+  }
+  return new RealGpioBackend();
+}
+const backend: GpioBackend = makeBackend();
 
 const acquiredOutputs: Record<string, number | null> = {};
 const acquiredInputs:  Record<string, number | null> = {};
@@ -211,20 +232,49 @@ export function writeOutput(name: string, value: number | boolean): void {
 export function readInput(name: string): number {
   const bcm = acquiredInputs[name];
   if (bcm === undefined) throw new Error(`Input ${name} not acquired`);
-  if (bcm === null) return 1; // mock-mode placeholder
+  if (bcm === null) {
+    // Mock-mode placeholder pin: consult the backend by name so test
+    // helpers (gpio._mockSetInput) and the diagnostics UI can drive
+    // simulated inputs even without a real BCM mapping.
+    const v = backend._getInputByName?.(name);
+    return v ?? 1; // default to "released" (pull-up high) if never set
+  }
   return backend.getValue(bcm);
 }
 
 export function cleanup(): void { backend.cleanup(); }
 
-export function isMock(): boolean { return MOCK || !libgpiod; }
+export function isMock(): boolean { return MOCK; }
 
 export function _mockSetInput(name: string, value: number): void {
   backend._setInput?.(name, value);
+}
+
+/**
+ * Assert that a set of pins are mapped to real BCM numbers before boot
+ * completes. Refuses to continue if any safety-critical signal is `null`
+ * on real hardware. In mock mode the check is logged but does not throw,
+ * since `pinmap.ts` ships with placeholder `null` values by design.
+ */
+export function assertCriticalPinsMapped(
+  pins: { kind: 'output' | 'input'; name: string; bcm: number | null }[]
+): void {
+  const unmapped = pins.filter((p) => p.bcm === null);
+  if (unmapped.length === 0) return;
+  const names = unmapped.map((p) => p.name).join(', ');
+  if (MOCK) {
+    log.warn(`Critical pins unmapped (${names}) — allowed only because MOCK_HARDWARE=1`);
+    return;
+  }
+  throw new Error(
+    `Refusing to boot: safety-critical pins are unmapped in pinmap.ts: ${names}. ` +
+    `Assign real BCM numbers, or set MOCK_HARDWARE=1 to bench-test without hardware.`
+  );
 }
 
 export default {
   acquireOutput, acquireInput, acquirePulseInput,
   writeOutput, readInput,
   cleanup, isMock, _mockSetInput,
+  assertCriticalPinsMapped,
 };

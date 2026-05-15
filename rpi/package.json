@@ -18,6 +18,7 @@
     "dev": "tsx watch src/index.ts",
     "mock": "MOCK_HARDWARE=1 npm run dev",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.web.json --noEmit",
+    "test:safety": "MOCK_HARDWARE=1 tsx scripts/test-safety.ts",
     "clean": "rm -rf dist web/js"
   },
   "dependencies": {

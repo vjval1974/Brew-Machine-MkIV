@@ -39,6 +39,13 @@ let stepStartSec   = 0;
 let secondsElapsed = 0;
 let tickRunner: NodeJS.Timeout | null = null;
 
+// Test-only hooks. Production code never sets these; the safety regression
+// test in scripts/test-safety.ts uses them to verify the failure-abort path
+// of the brew engine. Read by `runBrew` at the top of each step launch.
+export const _testHooks: { failStepAt: number | null } = {
+  failStepAt: null,
+};
+
 function publish(stepName?: string): void {
   const r = !running ? 'idle' : paused ? 'paused' : 'running';
   store.set('brew', {
@@ -345,6 +352,15 @@ async function runBrew(): Promise<void> {
   /** Promises for steps that have been fired but not yet resolved. */
   const pending: Array<{ idx: number; name: string; promise: Promise<void> }> = [];
 
+  /** Convert a step failure into a brew abort + safe states. */
+  const abortOnFailure = (err: Error, where: string): void => {
+    if (err.message === 'QUIT') return;             // QUIT is the cooperative path
+    log.error(`BREW: aborting — ${where}: ${err.message}`);
+    quitFlag = true;
+    try { hlt.abortAll('brew aborted'); } catch { /* ignore */ }
+    safeStates();
+  };
+
   for (let i = 0; i < steps.length; i++) {
     if (quitFlag) break;
 
@@ -356,12 +372,13 @@ async function runBrew(): Promise<void> {
       try {
         await Promise.all(pending.map((p) => p.promise));
       } catch (err) {
-        log.error(`BREW: pending step failed: ${(err as Error).message}`);
-        if ((err as Error).message === 'QUIT') break;
-        // continue — earlier failure shouldn't necessarily abort the brew
+        abortOnFailure(err as Error, `pending step before '${step.name}'`);
+        break;                                       // fail-loud: do not launch the next step
       }
       pending.length = 0;
     }
+
+    if (quitFlag) break;
 
     currentStep = i;
     stepStartSec = secondsElapsed;
@@ -370,11 +387,19 @@ async function runBrew(): Promise<void> {
 
     const promise = (async (): Promise<void> => {
       try {
+        // Test-only: inject a synthetic failure into a specific step.
+        if (_testHooks.failStepAt === i) {
+          _testHooks.failStepAt = null;
+          throw new Error('test-injected step failure');
+        }
         await step.run();
         log.info(`BREW: step ${i} '${step.name}' COMPLETE`);
       } catch (err) {
         if ((err as Error).message === 'QUIT') throw err;
         log.error(`BREW: step ${i} '${step.name}' FAILED: ${(err as Error).message}`);
+        // Step failure is fatal to the brew. Surface the error to the join
+        // and abort immediately so parallel-launched siblings stop too.
+        abortOnFailure(err as Error, `step '${step.name}'`);
         throw err;
       }
     })();
@@ -385,7 +410,7 @@ async function runBrew(): Promise<void> {
   try {
     await Promise.all(pending.map((p) => p.promise));
   } catch (err) {
-    log.warn(`BREW: tail join: ${(err as Error).message}`);
+    abortOnFailure(err as Error, 'tail join');
   }
 
   running = false;

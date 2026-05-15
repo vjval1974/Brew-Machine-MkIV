@@ -40,6 +40,12 @@ const outputs: PinMap['outputs'] = {
   // Boil valve H-bridge — orig PCF8574 PORTU bits 1 & 2
   BOIL_VALVE_OPEN:  { bcm: null },
   BOIL_VALVE_CLOSE: { bcm: null },
+
+  // External hardware watchdog IC kick line (toggle, not write).
+  // Wired to TPS3823 / MAX6369 / ATtiny WDI input. Its OK output is in
+  // series with the mains contactor coil. Leave `bcm: null` to disable —
+  // the system will boot with a warning but no external watchdog.
+  WATCHDOG_KICK:    { bcm: null },
 };
 
 const inputs: PinMap['inputs'] = {

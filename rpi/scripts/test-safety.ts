@@ -38,6 +38,8 @@ import * as boil        from '../src/controllers/boil';
 import * as boilValve   from '../src/controllers/boilValve';
 import * as flow        from '../src/controllers/flow';
 import * as brew        from '../src/controllers/brew';
+import * as tempSensors from '../src/controllers/tempSensors';
+import onewire          from '../src/hal/onewire';
 import store from '../src/state/store';
 
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
@@ -157,12 +159,43 @@ async function testHltPendingBound(): Promise<void> {
   hlt.abortAll('test cleanup');
 }
 
+async function testStableTempFault(): Promise<void> {
+  console.log('TEST: tempSensors returns null when no samples / stale / disagreeing');
+
+  // No data yet — getStableTemp must report null (sensor fault).
+  // The poller has been running since setup(); reset its buffer for the test
+  // by overwriting all recent reads with a sequence that disagrees.
+  onewire._mockSetTemp('HLT', 25);
+  await sleep(50);
+
+  // Force three disagreeing reads via mock temp.
+  onewire._mockSetTemp('HLT', 25);
+  await sleep(1100);
+  onewire._mockSetTemp('HLT', 50);   // big jump > tolerance
+  await sleep(1100);
+  onewire._mockSetTemp('HLT', 25);   // back
+  await sleep(1100);
+
+  const t = tempSensors.getStableTemp('HLT', 2.0);
+  assert(t === null, 'getStableTemp returns null when 3 samples disagree');
+
+  // Now agree → must return a stable mean.
+  onewire._mockSetTemp('HLT', 30);
+  await sleep(3100);                  // three more polls at 1 Hz with agreement
+  const t2 = tempSensors.getStableTemp('HLT', 2.0);
+  assert(t2 !== null && Math.abs(t2 - 30) < 0.5,
+    'getStableTemp returns mean when 3 samples agree');
+}
+
 async function main(): Promise<void> {
   await setup();
+  // The new tempSensors poller needs to be running for the stable-temp test.
+  tempSensors.start();
   try {
     await testFailureInjection();
     await testShutdownDrivesOutputsLow();
     await testHltPendingBound();
+    await testStableTempFault();
   } finally {
     await teardown();
   }

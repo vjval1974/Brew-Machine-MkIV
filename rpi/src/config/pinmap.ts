@@ -43,9 +43,9 @@ const outputs: PinMap['outputs'] = {
 
   // External hardware watchdog IC kick line (toggle, not write).
   // Wired to TPS3823 / MAX6369 / ATtiny WDI input. Its OK output is in
-  // series with the mains contactor coil. Leave `bcm: null` to disable —
-  // the system will boot with a warning but no external watchdog.
-  WATCHDOG_KICK:    { bcm: null },
+  // series with the mains contactor coil. BCM 26 = header pin 37 — spare
+  // on a standard Pi 5 with no I2C/SPI/UART/PWM overlay conflicts.
+  WATCHDOG_KICK:    { bcm: 26 },
 };
 
 const inputs: PinMap['inputs'] = {

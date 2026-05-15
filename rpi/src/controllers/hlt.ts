@@ -14,11 +14,14 @@ import log from '../util/logger';
 import store from '../state/store';
 import pinmap from '../config/pinmap';
 import { sleep, debounceInput } from '../hal/io_util';
-import onewire from '../hal/onewire';
+import watchdog from '../hal/watchdog';
 import * as valves from './valves';
 import * as flow from './flow';
 import * as mashWater from './mashWater';
+import * as tempSensors from './tempSensors';
 import type { HltLevel, HltCmd } from '../types';
+
+const MAX_CONSECUTIVE_TEMP_FAULTS = 5;     // ~5 ticks; ~1s without stable read
 
 interface HeatFillParams { setpoint: number }
 interface DrainParams    { litres:   number }
@@ -34,7 +37,7 @@ let setpoint = 74.5;
 let cmd: HltCmd = 'idle';
 let cmdParams: CmdParams = {};
 const pending: CmdResolver[] = [];
-let stableTemp = NaN;
+let consecutiveTempFaults = 0;
 let actualLitresDelivered = 0;
 let runner: Promise<void> | null = null;
 let levelRunner: Promise<void> | null = null;
@@ -69,17 +72,6 @@ function setHeater(on: boolean): void {
   store.patch('hlt', { heating: on });
 }
 
-/** Three-sample stable read; only updates `stableTemp` when all three agree. */
-async function stableHltTemp(tolerance = 2.0): Promise<number> {
-  const t1 = await onewire.readSensor('HLT'); await sleep(900);
-  const t2 = await onewire.readSensor('HLT'); await sleep(900);
-  const t3 = await onewire.readSensor('HLT');
-  if (Math.abs(t1 - t2) < tolerance && Math.abs(t2 - t3) < tolerance) {
-    stableTemp = (t1 + t2 + t3) / 3;
-  }
-  return stableTemp;
-}
-
 async function maintainHighLevel(): Promise<boolean> {
   const high = (await debounceInput('HLT_LEVEL_HIGH')) === 0;
   if (high) {
@@ -91,16 +83,41 @@ async function maintainHighLevel(): Promise<boolean> {
   return false;
 }
 
+/**
+ * Decide whether the heater should be on, given a target setpoint and the
+ * current stable temperature read from the tempSensors rolling buffer.
+ *
+ * Fault behaviour: if the buffer can't produce a stable three-sample read
+ * (no recent samples, samples disagree, or data is stale), increment a
+ * consecutive-fault counter, turn the heater OFF, and report "not at temp".
+ * After `MAX_CONSECUTIVE_TEMP_FAULTS` strikes, escalate to the hardware
+ * watchdog so the external WDT IC drops the contactor coil.
+ */
 async function maintainTemp(target: number): Promise<boolean> {
   const level = await getLevel();
-  if (level === 'mid' || level === 'high') {
-    const t = await stableHltTemp(2.0);
-    if (t < target) { setHeater(true);  return false; }
-    if (t > target + 0.1) { setHeater(false); return true; }
-    return true;
+  if (level !== 'mid' && level !== 'high') {
+    setHeater(false);
+    return false;
   }
-  setHeater(false);
-  return false;
+
+  const t = tempSensors.getStableTemp('HLT', 2.0);
+  if (t === null) {
+    setHeater(false);
+    consecutiveTempFaults++;
+    if (consecutiveTempFaults === 1) {
+      log.warn('HLT: no stable temperature read — heater forced OFF, waiting for sensor');
+    }
+    if (consecutiveTempFaults >= MAX_CONSECUTIVE_TEMP_FAULTS) {
+      log.error(`HLT: ${consecutiveTempFaults} consecutive temp faults — escalating to watchdog`);
+      watchdog.fail('HLT temperature sensor faulted');
+    }
+    return false;
+  }
+
+  consecutiveTempFaults = 0;
+  if (t < target)            { setHeater(true);  return false; }
+  if (t > target + 0.1)      { setHeater(false); return true;  }
+  return true;
 }
 
 async function loop(): Promise<void> {
@@ -116,7 +133,7 @@ async function loop(): Promise<void> {
     }
 
     const level = await getLevel();
-    const cachedTemp = await onewire.readCached('HLT', 800);
+    const cachedTemp = tempSensors.get('HLT');
     store.patch('hlt', { level, temp: cachedTemp, cmd, setpoint });
 
     if (cmd === 'idle') {

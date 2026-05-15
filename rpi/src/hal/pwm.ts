@@ -131,15 +131,22 @@ export async function createPwm(cfg: PwmConfig): Promise<Pwm> {
     await sw.init();
     return sw;
   }
+  // Real hardware: hardware PWM is non-negotiable. A SoftwarePwm fallback
+  // (setTimeout-driven GPIO toggling) on a 5 kW SSR is unsafe — under any
+  // event-loop stall, duty error per cycle can reach double digits. Fail
+  // loud so the operator fixes the dtoverlay rather than silently shipping
+  // a degraded heater controller.
   try {
     const hw = new HardwarePwm(cfg);
     await hw.init();
     log.info(`PWM ${cfg.name ?? ''}: hardware on pwmchip${cfg.chip}/pwm${cfg.channel}`);
     return hw;
   } catch (err) {
-    log.warn(`Hardware PWM failed (${(err as Error).message}); falling back to software PWM on GPIO ${cfg.bcm}`);
-    const sw = new SoftwarePwm(cfg);
-    await sw.init();
-    return sw;
+    throw new Error(
+      `Hardware PWM unavailable for ${cfg.name ?? `pwmchip${cfg.chip}/pwm${cfg.channel}`}: ` +
+      `${(err as Error).message}. Add 'dtoverlay=pwm-2chan,pin=${cfg.bcm},func=4' to ` +
+      `/boot/firmware/config.txt, reboot, and ensure /sys/class/pwm/pwmchip${cfg.chip} exists. ` +
+      `Refusing to fall back to software PWM on real hardware.`
+    );
   }
 }

@@ -2,6 +2,17 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Working with me (advisor mode)
+
+You are my advisor, not my assistant. Be direct and prioritize accuracy over agreeableness. Follow these rules:
+
+- **Lead with the most useful thing you can say.** No warm-up paragraphs, no "there are several ways to look at this." If there's something I probably don't want to hear, say it in the first line.
+- **Evaluate before you agree.** Don't open with affirmation by default. If I'm right, say so plainly and move on. If I'm wrong, missing something, or making an unstated assumption, say that instead. Agreement should be earned by the merits, not withheld as a reflex.
+- **When you disagree, give me structure:** why I'm wrong, what you'd do instead, and the specific downside of my approach.
+- **Rate your confidence.** Tag claims `[Certain]` for hard evidence, `[Likely]` for strong inference, `[Guessing]` when filling gaps. If most of a reply is guesswork, say so up front.
+- **Cut filler phrases:** "Great question," "You're absolutely right," "That makes a lot of sense," "Absolutely," "Definitely." If you catch yourself writing one, delete it.
+- **Hold your position under pushback** unless I give you genuinely new information. Repetition and insistence ("but I really think") aren't new information. But if I show you you're wrong, change your mind and say why.
+
 ## What this is
 
 Firmware for **Brew Machine MkIV** (project name `RTOSBrew`): a fully automated home brewery controller. It runs on an **STM32F103 high-density** MCU (ARM Cortex-M3 @ 72 MHz) under **FreeRTOS**, driving a resistive touchscreen LCD UI plus pumps, valves, heating elements (SSRs), a motorised grain crane, mill, stirrer, hop dropper, flow meter and DS1820 temperature sensors. There is no host/PC component — everything here is cross-compiled C that runs on the board.
@@ -89,6 +100,43 @@ Treat these as upstream; application logic belongs in the top-level `*.c`/`*.h` 
 - Strings passed to the console/LCD are frequently null-terminated explicitly as `"...\r\n\0"`.
 - LCD button/region hit-boxes are defined as `X1/Y1/X2/Y2` pixel-rectangle macro groups in the owning header (see `brew.h`, `hlt.h`).
 - Licensed under **GPL v3** (`LICENSE`); existing files carry author/date headers — keep the style when adding new modules.
+
+## Raspberry Pi 5 port (`rpi/`)
+
+A second, **parallel** implementation lives under `rpi/` (added on branch `claude/raspberry-pi-lcd-port-WAjwk`). It reimplements the whole controller in **TypeScript / Node.js (≥20)** for a **Raspberry Pi 5** with a browser kiosk UI instead of the FSMC LCD + touch. The C firmware is the authoritative source of behaviour; the Pi port is a faithful re-port, not a replacement — keep them in sync conceptually when changing brew logic.
+
+It is fully additive: nothing outside `rpi/` is modified, so the two targets don't conflict.
+
+### Build / run (from `rpi/`)
+```sh
+npm install            # express + ws; node-libgpiod & i2c-bus are optionalDependencies
+npm run build          # tsc server (src→dist) + web (web/src→web/js)
+npm start              # production: node dist/index.js  (UI on :8080)
+npm run dev            # tsx watch mode
+MOCK_HARDWARE=1 npm run dev   # no GPIO/I2C/1-Wire needed — in-memory HAL mocks
+npm run typecheck      # tsc --noEmit on both tsconfigs (server + web)
+npm run test:safety    # MOCK_HARDWARE=1 brew-abort/safe-state regression test (exits non-zero on fail)
+```
+`tsconfig.json` is `strict`. Typecheck and `test:safety` both currently pass — treat a regression in either as a blocker.
+
+### Architecture mapping (C → TS)
+- `main.c` → `src/index.ts` (init order + clock/peripheral setup → HAL/controller wiring + graceful shutdown).
+- One module per C file under `src/controllers/` (`valves`, `mashPump`, `chillerPump`, `mill`, `stir`, `crane`, `hopDropper`, `hlt`, `boil`, `boilValve`, `flow`, `tempSensors`, `mashWater`, `brew`).
+- HAL under `src/hal/`: `gpio.ts` (libgpiod), `i2c.ts` (PCF8574 expanders), `onewire.ts` (DS18B20 via kernel `w1-therm`), `pwm.ts` (sysfs hardware PWM for the boil SSR), `watchdog.ts`, and a `workers/flow-worker.ts` worker thread that counts flow pulses on a `SharedArrayBuffer`.
+- FreeRTOS tasks → async loops; FreeRTOS queues → `Promise<void>` returned from controller commands; LCD/menu UI → `web/` (Express + WebSocket; state pushed as snapshot/patch messages).
+- Central typed state is `src/state/store.ts` (`AppState`); brew recipe params are `src/parameters/parameters.ts` + `config/parameters.default.json`, one-to-one with `parameters.h`.
+
+### Two things to know before touching it
+- **`src/config/pinmap.ts` ships with every `bcm` set to `null`** (placeholders). On real hardware the HAL refuses to claim a null pin, and `index.ts` refuses to boot if any *safety-critical* pin (HLT SSR, INLET valve, HLT level inputs, boil PWM) is unmapped — unless `MOCK_HARDWARE=1`. Map real BCM numbers there first.
+- **The parallel WAIT model is the whole point.** `src/controllers/brew.ts` `steps[]` mirrors `brew.c`'s `BrewSteps[]` (line ~2056) including the `wait` flag (= `ucWait`): `wait:false` fires the step and advances immediately (runs in parallel); `wait:true` first awaits *all* previously-launched steps. This overlap (HLT reheating the next sparge water during the current mash/sparge) is what makes the brew ~3 h faster than naive sequential execution. Don't "simplify" it to sequential `await`s.
+
+### Known gaps / safety notes (as of branch `…WAjwk`)
+These are documented so future work doesn't assume the port is complete:
+- **No continuous boil-kettle level monitor.** `boil.ts` only checks `BOIL_LEVEL` at the moment `setDuty()` is called; during a long boil the element holds duty with no re-check. The HLT has a background `levelMonitor`; the boil does not — dry-fire risk.
+- **`unhandledRejection` triggers a full `shutdown()`** (`index.ts`), while the code intentionally rejects fire-and-forget promises (diagnostics `hlt.startHeating()`, `ensureOneInFlight` supersede). An un-awaited rejection can abort the whole machine. Fail-safe, but an availability footgun.
+- **Watchdog escalation is aggressive:** ~5 consecutive unstable HLT temp reads (~1 s) calls `watchdog.fail()`, which stops kicking and lets the SoC watchdog reboot the Pi mid-brew. A transient DS18B20 glitch can kill a multi-hour brew.
+- **Valve setters are non-idempotent.** `valves.open/close` always write GPIO, emit a store `change`, log, and fire `onOpen/onClose` hooks — even when already in that state. The HLT idle loop calls them every ~200 ms, so edge hooks (`flow.setMeasuring`) fire on non-edges and WebSocket/log traffic is spammy. Suppress the emit/log/hook when state is unchanged (but keep re-asserting the physical line if that's intended).
+- **HLT command state** (`cmd`/`cmdParams` module globals) has no mutual exclusion; single-command-in-flight correctness depends entirely on the brew step WAIT ordering. Diagnostics actions during a brew can interleave commands.
 
 ## Git workflow notes
 - The repo currently commits build output (`Debug/`, `Release/`, `*.axf`, `*.bin`, `*.map`) and IDE metadata (`.idea/`, `.settings/`, `.cproject`, `.project`). These are generated; avoid hand-editing them, and don't rely on them being current.

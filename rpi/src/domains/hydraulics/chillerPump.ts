@@ -1,11 +1,11 @@
 // Chiller pump (also called "boil pump" in the original UI) — port of
 // chiller_pump.c. Straight on/off, no interlocks.
 
-import gpio from '../hal/gpio';
-import log from '../util/logger';
-import store from '../state/store';
-import pinmap from '../config/pinmap';
-import type { PumpState } from '../types';
+import gpio from '../../platform/hal/gpio';
+import log from '../../platform/util/logger';
+import store from '../../platform/store/store';
+import pinmap from '../../config/pinmap';
+import type { PumpState } from '../../types';
 
 export function init(): void {
   const cfg = pinmap.outputs.CHILLER_PUMP;

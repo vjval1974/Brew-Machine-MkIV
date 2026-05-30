@@ -1,20 +1,20 @@
 import express from 'express';
 import type { Request, Response, Router } from 'express';
-import store from '../state/store';
+import store from '../platform/store/store';
 
-import type * as valvesT      from '../controllers/valves';
-import type * as mashPumpT    from '../controllers/mashPump';
-import type * as chillerPumpT from '../controllers/chillerPump';
-import type * as millT        from '../controllers/mill';
-import type * as stirT        from '../controllers/stir';
-import type * as craneT       from '../controllers/crane';
-import type * as hopDropperT  from '../controllers/hopDropper';
-import type * as hltT         from '../controllers/hlt';
-import type * as boilT        from '../controllers/boil';
-import type * as boilValveT   from '../controllers/boilValve';
-import type * as flowT        from '../controllers/flow';
-import type * as brewT        from '../controllers/brew';
-import type paramsT           from '../parameters/parameters';
+import type * as valvesT      from '../domains/hydraulics/valves';
+import type * as mashPumpT    from '../domains/hydraulics/mashPump';
+import type * as chillerPumpT from '../domains/hydraulics/chillerPump';
+import type * as millT        from '../domains/motion/mill';
+import type * as stirT        from '../domains/motion/stir';
+import type * as craneT       from '../domains/motion/crane';
+import type * as hopDropperT  from '../domains/motion/hopDropper';
+import type * as hltT         from '../domains/hlt/hlt';
+import type * as boilT        from '../domains/boil/boil';
+import type * as boilValveT   from '../domains/hydraulics/boilValve';
+import type * as flowT        from '../domains/hydraulics/flow';
+import type * as brewT        from '../domains/brewing/brew';
+import type paramsT           from '../platform/parameters/parameters';
 import type { ValveName }     from '../types';
 
 export interface Controllers {

@@ -1,30 +1,57 @@
 // Entry point — wires the HAL, controllers, and HTTP/WS server together.
 // Direct port of main.c's `main()` + `prvSetupHardware()`.
 
-import log from './util/logger';
-import gpio from './hal/gpio';
-import i2c from './hal/i2c';
-import watchdog from './hal/watchdog';
+import log from './platform/util/logger';
+import gpio from './platform/hal/gpio';
+import i2c from './platform/hal/i2c';
+import watchdog from './platform/hal/watchdog';
 import pinmap from './config/pinmap';
+import store from './platform/store/store';
 
-import params from './parameters/parameters';
+import params from './platform/parameters/parameters';
 
-import * as valves      from './controllers/valves';
-import * as mashPump    from './controllers/mashPump';
-import * as chillerPump from './controllers/chillerPump';
-import * as mill        from './controllers/mill';
-import * as stir        from './controllers/stir';
-import * as crane       from './controllers/crane';
-import * as hopDropper  from './controllers/hopDropper';
-import * as hlt         from './controllers/hlt';
-import * as boil        from './controllers/boil';
-import * as boilValve   from './controllers/boilValve';
-import * as flow        from './controllers/flow';
-import * as tempSensors from './controllers/tempSensors';
-import * as brew        from './controllers/brew';
+import * as valves      from './domains/hydraulics/valves';
+import * as mashPump    from './domains/hydraulics/mashPump';
+import * as chillerPump from './domains/hydraulics/chillerPump';
+import * as mill        from './domains/motion/mill';
+import * as stir        from './domains/motion/stir';
+import * as crane       from './domains/motion/crane';
+import * as hopDropper  from './domains/motion/hopDropper';
+import * as hlt         from './domains/hlt/hlt';
+import * as boil        from './domains/boil/boil';
+import * as boilValve   from './domains/hydraulics/boilValve';
+import * as flow        from './domains/hydraulics/flow';
+import * as tempSensors from './domains/sensing/tempSensors';
+import * as brew        from './domains/brewing/brew';
 
 import { createServer } from './server/server';
 import type { Controllers } from './server/routes';
+
+/**
+ * Bounded contexts and their canonical store-section owners. Centralised
+ * here so the architecture is in one place and not spread across init
+ * functions. The registry is consulted whenever a `store.patch(section,
+ * patch, writer)` is called with an explicit `writer` — non-matching
+ * writers log a one-shot warning. Today this is documentation; tomorrow
+ * it's a code-review checklist that a future ESLint rule (or test) can
+ * promote to hard enforcement.
+ */
+function declareDomainOwners(): void {
+  store.declareOwner('brew',       'brewing');
+  store.declareOwner('hlt',        'hlt');
+  store.declareOwner('boil',       'boil');
+  store.declareOwner('valves',     'hydraulics');
+  store.declareOwner('pumps',      'hydraulics');
+  store.declareOwner('boilValve',  'hydraulics');
+  store.declareOwner('flow',       'hydraulics');
+  store.declareOwner('mashWater',  'hydraulics');
+  store.declareOwner('crane',      'motion');
+  store.declareOwner('stir',       'motion');
+  store.declareOwner('mill',       'motion');
+  store.declareOwner('hopDropper', 'motion');
+  store.declareOwner('temps',      'sensing');
+  store.declareOwner('parameters', 'platform');
+}
 
 /**
  * Pins whose failure to be mapped (`bcm === null`) on real hardware would
@@ -56,6 +83,7 @@ async function main(): Promise<void> {
 
   // Safety: refuse to boot with unmapped critical pins on real hardware.
   assertSafetyCriticalPinsMapped();
+  declareDomainOwners();
 
   params.load();
   await i2c.open();

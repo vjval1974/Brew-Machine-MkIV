@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import type { LogEntry, LogLevel } from '../types';
+import type { LogEntry, LogLevel } from '../../types';
 
 export const bus = new EventEmitter();
 bus.setMaxListeners(50);

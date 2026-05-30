@@ -17,7 +17,7 @@
 import fsSync from 'fs';
 import log from '../util/logger';
 import gpio from './gpio';
-import pinmap from '../config/pinmap';
+import pinmap from '../../config/pinmap';
 
 const MOCK = process.env.MOCK_HARDWARE === '1';
 

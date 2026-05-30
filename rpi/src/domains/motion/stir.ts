@@ -1,12 +1,12 @@
 // Stir motor — port of stir.c. Interlocked: only runs during a brew when
 // the crane is at the bottom or driving down in increments.
 
-import gpio from '../hal/gpio';
-import log from '../util/logger';
-import store from '../state/store';
-import pinmap from '../config/pinmap';
+import gpio from '../../platform/hal/gpio';
+import log from '../../platform/util/logger';
+import store from '../../platform/store/store';
+import pinmap from '../../config/pinmap';
 import * as crane from './crane';
-import type { StirState } from '../types';
+import type { StirState } from '../../types';
 
 export function init(): void {
   gpio.acquireOutput('STIR', pinmap.outputs.STIR.bcm, 0);

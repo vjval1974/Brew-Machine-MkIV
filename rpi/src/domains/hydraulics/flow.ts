@@ -15,9 +15,9 @@
 
 import { Worker } from 'worker_threads';
 import path from 'path';
-import log from '../util/logger';
-import store from '../state/store';
-import pinmap from '../config/pinmap';
+import log from '../../platform/util/logger';
+import store from '../../platform/store/store';
+import pinmap from '../../config/pinmap';
 
 const MOCK = process.env.MOCK_HARDWARE === '1';
 
@@ -57,7 +57,7 @@ export function init(): void {
   // Real hardware: spawn the pulse-counter worker. Resolve worker path
   // for both dev (tsx, .ts files) and prod (compiled .js).
   const ext = __filename.endsWith('.ts') ? '.ts' : '.js';
-  const workerPath = path.join(__dirname, '..', 'hal', 'workers', `flow-worker${ext}`);
+  const workerPath = path.join(__dirname, '..', '..', 'platform', 'hal', 'workers', `flow-worker${ext}`);
   worker = new Worker(workerPath, {
     workerData: { bcm: cfg.bcm, edge: cfg.edge ?? 'falling', sharedBuffer },
   });

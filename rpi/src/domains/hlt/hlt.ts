@@ -9,17 +9,17 @@
 // the level reads LOW while heating, and slams the inlet valve closed if it
 // stays open with HIGH level for >3 s.
 
-import gpio from '../hal/gpio';
-import log from '../util/logger';
-import store from '../state/store';
-import pinmap from '../config/pinmap';
-import { sleep, debounceInput } from '../hal/io_util';
-import watchdog from '../hal/watchdog';
-import * as valves from './valves';
-import * as flow from './flow';
-import * as mashWater from './mashWater';
-import * as tempSensors from './tempSensors';
-import type { HltLevel, HltCmd } from '../types';
+import gpio from '../../platform/hal/gpio';
+import log from '../../platform/util/logger';
+import store from '../../platform/store/store';
+import pinmap from '../../config/pinmap';
+import { sleep, debounceInput } from '../../platform/hal/io_util';
+import watchdog from '../../platform/hal/watchdog';
+import * as valves from '../hydraulics/valves';
+import * as flow from '../hydraulics/flow';
+import * as mashWater from '../hydraulics/mashWater';
+import * as tempSensors from '../sensing/tempSensors';
+import type { HltLevel, HltCmd } from '../../types';
 
 const MAX_CONSECUTIVE_TEMP_FAULTS = 5;     // ~5 ticks; ~1s without stable read
 

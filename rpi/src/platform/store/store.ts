@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import type { AppState, Parameters } from '../types';
+import type { AppState, Parameters } from '../../types';
 
 const emptyParameters: Parameters = {
   iGrindTime: 0, fGrainWeightKilos: 0,
@@ -45,6 +45,19 @@ const initial: AppState = {
 
 type Section = keyof AppState;
 
+/**
+ * Soft section-ownership registry. Every domain module that writes a
+ * particular section should call `store.declareOwner('<section>', '<domain>')`
+ * once during init. If another module later writes that section, we log a
+ * warning. It's deliberately non-fatal: it surfaces accidental coupling in
+ * test runs and PR review without blocking legitimate compositions (e.g.
+ * the safety/quit path in index.ts touching the store directly during
+ * shutdown). Architect 2 specified this discipline in the synthesis.
+ */
+type OwnerName = string;
+const owners = new Map<Section, OwnerName>();
+const ownerWarned = new Set<string>();   // section:writer pairs already warned
+
 export class Store extends EventEmitter {
   state: AppState;
   constructor() {
@@ -53,8 +66,44 @@ export class Store extends EventEmitter {
     this.setMaxListeners(50);
   }
 
+  /**
+   * Register the canonical writer for a section. First registration wins —
+   * subsequent registrations log a conflict warning but don't override.
+   */
+  declareOwner<K extends Section>(section: K, owner: OwnerName): void {
+    const existing = owners.get(section);
+    if (existing && existing !== owner) {
+      // eslint-disable-next-line no-console
+      console.warn(`[store] section '${section}' already owned by '${existing}', '${owner}' refused`);
+      return;
+    }
+    owners.set(section, owner);
+  }
+
+  /** True if `writer` is the declared owner of `section` (or no owner declared). */
+  private ownsSection(section: Section, writer: OwnerName | undefined): boolean {
+    const owner = owners.get(section);
+    if (!owner) return true;            // no owner declared → anyone allowed
+    if (writer === undefined) return true;   // legacy call site (e.g. server)
+    return owner === writer;
+  }
+
+  private warnIfForeign(section: Section, writer: OwnerName | undefined): void {
+    if (this.ownsSection(section, writer)) return;
+    const key = `${section}:${writer ?? '<unknown>'}`;
+    if (ownerWarned.has(key)) return;
+    ownerWarned.add(key);
+    const owner = owners.get(section);
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[store] section '${section}' is owned by '${owner}'. ` +
+      `Writer '${writer}' is mutating it — likely a boundary violation.`
+    );
+  }
+
   /** Merge a partial object into a section and emit a change event. */
-  patch<K extends Section>(section: K, patch: Partial<AppState[K]>): void {
+  patch<K extends Section>(section: K, patch: Partial<AppState[K]>, writer?: OwnerName): void {
+    this.warnIfForeign(section, writer);
     const current = this.state[section] as object;
     const next = { ...current, ...patch } as AppState[K];
     this.state[section] = next;
@@ -62,7 +111,8 @@ export class Store extends EventEmitter {
   }
 
   /** Replace an entire section. */
-  set<K extends Section>(section: K, value: AppState[K]): void {
+  set<K extends Section>(section: K, value: AppState[K], writer?: OwnerName): void {
+    this.warnIfForeign(section, writer);
     this.state[section] = value;
     this.emit('change', { section, value });
   }

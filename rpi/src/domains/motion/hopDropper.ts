@@ -1,12 +1,12 @@
 // Hop dropper — port of hop_dropper.c.
 
-import gpio from '../hal/gpio';
-import log from '../util/logger';
-import store from '../state/store';
-import pinmap from '../config/pinmap';
-import params from '../parameters/parameters';
-import { sleep, debounceInput } from '../hal/io_util';
-import type { HopDropperState } from '../types';
+import gpio from '../../platform/hal/gpio';
+import log from '../../platform/util/logger';
+import store from '../../platform/store/store';
+import pinmap from '../../config/pinmap';
+import params from '../../platform/parameters/parameters';
+import { sleep, debounceInput } from '../../platform/hal/io_util';
+import type { HopDropperState } from '../../types';
 
 let busy = false;
 

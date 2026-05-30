@@ -5,12 +5,12 @@
 // reached (or when stopped). The background loop runs once per tick and is
 // the single owner of the H-bridge outputs.
 
-import gpio from '../hal/gpio';
-import log from '../util/logger';
-import store from '../state/store';
-import pinmap from '../config/pinmap';
-import { sleep, debounceInput } from '../hal/io_util';
-import type { CraneState } from '../types';
+import gpio from '../../platform/hal/gpio';
+import log from '../../platform/util/logger';
+import store from '../../platform/store/store';
+import pinmap from '../../config/pinmap';
+import { sleep, debounceInput } from '../../platform/hal/io_util';
+import type { CraneState } from '../../types';
 
 type Cmd = 'up' | 'down' | 'incremental' | 'stop';
 

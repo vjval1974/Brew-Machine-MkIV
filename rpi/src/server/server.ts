@@ -2,11 +2,11 @@ import express from 'express';
 import path from 'path';
 import http from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
-import log from '../util/logger';
-import store from '../state/store';
+import log from '../platform/util/logger';
+import store from '../platform/store/store';
 import buildRouter, { type Controllers } from './routes';
-import gpio from '../hal/gpio';
-import onewire from '../hal/onewire';
+import gpio from '../platform/hal/gpio';
+import onewire from '../platform/hal/onewire';
 import type { WsClientMessage, WsServerMessage } from '../types';
 
 export async function createServer(c: Controllers, port = 8080): Promise<http.Server> {

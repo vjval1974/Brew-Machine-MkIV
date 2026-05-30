@@ -1,11 +1,11 @@
 // Grain mill motor — port of mill.c.
 
-import gpio from '../hal/gpio';
-import log from '../util/logger';
-import store from '../state/store';
-import pinmap from '../config/pinmap';
-import { sleep } from '../hal/io_util';
-import type { MillState } from '../types';
+import gpio from '../../platform/hal/gpio';
+import log from '../../platform/util/logger';
+import store from '../../platform/store/store';
+import pinmap from '../../config/pinmap';
+import { sleep } from '../../platform/hal/io_util';
+import type { MillState } from '../../types';
 
 export function init(): void {
   gpio.acquireOutput('MILL', pinmap.outputs.MILL.bcm, 0);

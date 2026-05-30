@@ -1,8 +1,8 @@
 // Mash water tracker — port of MashWater.c.
 
-import log from '../util/logger';
-import store from '../state/store';
-import params from '../parameters/parameters';
+import log from '../../platform/util/logger';
+import store from '../../platform/store/store';
+import params from '../../platform/parameters/parameters';
 
 const WATER_LOSS_TO_MASH_LPK = 1.13;          // L per kg of grain
 const RESIDUAL_IN_MASH_AFTER_PUMPOUT = 2.5;   // L (kept for reference)

@@ -1,12 +1,12 @@
 // Mash pump — port of mash_pump.c.
 
-import gpio from '../hal/gpio';
-import log from '../util/logger';
-import store from '../state/store';
-import pinmap from '../config/pinmap';
-import * as crane from './crane';
+import gpio from '../../platform/hal/gpio';
+import log from '../../platform/util/logger';
+import store from '../../platform/store/store';
+import pinmap from '../../config/pinmap';
+import * as crane from '../motion/crane';
 import * as valves from './valves';
-import type { PumpState } from '../types';
+import type { PumpState } from '../../types';
 
 export function init(): void {
   const cfg = pinmap.outputs.MASH_PUMP;

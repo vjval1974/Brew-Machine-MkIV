@@ -1,12 +1,12 @@
 import fs from 'fs';
 import path from 'path';
 import log from '../util/logger';
-import store from '../state/store';
-import type { Parameters } from '../types';
+import store from '../store/store';
+import type { Parameters } from '../../types';
 
-const DATA_DIR  = path.join(__dirname, '..', '..', 'data');
+const DATA_DIR  = path.join(__dirname, '..', '..', '..', 'data');
 const DATA_FILE = path.join(DATA_DIR, 'parameters.json');
-const DEFAULTS  = path.join(__dirname, '..', '..', 'config', 'parameters.default.json');
+const DEFAULTS  = path.join(__dirname, '..', '..', '..', 'config', 'parameters.default.json');
 
 let cache: Parameters | null = null;
 

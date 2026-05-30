@@ -1,10 +1,10 @@
 // Valve controller — port of valves.c.
 
-import gpio from '../hal/gpio';
-import log from '../util/logger';
-import store from '../state/store';
-import pinmap from '../config/pinmap';
-import type { ValveName } from '../types';
+import gpio from '../../platform/hal/gpio';
+import log from '../../platform/util/logger';
+import store from '../../platform/store/store';
+import pinmap from '../../config/pinmap';
+import type { ValveName } from '../../types';
 
 const NAMES: ValveName[] = ['HLT', 'MASH', 'INLET', 'CHILLER'];
 

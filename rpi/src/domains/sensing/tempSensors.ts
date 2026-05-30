@@ -7,10 +7,10 @@
 // 750 ms blocking read runs on the libuv thread pool, never on the main
 // thread.
 
-import log from '../util/logger';
-import onewire from '../hal/onewire';
-import store from '../state/store';
-import type { AppState } from '../types';
+import log from '../../platform/util/logger';
+import onewire from '../../platform/hal/onewire';
+import store from '../../platform/store/store';
+import type { AppState } from '../../types';
 
 type SensorName = 'HLT' | 'MASH';
 

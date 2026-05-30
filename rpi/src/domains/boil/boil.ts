@@ -1,11 +1,11 @@
 // Boil kettle controller — port of boil.c.
 
-import log from '../util/logger';
-import store from '../state/store';
-import pinmap from '../config/pinmap';
-import gpio from '../hal/gpio';
-import { createPwm, type Pwm } from '../hal/pwm';
-import type { BoilState } from '../types';
+import log from '../../platform/util/logger';
+import store from '../../platform/store/store';
+import pinmap from '../../config/pinmap';
+import gpio from '../../platform/hal/gpio';
+import { createPwm, type Pwm } from '../../platform/hal/pwm';
+import type { BoilState } from '../../types';
 
 let pwm: Pwm | null = null;
 let duty = 0;

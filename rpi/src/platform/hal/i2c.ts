@@ -9,7 +9,7 @@
 // set/clear operations are read-modify-write safe under concurrent callers.
 
 import log from '../util/logger';
-import { i2c as i2cCfg } from '../config/pinmap';
+import { i2c as i2cCfg } from '../../config/pinmap';
 
 const MOCK = process.env.MOCK_HARDWARE === '1';
 

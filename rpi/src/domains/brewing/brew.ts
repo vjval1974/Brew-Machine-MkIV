@@ -10,25 +10,25 @@
 // at brew.c:375. Critical for total brew duration: the HLT can be reheating
 // the next batch of sparge water WHILE the current sparge / mash is running.
 
-import log from '../util/logger';
-import store from '../state/store';
-import params from '../parameters/parameters';
-import { sleep } from '../hal/io_util';
+import log from '../../platform/util/logger';
+import store from '../../platform/store/store';
+import params from '../../platform/parameters/parameters';
+import { sleep } from '../../platform/hal/io_util';
 
-import * as valves      from './valves';
-import * as mashPump    from './mashPump';
-import * as chillerPump from './chillerPump';
-import * as mill        from './mill';
-import * as stir        from './stir';
-import * as crane       from './crane';
-import * as hopDropper  from './hopDropper';
-import * as hlt         from './hlt';
-import * as boil        from './boil';
-import * as boilValve   from './boilValve';
-import * as flow        from './flow';
-import * as mashWater   from './mashWater';
+import * as valves      from '../hydraulics/valves';
+import * as mashPump    from '../hydraulics/mashPump';
+import * as chillerPump from '../hydraulics/chillerPump';
+import * as mill        from '../motion/mill';
+import * as stir        from '../motion/stir';
+import * as crane       from '../motion/crane';
+import * as hopDropper  from '../motion/hopDropper';
+import * as hlt         from '../hlt/hlt';
+import * as boil        from '../boil/boil';
+import * as boilValve   from '../hydraulics/boilValve';
+import * as flow        from '../hydraulics/flow';
+import * as mashWater   from '../hydraulics/mashWater';
 
-import type { BrewStepDef } from '../types';
+import type { BrewStepDef } from '../../types';
 
 // ── Run-state ──────────────────────────────────────────────────────────────
 let running    = false;

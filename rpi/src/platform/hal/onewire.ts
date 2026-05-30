@@ -4,7 +4,7 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import log from '../util/logger';
-import { oneWire } from '../config/pinmap';
+import { oneWire } from '../../config/pinmap';
 
 const MOCK = process.env.MOCK_HARDWARE === '1';
 

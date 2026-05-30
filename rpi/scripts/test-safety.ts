@@ -23,24 +23,24 @@ process.on('unhandledRejection', (reason: unknown) => {
   console.error('  ! unhandledRejection:', reason instanceof Error ? reason.message : String(reason));
 });
 
-import gpio    from '../src/hal/gpio';
-import i2c     from '../src/hal/i2c';
-import params  from '../src/parameters/parameters';
-import * as valves      from '../src/controllers/valves';
-import * as mashPump    from '../src/controllers/mashPump';
-import * as chillerPump from '../src/controllers/chillerPump';
-import * as mill        from '../src/controllers/mill';
-import * as stir        from '../src/controllers/stir';
-import * as crane       from '../src/controllers/crane';
-import * as hopDropper  from '../src/controllers/hopDropper';
-import * as hlt         from '../src/controllers/hlt';
-import * as boil        from '../src/controllers/boil';
-import * as boilValve   from '../src/controllers/boilValve';
-import * as flow        from '../src/controllers/flow';
-import * as brew        from '../src/controllers/brew';
-import * as tempSensors from '../src/controllers/tempSensors';
-import onewire          from '../src/hal/onewire';
-import store from '../src/state/store';
+import gpio    from '../src/platform/hal/gpio';
+import i2c     from '../src/platform/hal/i2c';
+import params  from '../src/platform/parameters/parameters';
+import * as valves      from '../src/domains/hydraulics/valves';
+import * as mashPump    from '../src/domains/hydraulics/mashPump';
+import * as chillerPump from '../src/domains/hydraulics/chillerPump';
+import * as mill        from '../src/domains/motion/mill';
+import * as stir        from '../src/domains/motion/stir';
+import * as crane       from '../src/domains/motion/crane';
+import * as hopDropper  from '../src/domains/motion/hopDropper';
+import * as hlt         from '../src/domains/hlt/hlt';
+import * as boil        from '../src/domains/boil/boil';
+import * as boilValve   from '../src/domains/hydraulics/boilValve';
+import * as flow        from '../src/domains/hydraulics/flow';
+import * as brew        from '../src/domains/brewing/brew';
+import * as tempSensors from '../src/domains/sensing/tempSensors';
+import onewire          from '../src/platform/hal/onewire';
+import store from '../src/platform/store/store';
 
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 

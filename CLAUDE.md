@@ -120,15 +120,21 @@ npm run test:safety    # MOCK_HARDWARE=1 brew-abort/safe-state regression test (
 `tsconfig.json` is `strict`. Typecheck and `test:safety` both currently pass — treat a regression in either as a blocker.
 
 ### Architecture mapping (C → TS)
+Source is split into **`src/domains/`** (the controllers, grouped by area, each with an `index.ts` barrel) and **`src/platform/`** (cross-cutting infra). Mapping from the C modules:
 - `main.c` → `src/index.ts` (init order + clock/peripheral setup → HAL/controller wiring + graceful shutdown).
-- One module per C file under `src/controllers/` (`valves`, `mashPump`, `chillerPump`, `mill`, `stir`, `crane`, `hopDropper`, `hlt`, `boil`, `boilValve`, `flow`, `tempSensors`, `mashWater`, `brew`).
-- HAL under `src/hal/`: `gpio.ts` (libgpiod), `i2c.ts` (PCF8574 expanders), `onewire.ts` (DS18B20 via kernel `w1-therm`), `pwm.ts` (sysfs hardware PWM for the boil SSR), `watchdog.ts`, and a `workers/flow-worker.ts` worker thread that counts flow pulses on a `SharedArrayBuffer`.
+- One module per C file, grouped by domain under `src/domains/`:
+  - `brewing/brew.ts` (the step machine), `hlt/hlt.ts`, `boil/boil.ts`
+  - `hydraulics/` → `valves`, `mashPump`, `chillerPump`, `boilValve`, `flow`, `mashWater`
+  - `motion/` → `crane`, `mill`, `stir`, `hopDropper`
+  - `sensing/` → `tempSensors`
+- HAL + infra under `src/platform/`: `hal/gpio.ts` (libgpiod), `hal/i2c.ts` (PCF8574 expanders), `hal/onewire.ts` (DS18B20 via kernel `w1-therm`), `hal/pwm.ts` (sysfs hardware PWM for the boil SSR), `hal/watchdog.ts`, and `hal/workers/flow-worker.ts` (worker thread counting flow pulses on a `SharedArrayBuffer`). Central typed state is `platform/store/store.ts` (`AppState`); brew recipe params are `platform/parameters/parameters.ts` + `config/parameters.default.json`, one-to-one with `parameters.h`.
 - FreeRTOS tasks → async loops; FreeRTOS queues → `Promise<void>` returned from controller commands; LCD/menu UI → `web/` (Express + WebSocket; state pushed as snapshot/patch messages).
-- Central typed state is `src/state/store.ts` (`AppState`); brew recipe params are `src/parameters/parameters.ts` + `config/parameters.default.json`, one-to-one with `parameters.h`.
+
+> Note: the older `rpi/README.md` still describes the pre-reorg flat `src/controllers/` + `src/hal/` layout. Trust the tree above (and `src/domains/` / `src/platform/`) over the README until it's updated.
 
 ### Two things to know before touching it
 - **`src/config/pinmap.ts` ships with every `bcm` set to `null`** (placeholders). On real hardware the HAL refuses to claim a null pin, and `index.ts` refuses to boot if any *safety-critical* pin (HLT SSR, INLET valve, HLT level inputs, boil PWM) is unmapped — unless `MOCK_HARDWARE=1`. Map real BCM numbers there first.
-- **The parallel WAIT model is the whole point.** `src/controllers/brew.ts` `steps[]` mirrors `brew.c`'s `BrewSteps[]` (line ~2056) including the `wait` flag (= `ucWait`): `wait:false` fires the step and advances immediately (runs in parallel); `wait:true` first awaits *all* previously-launched steps. This overlap (HLT reheating the next sparge water during the current mash/sparge) is what makes the brew ~3 h faster than naive sequential execution. Don't "simplify" it to sequential `await`s.
+- **The parallel WAIT model is the whole point.** `src/domains/brewing/brew.ts` `steps[]` mirrors `brew.c`'s `BrewSteps[]` (line ~2056) including the `wait` flag (= `ucWait`): `wait:false` fires the step and advances immediately (runs in parallel); `wait:true` first awaits *all* previously-launched steps. This overlap (HLT reheating the next sparge water during the current mash/sparge) is what makes the brew ~3 h faster than naive sequential execution. Don't "simplify" it to sequential `await`s.
 
 ### Known gaps / safety notes (as of branch `…WAjwk`)
 These are documented so future work doesn't assume the port is complete:

@@ -40,6 +40,7 @@ import * as flow        from '../src/domains/hydraulics/flow';
 import * as brew        from '../src/domains/brewing/brew';
 import * as tempSensors from '../src/domains/sensing/tempSensors';
 import onewire          from '../src/platform/hal/onewire';
+import recipes          from '../src/domains/brewing/recipes';
 import store from '../src/platform/store/store';
 
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
@@ -52,6 +53,7 @@ function assert(cond: boolean, msg: string): void {
 
 async function setup(): Promise<void> {
   params.load();
+  recipes.load();
   await i2c.open();
   valves.init();
   mashPump.init();

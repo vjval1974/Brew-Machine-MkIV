@@ -109,6 +109,17 @@ async function handleCmd(c: Controllers, msg: WsClientMessage): Promise<void> {
     case 'mock.setInput':      gpio._mockSetInput(str('name'), num('value')); return;
     case 'mock.setTemp':       onewire._mockSetTemp(str('name'), num('value')); return;
     case 'mock.injectPulses':  c.flow._injectPulses(Number(args.count) || 1);   return;
+
+    case 'recipe.activate':    c.recipes.activate(str('id')); return;
+    case 'recipe.create':      c.recipes.create(str('name'), args.description ? String(args.description) : ''); return;
+    case 'recipe.duplicate':   c.recipes.duplicate(str('id'), args.name ? String(args.name) : undefined); return;
+    case 'recipe.delete':      c.recipes.remove(str('id')); return;
+    case 'recipe.rename':      c.recipes.rename(str('id'), str('name'), args.description ? String(args.description) : undefined); return;
+    case 'recipe.addStep':     c.recipes.addStep(str('recipeId'), str('kind') as never, args.position !== undefined ? Number(args.position) : undefined); return;
+    case 'recipe.removeStep':  c.recipes.removeStep(str('recipeId'), str('stepId')); return;
+    case 'recipe.moveStep':    c.recipes.moveStep(str('recipeId'), str('stepId'), num('delta')); return;
+    case 'recipe.updateStep':  c.recipes.updateStep(str('recipeId'), str('stepId'), (args.patch ?? {}) as Parameters<typeof c.recipes.updateStep>[2]); return;
+
     default:
       throw new Error(`Unknown command: ${name}`);
   }

@@ -37,6 +37,7 @@ interface TabButton extends HTMLButtonElement { dataset: DOMStringMap }
   window.buildValvesView('view-valves');
   window.buildDiagnosticsView('view-diagnostics');
   window.buildParametersView('view-parameters');
+  window.buildRecipesView('view-recipes');
   window.buildBrewView('view-brew');
 })();
 

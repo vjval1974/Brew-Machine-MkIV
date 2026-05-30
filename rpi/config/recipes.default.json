@@ -1,0 +1,41 @@
+{
+  "activeRecipeId": "mkiv-default",
+  "recipes": [
+    {
+      "id": "mkiv-default",
+      "name": "MkIV Default (full brew)",
+      "description": "Direct port of the original brew.c BrewSteps[] sequence. Mill in parallel with strike water heat, mash in parallel with sparge1 heat, sparge1 in parallel with sparge2 heat. ~6 hours total on a real rig.",
+      "createdAt": 0,
+      "updatedAt": 0,
+      "steps": [
+        { "id": "s0",  "kind": "wait",                "wait": false, "enabled": true, "params": { "ms": 3000 } },
+        { "id": "s1",  "kind": "crane.up",            "wait": false, "enabled": true, "params": {} },
+        { "id": "s2",  "kind": "valves.close_all",    "wait": false, "enabled": true, "params": {} },
+        { "id": "s3",  "kind": "boil_valve.set",      "wait": true,  "enabled": true, "params": { "state": "closed" } },
+        { "id": "s4",  "kind": "hlt.heat_and_fill",   "wait": false, "enabled": true, "params": { "setpoint_c": 75 } },
+        { "id": "s5",  "kind": "mill.run_for",        "wait": false, "enabled": true, "params": { "minutes": 17 } },
+        { "id": "s6",  "kind": "hlt.drain_to",        "wait": true,  "enabled": true, "params": { "litres": 21, "destination": "mash" } },
+        { "id": "s7",  "kind": "crane.incremental",   "wait": true,  "enabled": true, "params": {} },
+        { "id": "s8",  "kind": "hlt.heat_and_fill",   "wait": true,  "enabled": true, "params": { "setpoint_c": 98 } },
+        { "id": "s9",  "kind": "mash_cycle",          "wait": false, "enabled": true, "params": { "total_min": 60, "stir_t1_min": 10, "pump_t1_min": 10, "pump_t2_min": 5, "stir_t2_min": 0 } },
+        { "id": "s10", "kind": "pump_to_boil_cycle",  "wait": true,  "enabled": true, "params": { "total_sec": 180, "recycle_on_sec": 30, "recycle_off_sec": 300 } },
+        { "id": "s11", "kind": "hlt.drain_to",        "wait": true,  "enabled": true, "params": { "litres": 12, "destination": "mash" } },
+        { "id": "s12", "kind": "hlt.heat_and_fill",   "wait": true,  "enabled": true, "params": { "setpoint_c": 95 } },
+        { "id": "s13", "kind": "sparge_cycle",        "wait": false, "enabled": true, "params": { "total_min": 15, "stir_t1_min": 5, "pump_t1_min": 5, "pump_t2_min": 5, "stir_t2_min": 0 } },
+        { "id": "s14", "kind": "pump_to_boil_cycle",  "wait": true,  "enabled": true, "params": { "total_sec": 120, "recycle_on_sec": 30, "recycle_off_sec": 300 } },
+        { "id": "s15", "kind": "hlt.drain_to",        "wait": true,  "enabled": true, "params": { "litres": 12, "destination": "mash" } },
+        { "id": "s16", "kind": "sparge_cycle",        "wait": true,  "enabled": true, "params": { "total_min": 15, "stir_t1_min": 5, "pump_t1_min": 5, "pump_t2_min": 5, "stir_t2_min": 0 } },
+        { "id": "s17", "kind": "pump_to_boil_cycle",  "wait": true,  "enabled": true, "params": { "total_sec": 120, "recycle_on_sec": 30, "recycle_off_sec": 300 } },
+        { "id": "s18", "kind": "crane.up",            "wait": true,  "enabled": true, "params": {} },
+        { "id": "s19", "kind": "hlt.heat_and_fill",   "wait": false, "enabled": true, "params": { "setpoint_c": 32.34 } },
+        { "id": "s20", "kind": "bring_to_boil",       "wait": false, "enabled": true, "params": { "minutes": 17 } },
+        { "id": "s21", "kind": "pump_to_boil_cycle",  "wait": true,  "enabled": true, "params": { "total_sec": 120, "recycle_on_sec": 30, "recycle_off_sec": 300 } },
+        { "id": "s22", "kind": "boil_cycle",          "wait": true,  "enabled": true, "params": { "duration_min": 60, "duty_pct": 60, "hop_times_min": "60,30,15,5,1,1" } },
+        { "id": "s23", "kind": "wait",                "wait": true,  "enabled": true, "params": { "ms": 60000 } },
+        { "id": "s24", "kind": "chill",               "wait": true,  "enabled": true, "params": { "minutes": 20 } },
+        { "id": "s25", "kind": "pump_to_fermenter",   "wait": true,  "enabled": true, "params": { "minutes": 7 } },
+        { "id": "s26", "kind": "safe_states",         "wait": true,  "enabled": true, "params": {} }
+      ]
+    }
+  ]
+}

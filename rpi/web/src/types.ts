@@ -6,6 +6,48 @@ export type ValveState   = 'open' | 'closed';
 export type PumpState    = 'pumping' | 'stopped';
 export type BoilValveState = 'opened' | 'closed' | 'opening' | 'closing' | 'stopped';
 
+export interface ParamSpec {
+  key:     string;
+  label:   string;
+  type:    'number' | 'integer' | 'string' | 'boolean' | 'select';
+  default: number | string | boolean | number[];
+  min?:    number;
+  max?:    number;
+  step?:   number;
+  unit?:   string;
+  options?: string[];
+  description?: string;
+}
+
+export interface StepKindMeta {
+  id:          string;
+  displayName: string;
+  description: string;
+  params:      ParamSpec[];
+}
+
+export interface StepInstance {
+  id:      string;
+  kind:    string;
+  wait:    boolean;
+  enabled: boolean;
+  params:  Record<string, unknown>;
+}
+
+export interface Recipe {
+  id:          string;
+  name:        string;
+  description: string;
+  steps:       StepInstance[];
+  createdAt:   number;
+  updatedAt:   number;
+}
+
+export interface RecipesState {
+  activeRecipeId: string | null;
+  recipes:        Recipe[];
+}
+
 export interface AppStateLite {
   valves?: Partial<Record<ValveName, ValveState>>;
   pumps?:  { mash?: PumpState; chiller?: PumpState };
@@ -28,6 +70,7 @@ export interface AppStateLite {
     maxSteps?: number;
   };
   parameters?: Record<string, unknown>;
+  recipes?: RecipesState;
 }
 
 export interface LogEntry {
@@ -66,6 +109,7 @@ declare global {
     buildDiagnosticsView: (id: string) => void;
     buildParametersView:  (id: string) => void;
     buildBrewView:        (id: string) => void;
+    buildRecipesView:     (id: string) => void;
   }
 }
 

@@ -112,6 +112,74 @@ export interface PinMap {
   i2c: I2cConfig;
 }
 
+// ── Recipes (editable brew sequences) ───────────────────────────────────────
+
+/** Identifier of a step kind, e.g. 'hlt.heat_and_fill'. */
+export type StepKindId =
+  | 'wait'
+  | 'crane.up'
+  | 'crane.down'
+  | 'crane.incremental'
+  | 'mill.run_for'
+  | 'hlt.heat_and_fill'
+  | 'hlt.drain_to'
+  | 'valves.close_all'
+  | 'valve.set'
+  | 'boil_valve.set'
+  | 'mash_cycle'
+  | 'sparge_cycle'
+  | 'pump_to_boil_cycle'
+  | 'bring_to_boil'
+  | 'boil_cycle'
+  | 'chill'
+  | 'pump_to_fermenter'
+  | 'safe_states';
+
+/** Schema for one parameter on a step kind. Drives both validation and UI. */
+export interface ParamSpec {
+  key:     string;
+  label:   string;
+  type:    'number' | 'integer' | 'string' | 'boolean' | 'select';
+  default: number | string | boolean | number[];
+  min?:    number;
+  max?:    number;
+  step?:   number;
+  unit?:   string;
+  options?: string[];        // for type='select'
+  description?: string;
+}
+
+/** Metadata about a step kind — declared in stepKinds.ts. */
+export interface StepKindMeta {
+  id:          StepKindId;
+  displayName: string;
+  description: string;
+  params:      ParamSpec[];
+}
+
+/** One step instance inside a Recipe. */
+export interface StepInstance {
+  id:      string;                    // uuid for this instance
+  kind:    StepKindId;
+  wait:    boolean;                   // join with all prior pending steps?
+  enabled: boolean;                   // skip when false
+  params:  Record<string, unknown>;
+}
+
+export interface Recipe {
+  id:          string;
+  name:        string;
+  description: string;
+  steps:       StepInstance[];
+  createdAt:   number;
+  updatedAt:   number;
+}
+
+export interface RecipesState {
+  activeRecipeId: string | null;
+  recipes:        Recipe[];
+}
+
 // ── Whole-app state snapshot ────────────────────────────────────────────────
 export interface AppState {
   valves: Record<ValveName, ValveState>;
@@ -155,6 +223,7 @@ export interface AppState {
     maxSteps:       number;
   };
   parameters: Parameters;
+  recipes:    RecipesState;
 }
 
 // ── Wire protocol (WebSocket) ───────────────────────────────────────────────

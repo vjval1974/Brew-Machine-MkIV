@@ -9,6 +9,7 @@ import pinmap from './config/pinmap';
 import store from './platform/store/store';
 
 import params from './platform/parameters/parameters';
+import recipes from './domains/brewing/recipes';
 
 import * as valves      from './domains/hydraulics/valves';
 import * as mashPump    from './domains/hydraulics/mashPump';
@@ -51,6 +52,7 @@ function declareDomainOwners(): void {
   store.declareOwner('hopDropper', 'motion');
   store.declareOwner('temps',      'sensing');
   store.declareOwner('parameters', 'platform');
+  store.declareOwner('recipes',    'recipes');
 }
 
 /**
@@ -86,6 +88,7 @@ async function main(): Promise<void> {
   declareDomainOwners();
 
   params.load();
+  recipes.load();
   await i2c.open();
 
   valves.init();
@@ -119,7 +122,7 @@ async function main(): Promise<void> {
   const controllers: Controllers = {
     valves, mashPump, chillerPump, mill, stir, crane, hopDropper,
     hlt, boil, boilValve, flow,
-    brew, parameters: params,
+    brew, parameters: params, recipes,
   };
   await createServer(controllers, port);
 

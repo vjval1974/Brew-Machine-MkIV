@@ -14,8 +14,10 @@ import type * as boilT        from '../domains/boil/boil';
 import type * as boilValveT   from '../domains/hydraulics/boilValve';
 import type * as flowT        from '../domains/hydraulics/flow';
 import type * as brewT        from '../domains/brewing/brew';
+import type recipesT          from '../domains/brewing/recipes';
 import type paramsT           from '../platform/parameters/parameters';
-import type { ValveName }     from '../types';
+import type { ValveName, StepKindId } from '../types';
+import { listKinds }          from '../domains/brewing/stepKinds';
 
 export interface Controllers {
   valves:      typeof valvesT;
@@ -31,6 +33,7 @@ export interface Controllers {
   flow:        typeof flowT;
   brew:        typeof brewT;
   parameters:  typeof paramsT;
+  recipes:     typeof recipesT;
 }
 
 export default function buildRouter(c: Controllers): Router {
@@ -117,6 +120,44 @@ export default function buildRouter(c: Controllers): Router {
   r.post('/boil/stop',  async (_req, res) => { await c.boil.stop();  res.json({ ok: true }); });
 
   r.post('/flow/reset', (_req, res) => { c.flow.reset(); res.json({ ok: true }); });
+
+  // ── Recipes ───────────────────────────────────────────────────────────────
+  r.get('/recipes',           (_req, res) => res.json(c.recipes.get()));
+  r.get('/recipes/kinds',     (_req, res) => res.json(listKinds()));
+  r.post('/recipes',          (req, res) => {
+    const body = req.body as { name: string; description?: string };
+    res.json(c.recipes.create(body.name, body.description));
+  });
+  r.post('/recipes/:id/duplicate', (req, res) => {
+    const body = req.body as { name?: string };
+    res.json(c.recipes.duplicate(req.params.id, body.name));
+  });
+  r.post('/recipes/:id/activate',  (req, res) => { c.recipes.activate(req.params.id); res.json({ ok: true }); });
+  r.delete('/recipes/:id',         (req, res) => { c.recipes.remove(req.params.id);   res.json({ ok: true }); });
+  r.put('/recipes/:id',            (req, res) => {
+    const body = req.body as { name: string; description?: string };
+    c.recipes.rename(req.params.id, body.name, body.description);
+    res.json({ ok: true });
+  });
+
+  r.post('/recipes/:id/steps', (req, res) => {
+    const body = req.body as { kind: StepKindId; position?: number };
+    res.json(c.recipes.addStep(req.params.id, body.kind, body.position));
+  });
+  r.delete('/recipes/:id/steps/:stepId', (req, res) => {
+    c.recipes.removeStep(req.params.id, req.params.stepId);
+    res.json({ ok: true });
+  });
+  r.post('/recipes/:id/steps/:stepId/move', (req, res) => {
+    const body = req.body as { delta: number };
+    c.recipes.moveStep(req.params.id, req.params.stepId, Number(body.delta));
+    res.json({ ok: true });
+  });
+  r.put('/recipes/:id/steps/:stepId', (req, res) => {
+    const body = req.body as { wait?: boolean; enabled?: boolean; params?: Record<string, unknown> };
+    c.recipes.updateStep(req.params.id, req.params.stepId, body);
+    res.json({ ok: true });
+  });
 
   return r;
 }

@@ -41,6 +41,7 @@ const initial: AppState = {
   mashWater: { inMash: 0, inBoiler: 0 },
   brew: { running: 'idle', step: 0, stepName: 'Idle', secondsElapsed: 0, stepElapsed: 0, maxSteps: 0 },
   parameters: emptyParameters,
+  recipes: { activeRecipeId: null, recipes: [] },
 };
 
 type Section = keyof AppState;

@@ -16,10 +16,10 @@
     "watch:web": "tsc -p tsconfig.web.json --watch --preserveWatchOutput",
     "start": "node dist/index.js",
     "dev": "tsx watch src/index.ts",
-    "mock": "MOCK_HARDWARE=1 npm run dev",
+    "mock": "cross-env MOCK_HARDWARE=1 tsx watch src/index.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.web.json --noEmit",
-    "test:safety": "MOCK_HARDWARE=1 tsx scripts/test-safety.ts",
-    "clean": "rm -rf dist web/js"
+    "test:safety": "cross-env MOCK_HARDWARE=1 tsx scripts/test-safety.ts",
+    "clean": "rimraf dist web/js"
   },
   "dependencies": {
     "express": "^4.19.2",
@@ -33,6 +33,8 @@
     "@types/express": "^4.17.21",
     "@types/node": "^20.14.0",
     "@types/ws": "^8.5.10",
+    "cross-env": "^7.0.3",
+    "rimraf": "^5.0.10",
     "tsx": "^4.16.0",
     "typescript": "^5.5.0"
   }

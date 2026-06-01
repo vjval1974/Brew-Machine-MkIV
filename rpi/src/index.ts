@@ -5,6 +5,7 @@ import log from './platform/util/logger';
 import gpio from './platform/hal/gpio';
 import i2c from './platform/hal/i2c';
 import watchdog from './platform/hal/watchdog';
+import onewire from './platform/hal/onewire';
 import pinmap from './config/pinmap';
 import store from './platform/store/store';
 
@@ -89,6 +90,7 @@ async function main(): Promise<void> {
 
   params.load();
   recipes.load();
+  onewire.load();
   await i2c.open();
 
   valves.init();

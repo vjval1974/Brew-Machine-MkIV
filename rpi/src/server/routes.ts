@@ -18,6 +18,7 @@ import type recipesT          from '../domains/brewing/recipes';
 import type paramsT           from '../platform/parameters/parameters';
 import type { ValveName, StepKindId } from '../types';
 import { listKinds }          from '../domains/brewing/stepKinds';
+import onewire                from '../platform/hal/onewire';
 
 export interface Controllers {
   valves:      typeof valvesT;
@@ -157,6 +158,37 @@ export default function buildRouter(c: Controllers): Router {
     const body = req.body as { wait?: boolean; enabled?: boolean; params?: Record<string, unknown> };
     c.recipes.updateStep(req.params.id, req.params.stepId, body);
     res.json({ ok: true });
+  });
+
+  // ── 1-Wire (DS18B20) discovery + assignment ──────────────────────────────
+  r.get('/onewire', async (_req, res) => {
+    res.json({
+      sensors: onewire.getAssignments(),
+      devices: await onewire.scan(),
+    });
+  });
+  r.post('/onewire/scan', async (_req, res) => {
+    res.json({
+      sensors: onewire.getAssignments(),
+      devices: await onewire.scan(),
+    });
+  });
+  r.put('/onewire/sensor/:name', (req, res) => {
+    const body = req.body as { rom: string };
+    if (!body || typeof body.rom !== 'string') {
+      res.status(400).json({ error: 'body.rom required' });
+      return;
+    }
+    onewire.setSensorRom(req.params.name, body.rom);
+    res.json({ ok: true, sensors: onewire.getAssignments() });
+  });
+  r.delete('/onewire/sensor/:name', (req, res) => {
+    onewire.clearSensorOverride(req.params.name);
+    res.json({ ok: true, sensors: onewire.getAssignments() });
+  });
+  r.delete('/onewire/overrides', (_req, res) => {
+    onewire.clearAllOverrides();
+    res.json({ ok: true, sensors: onewire.getAssignments() });
   });
 
   return r;

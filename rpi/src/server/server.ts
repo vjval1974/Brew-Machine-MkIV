@@ -120,6 +120,10 @@ async function handleCmd(c: Controllers, msg: WsClientMessage): Promise<void> {
     case 'recipe.moveStep':    c.recipes.moveStep(str('recipeId'), str('stepId'), num('delta')); return;
     case 'recipe.updateStep':  c.recipes.updateStep(str('recipeId'), str('stepId'), (args.patch ?? {}) as Parameters<typeof c.recipes.updateStep>[2]); return;
 
+    case 'onewire.assign':         onewire.setSensorRom(str('name'), str('rom')); return;
+    case 'onewire.clearOverride':  onewire.clearSensorOverride(str('name')); return;
+    case 'onewire.clearAll':       onewire.clearAllOverrides(); return;
+
     default:
       throw new Error(`Unknown command: ${name}`);
   }

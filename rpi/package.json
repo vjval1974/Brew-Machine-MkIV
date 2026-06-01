@@ -15,8 +15,8 @@
     "watch:server": "tsc -p tsconfig.json --watch --preserveWatchOutput",
     "watch:web": "tsc -p tsconfig.web.json --watch --preserveWatchOutput",
     "start": "node dist/index.js",
-    "dev": "tsx watch src/index.ts",
-    "mock": "cross-env MOCK_HARDWARE=1 tsx watch src/index.ts",
+    "dev": "npm run build:web && tsx watch src/index.ts",
+    "mock": "npm run build:web && cross-env MOCK_HARDWARE=1 tsx watch src/index.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.web.json --noEmit",
     "test:safety": "cross-env MOCK_HARDWARE=1 tsx scripts/test-safety.ts",
     "clean": "rimraf dist web/js"

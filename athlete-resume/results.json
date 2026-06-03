@@ -1,0 +1,99 @@
+{
+  "athlete": {
+    "name": "Max Goold",
+    "age": 13,
+    "discipline": "Surfing (shortboard)",
+    "home_break": "Palm Beach, Gold Coast, QLD, Australia",
+    "club": "Palm Beach (formerly Currumbin Alley Boardriders / Surfing Services Currumbin)",
+    "instagram": "@max_and_brad_goold",
+    "instagram_url": "https://www.instagram.com/max_and_brad_goold/",
+    "instagram_followers": "TO FILL MANUALLY (not publicly scraped — login wall not bypassed)",
+    "instagram_engagement_rate": "TO FILL MANUALLY",
+    "disambiguation_note": "NOT the Melbourne junior road/track cyclist 'Max Goold' (IG @max_goold_, b. 15 Jan 2007, Victorian Institute of Sport / WWV). All results below are verified as the Palm Beach/Gold Coast junior SURFER. Every cycling result has been excluded."
+  },
+  "current_ranking": {
+    "series": "Surfing Australia Junior Series (U14 Boys division)",
+    "rank": "UNVERIFIED — could not be retrieved in this environment",
+    "points": "UNVERIFIED — could not be retrieved in this environment",
+    "lookup_instructions": "Liveheats rankings live in a React SPA backed by a GraphQL API; both the API host and a headless browser were blocked by this environment's network policy, so the live table could not be read. To fill manually, open the page below, set Series = current 'Surfing Australia Junior Series', Division = 'U14 Boys', and read Max Goold's rank + points.",
+    "rankings_url": "https://www.liveheats.com/surfingausranking/rankings",
+    "known_series_ids": ["22497", "26391", "1592"],
+    "note": "Series ID 22497 and 26391 both resolve to 'Surfing Australia Junior Series' pages; 1592 is 'Surfing Australia National Junior Rankings'. Confirm which is the live 2026 series. 2025 U14 Boys ranking champion was Lennox Lindsay (Culburra, NSW) — i.e. Max was not the 2025 U14 champion (he was in younger age divisions that year)."
+  },
+  "results": [
+    {
+      "date": "2023-12",
+      "event": "Woolworths Surfer Groms Comp (North Cronulla)",
+      "series": "Woolworths Surfer Groms Comps Series (national grom development series)",
+      "location": "North Cronulla, NSW",
+      "division": "U12 Boys",
+      "placing": "1st",
+      "scores": "13.67 (two-wave combined heat total)",
+      "points": "",
+      "club": "Currumbin Alley",
+      "source_url": "https://surfingaustralia.com/champions-crowned-at-the-woolworths-surfer-groms-comp-in-cronulla/",
+      "verification": "VERIFIED placing + club via Surfing Australia article (search). Combined total 13.67 is from your seed data; the exact figure was not visible in the public excerpt — confirm against the event's Liveheats result page."
+    },
+    {
+      "date": "2024",
+      "event": "Australian Junior Online Surf Championships (powered by mophie)",
+      "series": "Surfing Australia Junior Series",
+      "location": "Online / national (video-judged)",
+      "division": "U12 Grom Boys",
+      "placing": "1st",
+      "scores": "9.27 (winning ride score; 2nd Bali Dobson 8.83, 3rd Jaya Suhendra 8.4)",
+      "points": "6500 Surfing Australia Junior Series points (per Surfing Australia / your seed — not independently re-verified)",
+      "club": "Palm Beach, QLD",
+      "source_url": "https://surfingaustralia.com/winners-of-the-2024-australian-junior-online-surf-championships-powered-by-mophie/",
+      "verification": "VERIFIED: division, 1st place, 9.27, hometown 'Palm Beach, QLD', and podium (Dobson/Suhendra) confirmed via Surfing Australia article (search). Exact event month not confirmed; listed as 2024."
+    },
+    {
+      "date": "2026-02",
+      "event": "Surf Reflections Junior Series — Round 1 (Bonny Hills)",
+      "series": "Surf Reflections Junior Series (powered by Surfest) — Surfing Australia National Series, rated 5500",
+      "location": "Bonny Hills, NSW",
+      "division": "U14 Boys",
+      "placing": "1st",
+      "scores": "Winning total not published in available sources (2nd Clement Piellard, 3rd Noah Kornek)",
+      "points": "",
+      "club": "Palm Beach",
+      "source_url": "https://www.miragenews.com/grom-trio-claim-back-to-back-titles-in-surf-1670562/",
+      "verification": "VERIFIED 1st place via Mirage News / News Of The Area (Coffs Coast) coverage. Heat scores not published publicly."
+    },
+    {
+      "date": "2026-05",
+      "event": "Surf Reflections Junior Series — Round 2 (Hungry Head)",
+      "series": "Surf Reflections Junior Series (powered by Surfest) — Surfing Australia National Series, rated 5500",
+      "location": "Hungry Head, Urunga, NSW",
+      "division": "U14 Boys",
+      "placing": "1st",
+      "scores": "Winning total not published in available sources (2nd Bede Cant, 3rd Mack Ringis, 4th Beau Hall)",
+      "points": "",
+      "club": "Palm Beach",
+      "source_url": "https://www.miragenews.com/grom-trio-claim-back-to-back-titles-in-surf-1670562/",
+      "verification": "VERIFIED 1st place (back-to-back) via Mirage News / News Of The Area. Event dates reported as 8–10 May 2026 (Round 2). Heat scores not published publicly."
+    }
+  ],
+  "checked_but_no_result_found": [
+    {
+      "event": "Woolworths Australian Junior Surfing Titles (Phillip Island / Cape Woolamai, VIC)",
+      "finding": "No result for Max Goold located in public coverage. The event has a U14 Boys division but Max was not found in winners/finalists coverage. Cannot confirm whether he competed.",
+      "source_url": "https://surfingaustralia.com/woolworths-australian-junior-surfing-titles-return-to-phillip-island-victoria/"
+    },
+    {
+      "event": "Let's Surf Lake Mac Pro Junior (Redhead Beach, NSW)",
+      "finding": "No result for Max Goold located. Note: this is a WSL Australia/Oceania Pro Junior (older U18 field; 2025 winners Eden Hasson / Milla Brown) — at 13 Max is below the typical competitive field, so absence is expected.",
+      "source_url": "https://www.worldsurfleague.com/events/2025/jun/426/lets-surf-lake-mac-pro-junior/main"
+    },
+    {
+      "event": "2026 Australian Junior Online Surf Championships presented by FCS",
+      "finding": "Event ran online 1–31 Jan 2026; winners announced ~5 Feb 2026. A winners article exists but Max Goold's placing in his age division was NOT visible in public excerpts. WORTH CHECKING MANUALLY — he won the 2024 edition, so a 2026 result is plausible.",
+      "source_url": "https://surfingaustralia.com/2026-australian-junior-online-surf-championships-presented-by-fcs-winners/"
+    }
+  ],
+  "data_collection_notes": {
+    "environment_limitation": "This research ran in a sandboxed environment with outbound network restricted to a search proxy only. Direct HTTPS (curl), the Liveheats GraphQL API (https://liveheats.com/api/graphql), full-page fetches, and headless-browser (Playwright) rendering were all blocked (HTTP 403 / host-not-in-allowlist). Findings therefore come from web-search result pages and their summaries, not from full source-page rendering or the GraphQL API.",
+    "implication": "Live ranking points, the Liveheats athlete profile, and heat-by-heat scores could not be pulled programmatically. The seed results were all corroborated where public coverage existed. Items that could not be verified are flagged rather than guessed.",
+    "instagram": "Handle recorded only. Login wall not bypassed; follower/engagement left blank for manual entry per your instruction."
+  }
+}
